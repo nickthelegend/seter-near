@@ -15,11 +15,15 @@ const cfg = await view(C, 'get_config');
 const t = await (await fetch(PRICE_SOURCE, { headers: { 'user-agent': 'mienai-seed/0.1' } })).json();
 const p = Number(t.price);
 const steps = [];
-for (const [cond, mult, label] of [['lte', 0.88, 'deep stop-loss'], ['lte', 0.92, 'stop-loss'], ['gte', 1.12, 'take-profit']]) {
+const ORDERS = [['lte', 0.88, 'deep stop-loss'], ['lte', 0.92, 'stop-loss'], ['gte', 1.12, 'take-profit']];
+// Resume support: skip the orders this account already placed beyond the recorded run (orders 1 and 2).
+const already = Math.max(0, (await view(C, 'get_orders_of', { owner: trader.accountId })).length - 2);
+for (const [cond, mult, label] of ORDERS.slice(already)) {
   const pt = orderPlaintext({ cond, triggerUsd: (p * mult).toFixed(4), side: 'sell', amount: String(10n ** 23n) });
   steps.push(await call(trader, C, 'place_order', { ct: sealToEnclave(cfg.tee.order_pub, trader.accountId, pt), commit: commitment(trader.accountId, pt), view_ct: sealView(view_key, trader.accountId, pt) }, { deposit: 20n * 10n ** 21n, step: `trader seals a ${label} (sell 0.1 NEAR); level not recorded` }));
 }
 steps.push(await call(keeper, C, 'publish_bands', {}, { deposit: 20n * 10n ** 21n, gas: 300_000_000_000_000n, step: 'enclave band report (OutLayer TEE run, k = 5)' }));
 const stats = await view(C, 'get_stats');
-await writeFile(resolve(root, 'deployments/book-2026-11-09.json'), JSON.stringify({ network: 'testnet', contract: C, price_at_placement: { source: PRICE_SOURCE, price: t.price, trade_id: t.trade_id, time: t.time }, steps, bands: stats.bands }, null, 2) + '\n');
+const ids = (await view(C, 'get_orders_of', { owner: trader.accountId })).map((o) => o.id).slice(2);
+await writeFile(resolve(root, 'deployments/book-2026-11-09.json'), JSON.stringify({ network: 'testnet', contract: C, order_ids: ids, note: already ? `${already} order(s) placed by an earlier attempt of this script (interrupted by FastNEAR HTTP 429); see the contract's get_orders_of` : undefined, price_at_placement: { source: PRICE_SOURCE, price: t.price, trade_id: t.trade_id, time: t.time }, steps, bands: stats.bands }, null, 2) + '\n');
 console.log(JSON.stringify(stats.bands));

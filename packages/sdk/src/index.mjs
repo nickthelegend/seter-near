@@ -1,5 +1,5 @@
 // Shared constants and read-only chain helpers for Mienai. No keys are handled here.
-export const TESTNET_RPC = 'https://test.rpc.fastnear.com';
+export const TESTNET_RPC = globalThis.process?.env?.NEAR_TESTNET_RPC || 'https://test.rpc.fastnear.com';
 export const OUTLAYER_TESTNET = 'outlayer.testnet';
 export const OUTLAYER_TESTNET_API = 'https://testnet-api.outlayer.ai';
 export const PRICE_SOURCE = 'https://api.exchange.coinbase.com/products/NEAR-USD/ticker';
