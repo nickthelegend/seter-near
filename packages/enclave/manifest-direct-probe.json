@@ -1,0 +1,8 @@
+{
+  "display": { "name": "Mienai trigger enclave (direct probe)", "author": "nickthelegend" },
+  "operations": ["keys", "check", "bands"],
+  "capabilities": { "network": ["api.exchange.coinbase.com"] },
+  "signing_keys": [{ "path": "attest", "type": "ed25519", "bind": "wasm", "caller": "predecessor" }],
+  "encryption_keys": [{ "path": "orders", "bind": "wasm", "caller": "predecessor" }],
+  "callers": { "contract": "deny", "https": "deny" }
+}

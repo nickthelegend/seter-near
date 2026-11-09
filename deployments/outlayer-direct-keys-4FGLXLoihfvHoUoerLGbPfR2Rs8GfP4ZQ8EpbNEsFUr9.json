@@ -1,0 +1,11 @@
+{
+  "tx": "4FGLXLoihfvHoUoerLGbPfR2Rs8GfP4ZQ8EpbNEsFUr9",
+  "explorer": "https://testnet.nearblocks.io/txns/4FGLXLoihfvHoUoerLGbPfR2Rs8GfP4ZQ8EpbNEsFUr9",
+  "input": "{\"operation\":\"keys\",\"contract\":\"mienai-3013a230.testnet\",\"request\":1794243469895,\"orders\":[]}",
+  "output": "{\"body\":\"{\\\"attest_pub\\\":\\\"wBQmXILGPmi6+/TCYdknzGVNoe7VWlUXMhhRomhf1Ws=\\\",\\\"contract\\\":\\\"mienai-3013a230.testnet\\\",\\\"ctx\\\":{\\\"block\\\":\\\"276947675\\\",\\\"outlayer_request\\\":\\\"14938\\\",\\\"predecessor\\\":\\\"mienai-3013a230.testnet\\\"},\\\"op\\\":\\\"keys\\\",\\\"order_pub\\\":\\\"aoZQoH9gDdcXp6UjOQLMpFhApS2aAIJd2uQKypZyuA0=\\\",\\\"request\\\":1794243469895,\\\"v\\\":1}\",\"sig\":\"eaVfx43tynCM2mpuMPFOI4YmA1UYu9649qqoUo3ZPUD086X/bxiXDODUZmCKp2DAgX75XpfUAi2gFedXK3PtCQ==\"}",
+  "failure": null,
+  "logs": [
+    "[[yNEAR charged: \"1242100100000000000000\"]]",
+    "Execution completed successfully. Output: Json(436 bytes), Resources: { instructions: 1022158, time_ms: 1159 }, Cost: 1242100100000000000000 yoctoNEAR, Refund: 28757899900000000000000 yoctoNEAR, Freshly compiled"
+  ]
+}

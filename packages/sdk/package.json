@@ -1,0 +1,15 @@
+{
+  "name": "@mienai/sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "exports": { ".": "./src/index.mjs", "./crypto": "./src/crypto.mjs" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "dependencies": {
+    "@noble/ciphers": "1.3.0",
+    "@noble/curves": "1.9.2",
+    "@noble/hashes": "1.8.0",
+    "@phala/dcap-qvl": "0.7.1",
+    "near-api-js": "7.3.1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "tx": "4RDtRKvrXwjEz7ShLfgdSnWfDCNcWSksDvrtYRpvrWrK",
+  "explorer": "https://testnet.nearblocks.io/txns/4RDtRKvrXwjEz7ShLfgdSnWfDCNcWSksDvrtYRpvrWrK",
+  "input": "{\"operation\":\"check\",\"contract\":\"mienai-3013a230.testnet\",\"request\":1794243553323,\"orders\":[{\"id\":1,\"owner\":\"mienai-4e6b1225.testnet\",\"ct\":\"AWLoF4gFHpOTjhVmnVui5MJUTtyCBO7gbU38SIk4rWQlCEnLB2vLmBuSk8sffdVWTqfVvq0vt8FkH5NLiPHRxYySURfvzjsOcW2B44JxB3syC4zaYQIj7FApNe31Y3gErMihwPT6Pw+6J2Ja8PoYvo3CtsITn9sZCswatNp166q/QJKunX1OI83relqUj74WoFvqF8VJW3jJroF4hzNGuJTcTzUOryAljhwXyMcRJOnFQPMbKUwGZrfI8TPHBA772UjiF8dI8iBKK2CQThM=\",\"commit\":\"6316b29f086642c97ad9856ca4f45412ff7e023457c80afcb96a2c68a1c55d16\"},{\"id\":2,\"owner\":\"mienai-4e6b1225.testnet\",\"ct\":\"AR2PMxLRl/LcY6fYnc7kk/55TXndvXSOeEN40jFvN1dr5TBtvM3Dhq56r9lZ0wbIJo38U7m+rp/GFhKL88efqTi+IYGVpDyYASTo8z3zDBaPGXSkLm+lw9sGVq2jfgt1illhP4Mf88Se0W8pfU4tFZf6iGsRqW6p4z/JthKXQGY25YEEWRLakySxwLR5McMHKdmviBgjUGghM/N1MW4TsMsxfiqk9LoIpfWVxOTwMbMltu1Qv2aDMkLZTtXbuGeqHGWPdWhLDlbhegJAOVU=\",\"commit\":\"7d7b6e15ac8ddca5f669fb67a2c8968bd24476dc0396681ce0834e140d53bcec\"}]}",
+  "output": "{\"body\":\"{\\\"checked\\\":2,\\\"contract\\\":\\\"mienai-3013a230.testnet\\\",\\\"ctx\\\":{\\\"block\\\":\\\"276947815\\\",\\\"outlayer_request\\\":\\\"14939\\\",\\\"predecessor\\\":\\\"mienai-3013a230.testnet\\\"},\\\"fired\\\":[{\\\"id\\\":1,\\\"pt\\\":\\\"{\\\\\\\"v\\\\\\\":1,\\\\\\\"cond\\\\\\\":\\\\\\\"gte\\\\\\\",\\\\\\\"trigger_e6\\\\\\\":1000000,\\\\\\\"side\\\\\\\":\\\\\\\"sell\\\\\\\",\\\\\\\"amount\\\\\\\":\\\\\\\"100000000000000000000000\\\\\\\",\\\\\\\"salt\\\\\\\":\\\\\\\"158b37c5b240d24395486c335ac532b6\\\\\\\"}\\\"}],\\\"op\\\":\\\"check\\\",\\\"price_e6\\\":3614100,\\\"price_ts_ms\\\":1794243551268,\\\"request\\\":1794243553323,\\\"source\\\":\\\"https://api.exchange.coinbase.com/products/NEAR-USD/ticker\\\",\\\"trade_id\\\":36356080,\\\"unreadable\\\":0,\\\"v\\\":1}\",\"sig\":\"KJx1SIixVF7vCOhTHWm0Q7IqwTIMsu/NFnRIrNAx7QK5gXbveiTrRC47ccEI1YkmTdtDsjUmluIv3ObfBAc7DA==\"}",
+  "failure": null,
+  "logs": [
+    "[[yNEAR charged: \"1087000700000000000000\"]]",
+    "Execution completed successfully. Output: Json(716 bytes), Resources: { instructions: 7402304, time_ms: 870 }, Cost: 1087000700000000000000 yoctoNEAR, Refund: 28912999300000000000000 yoctoNEAR, Cached WASM from 2026-11-09T16:57:55.247145+00:00"
+  ]
+}

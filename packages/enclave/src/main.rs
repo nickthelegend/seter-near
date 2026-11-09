@@ -12,7 +12,14 @@ mod core;
 /// allowlist, the key declarations and the caller rule.
 #[used]
 #[cfg_attr(target_arch = "wasm32", link_section = "outlayer.manifest")]
+#[cfg(not(feature = "direct-probe"))]
 static OUTLAYER_MANIFEST: [u8; include_bytes!("../manifest.json").len()] = *include_bytes!("../manifest.json");
+/// A probe build for checking the code on OutLayer before the contract exists: the same code,
+/// a manifest admitting only a direct call. Never pinned by the contract.
+#[used]
+#[cfg_attr(target_arch = "wasm32", link_section = "outlayer.manifest")]
+#[cfg(feature = "direct-probe")]
+static OUTLAYER_MANIFEST: [u8; include_bytes!("../manifest-direct-probe.json").len()] = *include_bytes!("../manifest-direct-probe.json");
 
 #[cfg(target_arch = "wasm32")]
 mod signing_keys_host {
