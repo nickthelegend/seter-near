@@ -62,7 +62,7 @@ The TDX attestation of check #2 was verified independently (`packages/sdk/src/at
 | `packages/contract` | Rust near-sdk vault: orders, requests, verification, pool, balances. Sandbox tests in `tests/`. |
 | `packages/token` | tUSD test NEP-141 with an hourly faucet. |
 | `packages/sdk` | Sealing, attestation verification, FastFS upload, deploy and run scripts. |
-| `packages/web` | Vite + React app: landing (`/`) and app (`/app`). |
+| `packages/web` | Vite + React app: landing (`/`), console (`/app`) and order pages (`/order/<id>`). |
 | `deployments/` | Every transaction of the deploy and the real run, and the verified attestation. |
 | `docs/RESEARCH.md` | OutLayer, price-source and execution research with links. |
 
@@ -82,9 +82,10 @@ pnpm build && pnpm --filter @mienai/web preview   # http://127.0.0.1:5201
 
 Do X → see Y:
 
-- Open `/` → the live strip shows NEAR/USD from Coinbase and the contract's open/fired counts; "What a stop hunter sees" lists real ciphertexts with redacted triggers.
-- Open `/app` without a wallet → the public order book, the fired-order audit (trigger 3.5967, price 3.5886) and the enclave panel showing the pinned hash equal to the reproducible build.
-- Connect a testnet wallet (MyNearWallet), deposit NEAR, set a stop → the transaction stores a ciphertext; your order list decrypts it on your device.
+- Open `/` → every order on the contract hangs as a ticket from a line drawn at the live Coinbase NEAR/USD price; armed tickets show a redaction bar, the fired one shows its revealed trigger 3.5967. "Two views of the same contract" lists the real ciphertexts next to what only the enclave reads (last check price, band report).
+- Open `/app` without a wallet → the public book as sealed-order tickets (each with a k-anonymity meter: how many armed orders it hides among, against the k = 5 the band report needs), the enclave log built from `get_orders` and `get_request` (sealed, checked, fired, attested, by UTC day) and the enclave column showing the pinned hash equal to the reproducible build.
+- Open `/order/1` → the fired stop: trigger 3.5967 against the 3.5886 the TEE read, and the attestation as a certificate. Its TDX quote is fetched live from OutLayer's API and hashed in the browser; MRTD and RTMR3 are compared with the recorded verification.
+- Connect a testnet wallet (MyNearWallet), open the Vault sheet and deposit NEAR, then "Seal an order" → the sheet shows what you see next to what the chain will see (the ciphertext); the transaction stores only that, and your tickets decrypt it on your device.
 - `node packages/sdk/scripts/verify-attestation.mjs deployments/outlayer-direct-check-*.json 999ec172…` → all six attestation checks pass for the probe run.
 - To redeploy from scratch: `node packages/sdk/scripts/create-account.mjs deployer`, `... token`, `... trader`; `node packages/sdk/scripts/upload-enclave.mjs` (after editing `manifest.json` to your contract id); `node packages/sdk/scripts/deploy-testnet.mjs`; `node packages/sdk/scripts/real-run.mjs`.
 
