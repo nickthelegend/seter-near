@@ -24,7 +24,7 @@ export type Stats = { orders_total: number; open: number; fired: number; unfille
 export type Balance = { near: string; usd: string };
 
 /** FastNEAR first; a 429 from it carries no CORS header and surfaces as a network error, so fall over to the next RPC. */
-export const RPCS = ['https://rpc.testnet.near.org', 'https://near-testnet.drpc.org', RPC];
+export const RPCS = [RPC, 'https://near-testnet.drpc.org', 'https://rpc.testnet.near.org'];
 let preferred = 0;
 export async function view<T>(method: string, args: object = {}, contract = CONTRACT): Promise<T> {
   const body = JSON.stringify({ jsonrpc: '2.0', id: 'mienai-web', method: 'query', params: { request_type: 'call_function', finality: 'final', account_id: contract, method_name: method, args_base64: btoa(JSON.stringify(args)) } });
@@ -84,3 +84,56 @@ export type Attestation = { request_id: number; attestation_id: number; tx: stri
 export const runSteps = (run as unknown as { steps: Step[] }).steps.filter((s) => s.tx);
 export const firedStep = (run as unknown as { steps: Step[] }).steps.find((s) => s.attestation);
 export const deploySteps = (deployment as unknown as { steps: Step[] }).steps;
+
+/** An OutLayer request the contract issued, read live with get_request. */
+export type Request = { id: number; kind: 'Keys' | 'Check' | 'Bands'; caller: string; created_ns: string; order_ids: number[]; status: string; note: string };
+
+export const OUTLAYER_API = 'https://testnet-api.outlayer.ai';
+/** Recorded transaction for a step, found in the run or book records. */
+type RecStep = { step: string; tx?: string; at?: string; method?: string; return?: string | null; args?: unknown; last_check?: CheckSummary; attestation?: Attestation };
+const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? [])];
+export const txForOrder = (id: number) => allSteps.find((s) => s.method === 'place_order' && s.return === String(id))?.tx;
+export const txForRequest = (request: number) => runSteps.find((s) => s.last_check?.request === request)?.tx;
+export const attestationFor = (request: number) => (firedStep?.last_check?.request === request ? firedStep.attestation ?? null : null);
+
+export type EventKind = 'sealed' | 'checked' | 'fired' | 'attested' | 'cancelled';
+export type LogEvent = { key: string; at: number; kind: EventKind; title: string; detail: string; order?: number; tx?: string };
+
+/** The enclave log: every event the contract (and the recorded attestation check) can prove, newest first. */
+export function buildLog(orders: Order[], requests: Request[]): LogEvent[] {
+  const out: LogEvent[] = [];
+  for (const o of orders) {
+    out.push({ key: `s${o.id}`, at: nsToMs(o.created_ns), kind: 'sealed', title: `Order №${o.id} sealed`, detail: `${o.ct.length}-char ciphertext · trigger hidden`, order: o.id, tx: txForOrder(o.id) });
+    if (o.fire) out.push({ key: `f${o.id}`, at: nsToMs(o.fire.block_ts), kind: 'fired', title: `Order №${o.id} fired`, detail: `price ${e6(o.fire.price_e6)} crossed ${o.fire.cond === 'lte' ? '≤' : '≥'} ${e6(o.fire.trigger_e6)} · trigger revealed`, order: o.id, tx: txForRequest(o.fire.request) });
+    if (o.status === 'Cancelled') {
+      const c = allSteps.find((s) => s.method === 'cancel_order' && s.at && String(JSON.stringify(s.args)).match(new RegExp(`id\\D+${o.id}\\b`)));
+      if (c?.at) out.push({ key: `c${o.id}`, at: Date.parse(c.at), kind: 'cancelled', title: `Order №${o.id} cancelled`, detail: 'its trigger was never revealed · recorded tx', order: o.id, tx: c.tx });
+    }
+  }
+  for (const r of requests) {
+    const at = nsToMs(r.created_ns);
+    if (r.kind === 'Keys') out.push({ key: `r${r.id}`, at, kind: 'attested', title: 'Enclave published its keys', detail: `attested OutLayer run · request ${r.id} · ${r.status.toLowerCase()}` });
+    else if (r.kind === 'Check') out.push({ key: `r${r.id}`, at, kind: 'checked', title: `Check ${r.id}: enclave opened ${r.order_ids.length} order${r.order_ids.length === 1 ? '' : 's'}`, detail: r.note.replace('callback: ', ''), tx: txForRequest(r.id) });
+    else out.push({ key: `r${r.id}`, at, kind: 'checked', title: `Band report ${r.id}: ${r.order_ids.length} orders counted`, detail: 'k-anonymous bands · no level published', });
+  }
+  const a = firedStep?.attestation;
+  if (a) out.push({ key: `a${a.request_id}`, at: (a as unknown as { timestamp: number }).timestamp * 1000, kind: 'attested', title: 'TDX attestation verified', detail: `OutLayer run #${a.request_id} · TCB ${a.tcb.status ?? 'unknown'} · recorded check`, tx: a.tx });
+  return out.sort((x, y) => y.at - x.at);
+}
+
+export async function sha256Hex(data: ArrayBuffer | Uint8Array | string): Promise<string> {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data instanceof Uint8Array ? data : new Uint8Array(data);
+  const d = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
+  return Array.from(new Uint8Array(d), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** The TDX quote of an OutLayer run, fetched live from OutLayer's public API and hashed in the browser. */
+export type LiveQuote = { quoteSha256: string; quoteBytes: number; mrtd: string; rtmr3: string; reportData: string; wasm: string; requestId: number };
+export async function fetchQuote(tx: string): Promise<LiveQuote> {
+  const res = await fetch(`${OUTLAYER_API}/attestations/by-tx/${tx}`);
+  if (!res.ok) throw new Error(`OutLayer attestation API HTTP ${res.status}`);
+  const a = await res.json() as { tdx_quote: string; executed_wasm_sha256?: string; wasm_hash?: string; request_id: string | number };
+  const quote = Uint8Array.from(atob(a.tdx_quote), (c) => c.charCodeAt(0));
+  const hex = (o: number, n = 48) => Array.from(quote.subarray(o, o + n), (b) => b.toString(16).padStart(2, '0')).join('');
+  return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id) };
+}

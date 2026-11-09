@@ -1,254 +1,166 @@
-import { useEffect, useState } from 'react';
-import { CONTRACT, TOKEN, accountUrl, ago, deployment, e6, firedStep, near, nsToMs, runSteps, shortAccount, usd6, type Order } from './lib';
-import { useConfig, useFired, useOrders, useStats, useTicker } from './live';
-import { Chip, Ciphertext, Eyebrow, Logo, Num, Redacted, State, Tx, statusTone } from './ui';
+import { useMemo } from 'react';
+import { CONTRACT, TOKEN, accountUrl, ago, deployment, e6, enclaveUpload, firedStep, nsToMs, runSteps, shortAccount, type Order } from './lib';
+import { useConfig, useOrders, useStats, useTicker } from './live';
+import { Icon, Link, Num, Redacted, State, Tx, Wordmark } from './ui';
+import { EnclavePanel } from './Console';
+import { Certificate } from './OrderPage';
 
-export default function Landing({ go }: { go: (path: string) => void }) {
-  const ticker = useTicker();
-  const stats = useStats();
-  const orders = useOrders();
-  const fired = useFired();
-  const config = useConfig();
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 24);
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
-  }, []);
-  const lastFire = fired.data?.[fired.data.length - 1];
-  const open = (e: React.MouseEvent) => { e.preventDefault(); go('/app'); };
-
-  return (
-    <div className="landing">
-      <header className={`nav${scrolled ? ' nav--solid' : ''}`}>
-        <div className="nav__inner">
-          <Logo />
-          <nav className="nav__links" aria-label="Sections">
-            <a href="#attacker">Attacker's view</a>
-            <a href="#how">How it works</a>
-            <a href="#proof">Proof</a>
-            <a href="#near">NEAR tech</a>
-          </nav>
-          <a className="btn btn--primary btn--sm" href="/app" onClick={open}>Open app</a>
-        </div>
-      </header>
-
-      <section className="hero">
-        <div className="hero__art" aria-hidden="true" />
-        <div className="hero__inner">
-          <Eyebrow>Private stop-loss · NEAR testnet · OutLayer TEE</Eyebrow>
-          <h1 className="hero__title">Nobody can hunt <span className="hero__sealed">your stops.<i aria-hidden="true" /></span></h1>
-          <p className="hero__lede">Your stop-loss is invisible until it fires. Levels are sealed to an enclave; the NEAR contract holds only ciphertexts. The enclave watches the price and fires through a verified callback, then the trigger goes public for audit.</p>
-          <div className="hero__cta">
-            <a className="btn btn--primary" href="/app" onClick={open}>Set an invisible stop</a>
-            <a className="btn btn--ghost" href="#attacker">See what an attacker sees</a>
-          </div>
-        </div>
-        <div className="strip" aria-label="Live numbers">
-          <div className="strip__cell">
-            <span className="label">NEAR / USD · Coinbase</span>
-            {ticker.data ? <strong><Num value={Number(ticker.data.price).toFixed(4)} /></strong> : <strong className="muted">{ticker.error ? 'Unavailable' : 'Loading'}</strong>}
-            <span className="sub">{ticker.data ? `trade #${ticker.data.trade_id}` : ticker.error || 'public ticker'}</span>
-          </div>
-          <div className="strip__cell">
-            <span className="label">Sealed orders open</span>
-            <strong>{stats.data ? stats.data.open : '—'}</strong>
-            <span className="sub">{stats.data ? `${stats.data.orders_total} placed in total` : stats.error || 'Loading'}</span>
-          </div>
-          <div className="strip__cell">
-            <span className="label">Fired and audited</span>
-            <strong className="signal">{stats.data ? stats.data.fired : '—'}</strong>
-            <span className="sub">{stats.data ? `${stats.data.rejected_reports} reports rejected` : 'Loading'}</span>
-          </div>
-          <div className="strip__cell">
-            <span className="label">Enclave runs</span>
-            <strong>{stats.data ? stats.data.requests_total : '—'}</strong>
-            <span className="sub">{stats.data?.last_check ? `last check ${ago(nsToMs(stats.data.last_check.block_ts))}` : 'OutLayer · Intel TDX'}</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" id="attacker">
-        <div className="section__head">
-          <Eyebrow>What a stop hunter sees</Eyebrow>
-          <h2>Ciphertexts and counts. Never a level.</h2>
-          <p>This is the contract's public state, read live from <a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">{CONTRACT}</a>. Anyone, including a whale looking for liquidity, sees exactly this.</p>
-        </div>
-        <div className="split">
-          <div className="panel panel--book">
-            <div className="panel__head">
-              <h3>Public order book</h3>
-              <span className="mono muted">{orders.data ? `${orders.data.length} orders` : ''}</span>
-            </div>
-            <BookTable orders={orders.data} error={orders.error} />
-            <div className="tally" aria-label="Counts anyone can read">
-              <div><span className="label">Open</span><strong>{stats.data?.open ?? '—'}</strong></div>
-              <div><span className="label">Fired</span><strong>{stats.data?.fired ?? '—'}</strong></div>
-              <div><span className="label">Cancelled</span><strong>{stats.data?.cancelled ?? '—'}</strong></div>
-              <div><span className="label">Levels visible</span><strong className="signal">0</strong></div>
-            </div>
-          </div>
-          <div className="panel panel--enclave">
-            <div className="panel__head"><h3>What only the enclave reads</h3><Chip tone="accent">Intel TDX</Chip></div>
-            <p className="panel__lede">The enclave opens every sealed order on each check, and says only which ones the price crossed.</p>
-            {stats.data?.last_check ? (
-              <dl className="facts">
-                <div><dt>Last check</dt><dd>request #{stats.data.last_check.request} · block {stats.data.last_check.block_height}</dd></div>
-                <div><dt>Price it read</dt><dd><Num value={e6(stats.data.last_check.price_e6)} unit="USD" /></dd></div>
-                <div><dt>Orders opened</dt><dd>{stats.data.last_check.checked} ({stats.data.last_check.unreadable} unreadable)</dd></div>
-                <div><dt>Fired</dt><dd>{stats.data.last_check.fired.length ? stats.data.last_check.fired.map((id) => `#${id}`).join(', ') : 'none'}</dd></div>
-              </dl>
-            ) : <State kind={stats.error ? 'error' : 'loading'}>{stats.error || 'Reading the contract'}</State>}
-            <div className="bands">
-              <span className="label">Liquidity bands (k ≥ 5)</span>
-              {stats.data?.bands ? (
-                <p>{JSON.parse(stats.data.bands.bands).length} bands published, {stats.data.bands.suppressed} orders suppressed (fewer than {stats.data.bands.k} in their band).</p>
-              ) : (
-                <p className="muted">No band report yet. The enclave publishes order counts per $0.05 band only when a band holds at least 5 orders, so no single stop can be located.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" id="how">
-        <div className="section__head">
-          <Eyebrow>How it works</Eyebrow>
-          <h2>Seal. Watch. Fire, then reveal.</h2>
-        </div>
-        <div className="beats">
-          <article className="beat">
-            <div className="beat__art beat__art--enclave" role="img" aria-label="A frosted enclave cube receiving sealed order threads" />
-            <span className="beat__n">01</span>
-            <h3>Seal in your browser</h3>
-            <p>Your trigger, side and size are encrypted to the enclave's X25519 key (XChaCha20-Poly1305, bound to your account). The contract stores the ciphertext and a SHA-256 commitment.</p>
-          </article>
-          <article className="beat">
-            <div className="beat__art beat__art--tripwire" role="img" aria-label="A mint tripwire crossing frosted glass panes" />
-            <span className="beat__n">02</span>
-            <h3>The enclave watches</h3>
-            <p>A keeper pays for a check. OutLayer runs the pinned WASM in Intel TDX; it reads NEAR/USD from Coinbase inside the enclave and opens every order. Unfired levels never leave it.</p>
-          </article>
-          <article className="beat beat--record">
-            <span className="beat__n">03</span>
-            <h3>Fire, then reveal</h3>
-            <p>A crossed order comes back signed by the enclave's key into a private callback. The contract checks signature, freshness, commitment and the crossing, swaps, and publishes the trigger.</p>
-            {lastFire?.fire ? <FireCard order={lastFire} /> : <State kind={fired.error ? 'error' : 'loading'}>{fired.error || 'Loading the latest fire'}</State>}
-          </article>
-        </div>
-      </section>
-
-      <section className="section" id="proof">
-        <div className="section__head">
-          <Eyebrow>Live proof</Eyebrow>
-          <h2>A real stop, fired by a real price.</h2>
-          <p>Recorded on NEAR testnet on 9 Nov 2026. A stop was sealed while NEAR traded near 3.60; the first enclave check read 3.6003 and fired nothing, the second read 3.5886 and fired it.</p>
-        </div>
-        <div className="proof">
-          <ol className="timeline">
-            {runSteps.map((s) => (
-              <li key={s.tx} className={s.attestation ? 'is-fire' : ''}>
-                <span className="timeline__dot" aria-hidden="true" />
-                <div>
-                  <p>{s.step.replace('; trigger hidden on chain', '')}</p>
-                  <span className="mono muted">{s.return ? `returned ${s.return.replace(/"/g, '')}` : 'ok'}{s.last_check ? ` · price ${e6(s.last_check.price_e6)}` : ''}</span>
-                </div>
-                <Tx hash={s.tx!} />
-              </li>
-            ))}
-          </ol>
-          <div className="panel attest">
-            <div className="panel__head"><h3>Attestation of the fire</h3>{firedStep?.attestation?.ok ? <Chip tone="signal">All checks pass</Chip> : <Chip tone="warn">Not verified</Chip>}</div>
-            {firedStep?.attestation ? (
-              <>
-                <ul className="checks">
-                  {Object.entries(firedStep.attestation.checks).map(([k, v]) => <li key={k} className={v ? 'ok' : 'bad'}><span aria-hidden="true">{v ? '✓' : '✕'}</span>{k.replaceAll('_', ' ')}</li>)}
-                </ul>
-                <dl className="facts facts--mono">
-                  <div><dt>TCB</dt><dd>{firedStep.attestation.tcb.status ?? firedStep.attestation.tcb.error}</dd></div>
-                  <div><dt>OutLayer request</dt><dd>#{firedStep.attestation.request_id}</dd></div>
-                  <div><dt>MRTD</dt><dd>{firedStep.attestation.measurements.mrtd.slice(0, 24)}…</dd></div>
-                  <div><dt>Source</dt><dd><a href={firedStep.attestation.source} target="_blank" rel="noreferrer">testnet-api.outlayer.ai ↗</a></dd></div>
-                </dl>
-              </>
-            ) : <State kind="empty">No recorded fire yet.</State>}
-          </div>
-        </div>
-      </section>
-
-      <section className="section" id="near">
-        <div className="section__head">
-          <Eyebrow>The NEAR tech, concretely</Eyebrow>
-          <h2>Two independent origin checks, both on chain.</h2>
-        </div>
-        <div className="tech">
-          {TECH.map((t) => (
-            <article key={t.code} className="tech__card">
-              <code>{t.code}</code>
-              <h3>{t.title}</h3>
-              <p>{t.body}</p>
-            </article>
-          ))}
-        </div>
-        <p className="footnote">Contracts: <a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">{CONTRACT}</a> (vault) and <a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer">{TOKEN}</a> (tUSD). Enclave hash <span className="mono">{(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 16)}…</span>. Mainnet NEAR Intents execution is Setup required: <span className="mono">NEAR_MAINNET_ACCOUNT</span>.</p>
-      </section>
-
-      <section className="closer">
-        <div className="closer__art" aria-hidden="true" />
-        <div className="closer__inner">
-          <h2>Set a stop the market can't see.</h2>
-          <a className="btn btn--primary" href="/app" onClick={open}>Open the app</a>
-        </div>
-      </section>
-      <footer className="footer"><Logo small /><span>MIT · © 2026 Nivesh Gajengi · NEAR testnet only; tUSD has no value.</span></footer>
-    </div>
-  );
+function HangingTicket({ o, i }: { o: Order; i: number }) {
+  const fired = o.status === 'Fired';
+  return <Link to={`/order/${o.id}`} className={`hang hang-${fired ? 'fired' : o.status === 'Open' ? 'armed' : 'gone'}`} aria-label={`Order ${o.id}, ${o.status}`}>
+    <i className="hang-clip" aria-hidden="true" />
+    <span className="hang-slip" style={{ rotate: `${[-4, 3, -2, 5, -3, 2][i % 6]}deg` }}>
+      <span className="hang-no">№{String(o.id).padStart(2, '0')}</span>
+      <span className="hang-st">{fired ? 'Fired' : o.status === 'Open' ? 'Armed' : o.status}</span>
+      {o.fire ? <b className="hang-val">{e6(o.fire.trigger_e6)}</b> : <Redacted size="sm" label="hidden" />}
+    </span>
+  </Link>;
 }
 
 const TECH = [
-  { code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE run', body: 'check() calls OutLayer with a WasmUrl pinned by SHA-256. OutLayer yields, a TDX worker runs the enclave, and the result resumes into our callback.' },
+  { code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE run', body: 'check() calls OutLayer with a WasmUrl pinned by SHA-256. OutLayer yields, a TDX worker runs the enclave, and the result resumes into the contract’s callback.' },
   { code: '#[private] fn on_result', title: 'Promise origin', body: 'The only door for a result is the promise of the contract’s own request. Calling on_result directly fails: “Method on_result is private”.' },
-  { code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by an ed25519 key OutLayer’s keystore releases only to this WASM hash, called by this contract. The contract verifies it before anything moves.' },
-  { code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE from the WASM hash and the calling contract (caller: predecessor). Another build or caller derives another key and opens nothing.' },
-  { code: 'callers.contract.only', title: 'Who may run it', body: 'The manifest, covered by the WASM hash, admits runs only from the Mienai contract, and only HTTPS egress to api.exchange.coinbase.com.' },
-  { code: 'NEP-141 · x·y = k', title: 'Settlement on testnet', body: 'NEAR Intents has no testnet, so a fire swaps against the vault’s NEAR / tUSD constant-product pool (0.3% fee). tUSD is a test NEP-141 token.' },
+  { code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key OutLayer’s keystore releases only to this WASM hash called by this contract. The contract verifies it before anything moves.' },
+  { code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE from the WASM hash and the calling contract. Another build or caller derives another key and opens nothing.' },
+  { code: 'callers.contract.only', title: 'Who may run it', body: 'The manifest, covered by the WASM hash, admits runs only from the Mienai contract, with HTTPS egress only to api.exchange.coinbase.com.' },
+  { code: 'NEP-141 · x·y = k', title: 'Settlement on testnet', body: 'NEAR Intents has no testnet, so a fire swaps against the vault’s NEAR / tUSD constant-product pool (0.3% fee). tUSD is a test token.' },
 ];
 
-function BookTable({ orders, error }: { orders: Order[] | null; error: string }) {
-  if (!orders) return <State kind={error ? 'error' : 'loading'}>{error || 'Reading the contract'}</State>;
-  if (!orders.length) return <State kind="empty">No orders on chain yet.</State>;
-  return (
-    <div className="book" role="table" aria-label="Public order book">
-      <div className="book__row book__row--head" role="row">
-        <span role="columnheader">#</span><span role="columnheader">Owner</span><span role="columnheader">Ciphertext on chain</span><span role="columnheader">Trigger</span><span role="columnheader">Status</span>
-      </div>
-      {[...orders].reverse().slice(0, 6).map((o) => (
-        <div className="book__row" role="row" key={o.id}>
-          <span className="mono" role="cell">{o.id}</span>
-          <span className="mono book__owner" role="cell">{shortAccount(o.owner)}</span>
-          <span role="cell" className="book__ct"><Ciphertext value={o.ct} chars={28} /></span>
-          <span role="cell">{o.fire ? <span className="mono revealed">{o.fire.cond === 'lte' ? '≤' : '≥'} {e6(o.fire.trigger_e6)}</span> : <Redacted />}</span>
-          <span role="cell"><Chip tone={statusTone(o.status)}>{o.status}</Chip></span>
-        </div>
-      ))}
-    </div>
-  );
-}
+export default function Landing() {
+  const ticker = useTicker();
+  const stats = useStats();
+  const orders = useOrders();
+  const config = useConfig();
+  const price = ticker.data ? Number(ticker.data.price) : null;
+  const hanging = useMemo(() => [...(orders.data ?? [])].sort((a, b) => Number(b.status === 'Open') - Number(a.status === 'Open') || b.id - a.id).slice(0, 5), [orders.data]);
+  const fired = orders.data?.find((o) => o.fire);
+  const latest = orders.data?.[orders.data.length - 1];
+  const s = stats.data;
+  const c = s?.last_check;
+  const att = firedStep?.attestation;
 
-export function FireCard({ order }: { order: Order }) {
-  const f = order.fire!;
-  return (
-    <div className="firecard">
-      <div className="firecard__top">
-        <span className="label">Order #{order.id} · {f.cond === 'lte' ? 'stop-loss' : 'take-profit'}</span>
-        <Chip tone="signal">Fired</Chip>
-      </div>
-      <div className="firecard__nums">
-        <div><span className="label">Trigger (revealed)</span><strong><Num value={e6(f.trigger_e6)} /></strong></div>
-        <div><span className="label">Price read</span><strong className="signal"><Num value={e6(f.price_e6)} /></strong></div>
-      </div>
-      <p className="mono muted small">{f.side} {near(f.filled_in, 2)} NEAR → {usd6(f.filled_out)} tUSD · Coinbase trade #{f.trade_id} · block {f.block_height}</p>
-    </div>
-  );
+  return <>
+    <header className="l-nav">
+      <Link to="/" aria-label="Mienai home"><Wordmark /></Link>
+      <nav aria-label="Primary">
+        <a href="#how" className="l-link">How it works</a>
+        <a href="#proof" className="l-link">Proof</a>
+        <Link to="/app" className="btn btn-light btn-sm">Open console</Link>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section className="hero">
+        <div className="hero-object" aria-hidden="true"><img src="/art/mienai-feature-enclave.webp" alt="" fetchPriority="high" /></div>
+        <div className="hero-copy">
+          <p className="eyebrow mono"><span lang="ja">見えない</span> · sealed orders · NEAR testnet</p>
+          <h1>Your stop-loss is <span className="h-sealed">invisible</span><br />until it fires.</h1>
+          <p className="hero-lede">Stop hunters push the price to where stops sit. With Mienai the level is sealed to an Intel TDX enclave; the chain stores only ciphertext.</p>
+          <div className="hero-cta">
+            <Link to="/app" className="btn btn-primary btn-lg">Seal a stop <Icon name="arrow" size={17} /></Link>
+            <a href="#hunter" className="btn btn-quiet btn-lg">What a stop hunter sees</a>
+          </div>
+        </div>
+        <div className="wire" aria-label="Live order book hanging on the NEAR price line">
+          <div className="wire-label mono"><i className="live" />NEAR / USD {price ? <b><Num value={price.toFixed(4)} /></b> : <b>{ticker.error ? 'unavailable' : '…'}</b>}<span>Coinbase · live</span></div>
+          <div className="wire-line" aria-hidden="true" />
+          <div className="wire-tickets">{orders.data ? hanging.map((o, i) => <HangingTicket key={o.id} o={o} i={i} />) : <span className="wire-wait mono">{orders.error ? 'contract unreadable' : 'reading the book…'}</span>}</div>
+          <p className="wire-note">{s ? <>{s.open} armed · {s.fired} fired · <b>0 levels on chain</b></> : 'Reading the contract…'}</p>
+        </div>
+      </section>
+
+      <section className="l-sec" id="how">
+        <header className="l-head"><p className="eyebrow mono">How it works</p><h2>Seal. Watch. Fire, then reveal.</h2></header>
+        <div className="bento">
+          <article className="b-card b-seal">
+            <span className="b-n mono">01</span>
+            <h3>Sealed in your browser</h3>
+            <p>Trigger, side and size are encrypted to the enclave’s X25519 key, bound to your account. The contract keeps the ciphertext and a SHA-256 commitment.</p>
+            <div className="b-live">
+              <p className="label">Latest order on chain · №{latest?.id ?? '—'}</p>
+              {latest ? <code className="cipher cipher-flow">{latest.ct.slice(0, 180)}</code> : <p className="dim">{orders.error || 'Loading'}</p>}
+            </div>
+            <img className="b-art b-art-shield" src="/art/mienai-st-shield.webp" alt="" aria-hidden="true" />
+          </article>
+          <article className="b-card b-watch">
+            <img className="b-photo" src="/art/mienai-feature-tripwire.webp" alt="" aria-hidden="true" />
+            <span className="b-n mono">02</span>
+            <h3>The enclave watches</h3>
+            <p>A keeper pays for a check. OutLayer runs the pinned WASM in Intel TDX; it reads NEAR/USD from Coinbase inside the enclave and opens every order. Unfired levels never leave it.</p>
+            <div className="b-live">
+              <p className="label">Last check · price read in the TEE</p>
+              {c ? <><p className="b-big"><Num value={e6(c.price_e6)} /></p><p className="dim">opened {c.checked} · fired {c.fired.length} · {ago(nsToMs(c.block_ts))}</p></> : <p className="dim">{stats.error || 'Loading'}</p>}
+            </div>
+          </article>
+          <article className="b-card b-fire">
+            <span className="b-n mono">03</span>
+            <h3>Fire, then reveal</h3>
+            <p>A crossed order returns signed by the enclave into a private callback. The contract checks signature, freshness, commitment and the crossing, swaps, then publishes the trigger.</p>
+            {fired?.fire ? <div className="b-reveal"><div><span className="label">Trigger №{fired.id}</span><b><Num value={e6(fired.fire.trigger_e6)} /></b></div><div><span className="label">Price read</span><b className="mint"><Num value={e6(fired.fire.price_e6)} /></b></div></div> : <p className="dim">{orders.data ? 'Nothing has fired yet.' : 'Loading'}</p>}
+          </article>
+          <article className="b-card b-band">
+            <span className="b-n mono">04</span>
+            <h3>Only crowds get counted</h3>
+            <p>The enclave can publish how many stops sit in each $0.05 band, but only for bands with at least k = {s?.bands?.k ?? 5} orders. A lone stop is never located.</p>
+            {s?.bands ? <><div className="bandgrid" role="img" aria-label={`${s.bands.suppressed} of ${s.bands.total} suppressed`}>{Array.from({ length: Math.max(s.bands.total, s.bands.k) }, (_, i) => <i key={i} className={i < s.bands!.total ? (i < s.bands!.total - s.bands!.suppressed ? 'pub' : 'sup') : ''} />)}</div><p className="dim">{s.bands.suppressed} of {s.bands.total} orders suppressed in the last report</p></> : <p className="dim">{s ? 'No band report yet.' : 'Loading'}</p>}
+          </article>
+        </div>
+      </section>
+
+      <section className="l-sec" id="hunter">
+        <header className="l-head l-head-row">
+          <div><p className="eyebrow mono">Live · {CONTRACT}</p><h2>Two views of the same contract.</h2></div>
+          <Link to="/app" className="l-more">Open the console <Icon name="arrow" size={16} /></Link>
+        </header>
+        <div className="views">
+          <div className="hunter">
+            <header><Icon name="eye" size={18} /><div><h3>What a stop hunter sees</h3><p>The contract’s public state, read live. Anyone can call these views.</p></div></header>
+            <dl className="tally">
+              <div><dt>Orders</dt><dd>{s ? s.orders_total : '—'}</dd></div>
+              <div><dt>Armed</dt><dd>{s ? s.open : '—'}</dd></div>
+              <div><dt>Cancelled</dt><dd>{s ? s.cancelled : '—'}</dd></div>
+              <div><dt>Levels visible</dt><dd className="mint">{s ? 0 : '—'}</dd></div>
+            </dl>
+            {!orders.data ? <State kind={orders.error ? 'error' : 'loading'} title={orders.error ? 'Could not read the contract' : 'Reading the book…'}>{orders.error}</State>
+              : <ul className="book">{[...orders.data].reverse().slice(0, 6).map((o) => <li key={o.id}>
+                <span className="mono book-no">№{String(o.id).padStart(2, '0')}</span>
+                <span className="book-ct"><code>{o.ct.slice(0, 40)}</code><small className="mono">{shortAccount(o.owner)}</small></span>
+                <span>{o.fire ? <b className="mono mint">{o.fire.cond === 'lte' ? '≤' : '≥'} {e6(o.fire.trigger_e6)}</b> : <Redacted size="sm" />}</span>
+              </li>)}</ul>}
+          </div>
+          <EnclavePanel config={config.data} configError={config.error} stats={s} />
+        </div>
+      </section>
+
+      <section className="l-sec" id="proof">
+        <header className="l-head"><p className="eyebrow mono">Live proof · recorded 9 Nov 2026</p><h2>A real stop, fired by a real price.</h2><p className="l-lede">Sealed while NEAR traded at 3.6021. The first enclave check read 3.6003 and fired nothing; the second read 3.5886 and fired it.</p></header>
+        <div className="proof">
+          {att && fired?.fire ? <Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The pinned program ran inside Intel TDX, read NEAR/USD at ${e6(fired.fire.price_e6)} and fired order №${fired.id} at its sealed trigger ${e6(fired.fire.trigger_e6)}.`} /> : <State kind="empty" title="No recorded fire yet" />}
+          <ol className="rail">
+            {runSteps.map((st) => <li key={st.tx} className={st.attestation ? 'is-fire' : ''}>
+              <span className="rail-dot" aria-hidden="true" />
+              <div><p>{st.step.replace('; trigger hidden on chain', '').replace(' (OutLayer TEE run)', '')}</p><span className="mono dim">{st.at ? new Date(st.at).toISOString().slice(11, 19) + ' UTC' : ''}{st.last_check ? ` · read ${e6(st.last_check.price_e6)}` : ''}</span></div>
+              <Tx hash={st.tx!} />
+            </li>)}
+          </ol>
+        </div>
+      </section>
+
+      <section className="l-sec" id="tech">
+        <header className="l-head"><p className="eyebrow mono">The NEAR tech, concretely</p><h2>Two independent origin checks, both on chain.</h2></header>
+        <dl className="spec">{TECH.map((t) => <div key={t.code}><dt><code>{t.code}</code></dt><dd><b>{t.title}</b><span>{t.body}</span></dd></div>)}</dl>
+        <p className="l-foot-note">Contracts <a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">{CONTRACT}</a> (vault) and <a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer">{TOKEN}</a> (tUSD). Enclave hash <span className="mono">{(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 16)}…</span>. Mainnet execution through NEAR Intents is <b>Setup required: NEAR_MAINNET_ACCOUNT</b>.</p>
+      </section>
+
+      <section className="closer">
+        <img src="/art/mienai-hero.webp" alt="" aria-hidden="true" />
+        <div><h2>Set a stop the market can’t see.</h2><Link to="/app" className="btn btn-primary btn-lg">Open the console <Icon name="arrow" size={17} /></Link></div>
+      </section>
+    </main>
+    <footer className="l-foot">
+      <Wordmark small />
+      <p>Sealed stop and limit orders on NEAR testnet, fired by an attested OutLayer enclave. MIT · © 2026 Nivesh Gajengi · tUSD has no value.</p>
+      <div className="l-foot-links"><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Contract <Icon name="external" size={12} /></a><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={12} /></a></div>
+    </footer>
+  </>;
 }
