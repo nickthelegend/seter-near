@@ -93,6 +93,7 @@ export default function Landing() {
             </div>
           </article>
           <article className="b-card b-fire">
+            <img className="b-art b-art-ticket" src="/art/mienai-st-ticket.webp" alt="" aria-hidden="true" />
             <span className="b-n mono">03</span>
             <h3>Fire, then reveal</h3>
             <p>A crossed order returns signed by the enclave into a private callback. The contract checks signature, freshness, commitment and the crossing, swaps, then publishes the trigger.</p>
@@ -114,6 +115,7 @@ export default function Landing() {
         </header>
         <div className="views">
           <div className="hunter">
+            <img className="hunter-cam" src="/art/mienai-st-camera.webp" alt="" aria-hidden="true" />
             <header><Icon name="eye" size={18} /><div><h3>What a stop hunter sees</h3><p>The contract’s public state, read live. Anyone can call these views.</p></div></header>
             <dl className="tally">
               <div><dt>Orders</dt><dd>{s ? s.orders_total : '—'}</dd></div>

@@ -229,7 +229,8 @@ a:has(> .wordmark) { text-decoration: none; display: inline-flex; min-height: 44
 .cipher-flow { max-height: 64px; -webkit-mask-image: linear-gradient(90deg, #000 60%, transparent); mask-image: linear-gradient(90deg, #000 60%, transparent); }
 .b-art { position: absolute; pointer-events: none; }
 .b-art-shield { right: -20px; bottom: -30px; width: 340px; -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); }
-.b-reveal { display: flex; gap: 28px; margin-top: auto; padding-top: 8px; }
+.b-art-ticket { right: -40px; top: -30px; width: 230px; opacity: .55; -webkit-mask-image: radial-gradient(closest-side, #000 45%, transparent); mask-image: radial-gradient(closest-side, #000 45%, transparent); }
+.b-reveal { position: relative; display: flex; gap: 28px; margin-top: auto; padding-top: 8px; }
 .b-reveal b { display: block; font-family: var(--mono); font-size: 34px; letter-spacing: -.03em; line-height: 1.1; }
 .b-band .dim { font-size: 13px; }
 .bandgrid { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -238,7 +239,9 @@ a:has(> .wordmark) { text-decoration: none; display: inline-flex; min-height: 44
 .bandgrid i.pub { border: 0; background: var(--mint); }
 
 .views { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
-.hunter { padding: 28px; border-radius: 30px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 22px; }
+.hunter { position: relative; overflow: hidden; isolation: isolate; padding: 28px; border-radius: 30px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 22px; }
+.hunter-cam { position: absolute; z-index: -1; right: -10px; top: -16px; width: 220px; opacity: .7; -webkit-mask-image: radial-gradient(closest-side, #000 50%, transparent); mask-image: radial-gradient(closest-side, #000 50%, transparent); }
+.hunter header { padding-right: 120px; }
 .hunter header { display: flex; gap: 14px; align-items: flex-start; }
 .hunter header > .icon { margin-top: 6px; color: var(--accent-2); }
 .hunter h3 { font-size: 22px; font-weight: 800; letter-spacing: -.03em; }
@@ -554,3 +557,4 @@ a:has(> .wordmark) { text-decoration: none; display: inline-flex; min-height: 44
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+@media (max-width: 760px) { .hunter header { padding-right: 70px; } .hunter-cam { width: 150px; } }
