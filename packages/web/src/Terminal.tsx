@@ -48,7 +48,7 @@ function MarketBar({ stats }: { stats: Stats | null }) {
   const pct = chg !== null && d.data ? (chg / d.data.open) * 100 : null;
   const up = (chg ?? 0) >= 0;
   const cell = (label: string, value: React.ReactNode, cls = '') => <div className={`mb-cell ${cls}`}><span>{label}</span><b>{value}</b></div>;
-  return <section className="mbar" aria-label="Market">
+  return <section className="mbar dark" aria-label="Market">
     <div className="mb-pair"><span className="coin" aria-hidden="true">N</span><div><b>NEAR / USD</b><small>Sealed spot · vault</small></div></div>
     <div className={`mb-last ${chg === null ? '' : up ? 'up' : 'down'}`}>{last ? <Num value={last.toFixed(4)} /> : <span className="dim">{t.error ? 'unavailable' : '…'}</span>}<small>Coinbase last</small></div>
     <div className="mb-cells">
@@ -58,7 +58,7 @@ function MarketBar({ stats }: { stats: Stats | null }) {
       {cell('24h volume (NEAR)', d.data ? Math.round(d.data.volume).toLocaleString('en-US') : '…')}
       {cell('Enclave read', stats?.last_check ? <>{e6(stats.last_check.price_e6)} <small>{ago(nsToMs(stats.last_check.block_ts))}</small></> : stats ? 'no check yet' : '…')}
       {cell('Armed', stats ? stats.open : '…')}
-      {cell('Levels on chain', stats ? <span className="mint">0</span> : '…')}
+      {cell('Levels on chain', stats ? <span className="gold">0</span> : '…')}
       <div className="mb-cell"><span>Source</span><b><a href="https://api.exchange.coinbase.com/products/NEAR-USD/ticker" target="_blank" rel="noreferrer">Coinbase <Icon name="external" size={11} /></a></b></div>
     </div>
     {(d.error || t.error) && <p className="mb-err" role="status">{d.error || t.error}</p>}
@@ -100,10 +100,10 @@ function SealedBook({ orders, stats, last }: { orders: Order[] | null; stats: St
       <ul className="book-rows">{armed.length ? armed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span><Hidden label="" /></span><span><Hidden label="" /></span><span className="mono dim">{ago(nsToMs(o.created_ns))}</span></Link></li>) : <li className="book-empty dim">No armed orders</li>}</ul>
       <div className="book-mid"><b className="mono">{last ? last.toFixed(4) : '…'}</b><span>Coinbase last · {armed.length} sealed level{armed.length === 1 ? '' : 's'} around it</span></div>
       <p className="book-sub mono">Revealed after firing</p>
-      <ul className="book-rows">{revealed.length ? revealed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span className="mono mint">{e6(o.fire!.trigger_e6)}</span><span className="mono">{near(o.fire!.amount, 2)}</span><span className="mono dim">{ago(nsToMs(o.fire!.block_ts))}</span></Link></li>) : <li className="book-empty dim">Nothing fired yet</li>}</ul>
+      <ul className="book-rows">{revealed.length ? revealed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span className="mono gold">{e6(o.fire!.trigger_e6)}</span><span className="mono">{near(o.fire!.amount, 2)}</span><span className="mono dim">{ago(nsToMs(o.fire!.block_ts))}</span></Link></li>) : <li className="book-empty dim">Nothing fired yet</li>}</ul>
     </>}
     <footer className="book-foot">
-      <div><span>Levels visible</span><b className="mint">{stats ? 0 : '…'}</b></div>
+      <div><span>Levels visible</span><b className="gold">{stats ? 0 : '…'}</b></div>
       <div><span>Band report (k = {b?.k ?? 5})</span><b>{b ? `${b.suppressed}/${b.total} suppressed` : stats ? 'none yet' : '…'}</b></div>
     </footer>
   </section>;
@@ -260,7 +260,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
         <tbody>{hist.map((o) => { const f = o.fire; return <tr key={o.id}>
           <td><span className="ocell"><img src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" className={f ? '' : 'faded'} /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
           <td>{f ? (f.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</td>
-          <td>{f ? <span className="mono mint">{e6(f.trigger_e6)} <small className="dim">revealed</small></span> : <Hidden label="never revealed" />}</td>
+          <td>{f ? <span className="mono gold">{e6(f.trigger_e6)} <small className="dim">revealed</small></span> : <Hidden label="never revealed" />}</td>
           <td className="mono">{f ? e6(f.price_e6) : '—'}</td>
           <td className="mono">{f ? `${near(f.filled_in, 2)} NEAR → ${usd6(f.filled_out)} tUSD` : '—'}</td>
           <td><span className={`st st-${o.status.toLowerCase()}`}><i />{o.status}</span></td>

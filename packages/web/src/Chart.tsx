@@ -3,7 +3,7 @@ import { CandlestickSeries, type SeriesMarker, ColorType, CrosshairMode, Histogr
 import type { Candle } from './market';
 
 export type ChartMark = { time: number; label: string; tone: 'fire' | 'check' };
-const UP = '#5effc4', DOWN = '#ff6b8b';
+const UP = '#16875a', DOWN = '#c23b3b';
 
 /** Coinbase NEAR/USD candles with the enclave's last read price as a line and fires/checks as markers. */
 export default function Chart({ data, enclavePrice, marks, compact = false }: { data: Candle[]; enclavePrice: number | null; marks: ChartMark[]; compact?: boolean }) {
@@ -18,11 +18,11 @@ export default function Chart({ data, enclavePrice, marks, compact = false }: { 
     if (!box.current) return;
     const c = createChart(box.current, {
       autoSize: true,
-      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: '#8f8ca8', fontFamily: 'Space Mono, ui-monospace, monospace', fontSize: 11, attributionLogo: false },
-      grid: { vertLines: { color: 'rgba(170,160,255,0.05)' }, horzLines: { color: 'rgba(170,160,255,0.06)' } },
-      rightPriceScale: { borderColor: 'rgba(170,160,255,0.12)', scaleMargins: { top: 0.08, bottom: 0.22 } },
-      timeScale: { borderColor: 'rgba(170,160,255,0.12)', timeVisible: true, secondsVisible: false, rightOffset: 4 },
-      crosshair: { mode: CrosshairMode.Normal, vertLine: { color: 'rgba(169,157,255,0.5)', labelBackgroundColor: '#3a2e91' }, horzLine: { color: 'rgba(169,157,255,0.5)', labelBackgroundColor: '#3a2e91' } },
+      layout: { background: { type: ColorType.Solid, color: 'transparent' }, textColor: '#6a6575', fontFamily: 'Space Mono, ui-monospace, monospace', fontSize: 11, attributionLogo: false },
+      grid: { vertLines: { color: 'rgba(23,19,33,0.04)' }, horzLines: { color: 'rgba(23,19,33,0.06)' } },
+      rightPriceScale: { borderColor: 'rgba(23,19,33,0.1)', scaleMargins: { top: 0.08, bottom: 0.22 } },
+      timeScale: { borderColor: 'rgba(23,19,33,0.1)', timeVisible: true, secondsVisible: false, rightOffset: 4 },
+      crosshair: { mode: CrosshairMode.Normal, vertLine: { color: 'rgba(23,19,33,0.3)', labelBackgroundColor: '#16131e' }, horzLine: { color: 'rgba(23,19,33,0.3)', labelBackgroundColor: '#16131e' } },
       handleScroll: !compact, handleScale: !compact,
     });
     const s = c.addSeries(CandlestickSeries, { upColor: UP, downColor: DOWN, borderUpColor: UP, borderDownColor: DOWN, wickUpColor: UP, wickDownColor: DOWN, priceFormat: { type: 'price', precision: 4, minMove: 0.0001 } });
@@ -35,18 +35,18 @@ export default function Chart({ data, enclavePrice, marks, compact = false }: { 
   useEffect(() => {
     if (!series.current || !vol.current) return;
     series.current.setData(data.map((d) => ({ time: d.time as UTCTimestamp, open: d.open, high: d.high, low: d.low, close: d.close })));
-    vol.current.setData(data.map((d) => ({ time: d.time as UTCTimestamp, value: d.volume, color: d.close >= d.open ? 'rgba(94,255,196,0.22)' : 'rgba(255,107,139,0.22)' })));
+    vol.current.setData(data.map((d) => ({ time: d.time as UTCTimestamp, value: d.volume, color: d.close >= d.open ? 'rgba(22,135,90,0.18)' : 'rgba(194,59,59,0.18)' })));
     const first = data[0]?.time ?? 0, last = data[data.length - 1]?.time ?? 0;
     const step = data.length > 1 ? data[1].time - data[0].time : 900;
     markers.current?.setMarkers(marks.filter((m) => m.time >= first && m.time <= last + step).map((m): SeriesMarker<Time> => ({
-      time: (m.time - ((m.time - first) % step)) as UTCTimestamp, position: m.tone === 'fire' ? 'aboveBar' as const : 'belowBar' as const, color: m.tone === 'fire' ? UP : '#a99dff', shape: m.tone === 'fire' ? 'arrowDown' as const : 'circle' as const, text: m.label,
+      time: (m.time - ((m.time - first) % step)) as UTCTimestamp, position: m.tone === 'fire' ? 'aboveBar' as const : 'belowBar' as const, color: m.tone === 'fire' ? '#9a6f1f' : '#5a46d4', shape: m.tone === 'fire' ? 'arrowDown' as const : 'circle' as const, text: m.label,
     })).sort((a, b) => (a.time as number) - (b.time as number)));
   }, [data, marks]);
 
   useEffect(() => {
     if (!series.current) return;
     if (line.current) { series.current.removePriceLine(line.current); line.current = null; }
-    if (enclavePrice) line.current = series.current.createPriceLine({ price: enclavePrice, color: '#a99dff', lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'enclave read' });
+    if (enclavePrice) line.current = series.current.createPriceLine({ price: enclavePrice, color: '#5a46d4', lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: 'enclave read' });
   }, [enclavePrice]);
 
   return <div className="chart" ref={box} />;

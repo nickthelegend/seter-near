@@ -88,7 +88,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
             <div><dt>Type</dt><dd>{p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</dd></div>
             <div><dt>Side</dt><dd>{p ? 'Sell NEAR → tUSD' : <Hidden label="" />}</dd></div>
             <div><dt>Size</dt><dd className="mono">{p ? `${near(p.amount, 4)} NEAR` : <Hidden label="" />}</dd></div>
-            <div><dt>Trigger</dt><dd className="mono">{f ? <span className="mint">{e6(f.trigger_e6)} · revealed</span> : p ? <>{e6(p.trigger_e6)} <small className="dim">only you</small></> : <Hidden />}</dd></div>
+            <div><dt>Trigger</dt><dd className="mono">{f ? <span className="gold">{e6(f.trigger_e6)} · revealed</span> : p ? <>{e6(p.trigger_e6)} <small className="dim">only you</small></> : <Hidden />}</dd></div>
             <div><dt>Placed (UTC)</dt><dd className="mono">{new Date(nsToMs(o.created_ns)).toISOString().slice(0, 19).replace('T', ' ')}</dd></div>
             <div><dt>Owner</dt><dd className="mono"><a href={accountUrl(o.owner)} target="_blank" rel="noreferrer">{o.owner}</a></dd></div>
             <div><dt>Commitment</dt><dd className="mono">{shortHex(o.commit, 10, 6)}</dd></div>
@@ -100,7 +100,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
             <div className="cross">
               <div><span>Trigger</span><b><Num value={e6(f.trigger_e6)} /></b></div>
               <i aria-hidden="true">{f.cond === 'lte' ? '≥' : '≤'}</i>
-              <div><span>Price read in the TEE</span><b className="mint"><Num value={e6(f.price_e6)} /></b></div>
+              <div><span>Price read in the TEE</span><b className="gold"><Num value={e6(f.price_e6)} /></b></div>
             </div>
             <p className="verdict-note">Sold {near(f.filled_in, 2)} NEAR for <b>{usd6(f.filled_out)} tUSD</b> on the vault pool · Coinbase trade #{f.trade_id} · block {f.block_height}</p>
           </> : o.status === 'Open' ? <>
@@ -137,7 +137,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
           <dl className="facts">
             <div><dt>Owner</dt><dd><a href={accountUrl(o.owner)} target="_blank" rel="noreferrer" className="mono">{o.owner}</a></dd></div>
             <div><dt>Sealed</dt><dd className="mono">{new Date(nsToMs(o.created_ns)).toISOString().replace('T', ' ').slice(0, 19)} UTC</dd></div>
-            <div><dt>Trigger</dt><dd>{f ? <span className="mono mint">{e6(f.trigger_e6)} (revealed)</span> : <Hidden />}</dd></div>
+            <div><dt>Trigger</dt><dd>{f ? <span className="mono gold">{e6(f.trigger_e6)} (revealed)</span> : <Hidden />}</dd></div>
             <div><dt>Placed in</dt><dd>{placeTx ? <Tx hash={placeTx} /> : <span className="dim">tx not recorded in this app</span>}</dd></div>
           </dl>
           <p className="label">Ciphertext · {o.ct.length} chars</p>

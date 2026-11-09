@@ -41,9 +41,9 @@ export function Icon({ name, size = 18 }: { name: string; size?: number }) {
 /* ---------- brand ---------- */
 export function Mark({ size = 30 }: { size?: number }) {
   return <svg className="mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <rect width="32" height="32" rx="9" fill="#1a1630" />
-    <path d="M16 6l8 3.4v5.8c0 5.3-3.4 9.3-8 11.6-4.6-2.3-8-6.3-8-11.6V9.4z" fill="none" stroke="#a99dff" strokeWidth="1.8" />
-    <path d="M4 16.5h24" stroke="#5effc4" strokeWidth="1.8" strokeLinecap="round" />
+    <rect width="32" height="32" rx="9" fill="#16131e" />
+    <path d="M16 6l8 3.4v5.8c0 5.3-3.4 9.3-8 11.6-4.6-2.3-8-6.3-8-11.6V9.4z" fill="none" stroke="#b9adff" strokeWidth="1.8" />
+    <path d="M4 16.5h24" stroke="#d6ad55" strokeWidth="1.8" strokeLinecap="round" />
   </svg>;
 }
 export function Wordmark({ small = false }: { small?: boolean }) {
