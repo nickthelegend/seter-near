@@ -1,0 +1,187 @@
+{
+  "network": "testnet",
+  "contract_id": "mienai-3013a230.testnet",
+  "token_id": "mienai-ad65ebef.testnet",
+  "outlayer": "outlayer.testnet",
+  "enclave": {
+    "url": "https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm",
+    "sha256": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386",
+    "upload_tx": {
+      "hash": "98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu",
+      "explorer": "https://testnet.nearblocks.io/txns/98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu"
+    }
+  },
+  "contract_sha256": "fb6bdc621973f435d32bdbe092c9d231483743dd186828cdaafcb47d106751f2",
+  "token_sha256": "ec19b0c069852c90f577b73b133e76845e93939d15cc1ee364198857dc644891",
+  "tee": {
+    "order_pub": "4rw5xCH2kF1Rmi0iFgXb/QH9xGcXrEtORYL9qB/mm2Y=",
+    "attest_pub": "ATAaXdsbP6DMT175EI4rEHMlUQqgpZq3+fd53LWG3Ow=",
+    "request": 1,
+    "set_at_ns": "1794244581733550267"
+  },
+  "pool_seed_price": {
+    "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+    "price": "3.615",
+    "trade_id": 36356603,
+    "time": "2026-11-09T17:16:21.376501214Z"
+  },
+  "steps": [
+    {
+      "step": "deploy tUSD (test NEP-141)",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "6vbop3FqjNHt1ukiTMbctCMiEFJUc9UzL4myLV6cG2SZ",
+      "explorer": "https://testnet.nearblocks.io/txns/6vbop3FqjNHt1ukiTMbctCMiEFJUc9UzL4myLV6cG2SZ",
+      "at": "2026-11-09T17:16:02.821Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "init tUSD",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "new",
+      "args": {
+        "owner_id": "mienai-ad65ebef.testnet"
+      },
+      "deposit": "0",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "8jineBCFPZKJb3kiDvSXW1QJMzLHWDrwSDwx6kwZZWL7",
+      "explorer": "https://testnet.nearblocks.io/txns/8jineBCFPZKJb3kiDvSXW1QJMzLHWDrwSDwx6kwZZWL7",
+      "at": "2026-11-09T17:16:05.691Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "deploy Mienai vault",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "H8xZoyz1vGBr81jRbku6dyNzztYy9rbGZiCUAzubgEfZ",
+      "explorer": "https://testnet.nearblocks.io/txns/H8xZoyz1vGBr81jRbku6dyNzztYy9rbGZiCUAzubgEfZ",
+      "at": "2026-11-09T17:16:09.678Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "init Mienai with the pinned enclave",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "new",
+      "args": {
+        "owner_id": "mienai-3013a230.testnet",
+        "token_id": "mienai-ad65ebef.testnet",
+        "outlayer_id": "outlayer.testnet",
+        "enclave_url": "https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm",
+        "enclave_hash": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386"
+      },
+      "deposit": "0",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "9PGRkmiU28fZzrMqctZucBjcPyiY1hXtaiu3spXC9MRr",
+      "explorer": "https://testnet.nearblocks.io/txns/9PGRkmiU28fZzrMqctZucBjcPyiY1hXtaiu3spXC9MRr",
+      "at": "2026-11-09T17:16:12.778Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "enclave keys (OutLayer TEE run)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "refresh_keys",
+      "args": {},
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "65uyDrTufTD6BKKFPsMMKPGRT7CUhPzuwU1rCpKv5hoQ",
+      "explorer": "https://testnet.nearblocks.io/txns/65uyDrTufTD6BKKFPsMMKPGRT7CUhPzuwU1rCpKv5hoQ",
+      "at": "2026-11-09T17:16:24.312Z",
+      "ok": true,
+      "return": "\"keys\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":1,\"operation\":\"keys\",\"orders\":0}]}",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":14945,\\\"sender_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"predecessor_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\\\",\\\"hash\\\":\\\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":20000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"operation\\\\\\\":\\\\\\\"keys\\\\\\\",\\\\\\\"contract\\\\\\\":\\\\\\\"mienai-3013a230.testnet\\\\\\\",\\\\\\\"request\\\\\\\":1,\\\\\\\"orders\\\\\\\":[]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":null,\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"20000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794244573905780809,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":null,\\\"project_id\\\":null}\",\"data_id\":[50,202,179,71,90,101,187,149,16,37,213,176,186,21,71,4,31,78,107,237,145,166,21,171,116,22,247,8,232,103,249,253],\"timestamp\":1794244573905780809}]}",
+        "[[yNEAR charged: \"1187500100000000000000\"]]",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-3013a230.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\",\"hash\":\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":1021618,\"time_ms\":795,\"compile_time_ms\":1080},\"success\":true,\"error_message\":null,\"payment_charged\":\"1187500100000000000000\",\"payment_refunded\":\"18812499900000000000000\",\"compilation_note\":\"Freshly compiled\",\"timestamp\":1794244581295383631}]}",
+        "Execution completed successfully. Output: Json(424 bytes), Resources: { instructions: 1021618, time_ms: 795 }, Cost: 1187500100000000000000 yoctoNEAR, Refund: 18812499900000000000000 yoctoNEAR, Freshly compiled"
+      ]
+    },
+    {
+      "step": "seed pool: 3 NEAR",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "seed_pool_near",
+      "args": {},
+      "deposit": "3000000000000000000000000",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "AuimZ4cF85yi1dHdzYkfZbuPPhsd4QaC6dGJNXGyYsh2",
+      "explorer": "https://testnet.nearblocks.io/txns/AuimZ4cF85yi1dHdzYkfZbuPPhsd4QaC6dGJNXGyYsh2",
+      "at": "2026-11-09T17:16:28.686Z",
+      "ok": true,
+      "return": "{\"near\":\"3000000000000000000000000\",\"usd\":\"0\"}",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "mint pool tUSD to the issuer",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "mint",
+      "args": {
+        "account_id": "mienai-ad65ebef.testnet",
+        "amount": "10845000"
+      },
+      "deposit": "0",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "4FEqStHp1yuQaG4W8TmQcSDcW3BnJvZYFYrxYG2bUXzD",
+      "explorer": "https://testnet.nearblocks.io/txns/4FEqStHp1yuQaG4W8TmQcSDcW3BnJvZYFYrxYG2bUXzD",
+      "at": "2026-11-09T17:16:31.278Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"mienai-ad65ebef.testnet\",\"amount\":\"10845000\",\"memo\":\"owner mint\"}]}"
+      ]
+    },
+    {
+      "step": "register vault on tUSD",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "mint",
+      "args": {
+        "account_id": "mienai-3013a230.testnet",
+        "amount": "0"
+      },
+      "deposit": "0",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "AxznncwSmme1pPV7Rw9Pomhj1Xh67M9kdGSgWQDtzCir",
+      "explorer": "https://testnet.nearblocks.io/txns/AxznncwSmme1pPV7Rw9Pomhj1Xh67M9kdGSgWQDtzCir",
+      "at": "2026-11-09T17:16:34.983Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"mienai-3013a230.testnet\",\"amount\":\"0\",\"memo\":\"owner mint\"}]}"
+      ]
+    },
+    {
+      "step": "seed pool: 10.845 tUSD at Coinbase 3.615",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "ft_transfer_call",
+      "args": {
+        "receiver_id": "mienai-3013a230.testnet",
+        "amount": "10845000",
+        "msg": "seed"
+      },
+      "deposit": "1",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "FYuJyGPdTp8abVtd1NtuYemCLb1wcdKAp7r7vDGpRKoa",
+      "explorer": "https://testnet.nearblocks.io/txns/FYuJyGPdTp8abVtd1NtuYemCLb1wcdKAp7r7vDGpRKoa",
+      "at": "2026-11-09T17:16:39.639Z",
+      "ok": true,
+      "return": "\"10845000\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"mienai-ad65ebef.testnet\",\"new_owner_id\":\"mienai-3013a230.testnet\",\"amount\":\"10845000\"}]}"
+      ]
+    }
+  ]
+}

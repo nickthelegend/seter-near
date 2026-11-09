@@ -6,12 +6,16 @@ export const PRICE_SOURCE = 'https://api.exchange.coinbase.com/products/NEAR-USD
 export const explorerTx = (hash) => `https://testnet.nearblocks.io/txns/${hash}`;
 export const explorerAccount = (id) => `https://testnet.nearblocks.io/address/${id}`;
 
-export async function rpc(method, params, url = TESTNET_RPC) {
-  const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'mienai', method, params }) });
-  if (!response.ok) throw new Error(`NEAR RPC HTTP ${response.status}`);
-  const body = await response.json();
-  if (body.error) throw new Error(`NEAR RPC error: ${JSON.stringify(body.error).slice(0, 300)}`);
-  return body.result;
+/** JSON-RPC with backoff: FastNEAR answers HTTP 429 to busy shared IPs. */
+export async function rpc(method, params, url = TESTNET_RPC, attempts = 8) {
+  for (let i = 0; ; i++) {
+    const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'mienai', method, params }) });
+    if ((response.status === 429 || response.status >= 500) && i < attempts - 1) { await new Promise((r) => setTimeout(r, 1500 * 1.6 ** i)); continue; }
+    if (!response.ok) throw new Error(`NEAR RPC HTTP ${response.status}`);
+    const body = await response.json();
+    if (body.error) throw new Error(`NEAR RPC error: ${JSON.stringify(body.error).slice(0, 300)}`);
+    return body.result;
+  }
 }
 
 export async function view(contractId, method, args = {}, url = TESTNET_RPC) {

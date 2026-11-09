@@ -3,7 +3,16 @@ import { actions } from 'near-api-js';
 import { explorerTx } from '../src/index.mjs';
 
 export async function call(account, receiverId, method, args = {}, { deposit = 0n, gas = 100_000_000_000_000n, step } = {}) {
-  const result = await account.signAndSendTransaction({ receiverId, actions: [actions.functionCall(method, args, gas, deposit)], waitUntil: 'FINAL', throwOnFailure: false });
+  let result;
+  for (let i = 0; ; i++) {
+    try { result = await account.signAndSendTransaction({ receiverId, actions: [actions.functionCall(method, args, gas, deposit)], waitUntil: 'FINAL', throwOnFailure: false }); break; }
+    catch (error) {
+      // FastNEAR answers 429 to busy shared IPs while the transaction is being built (nonce / block
+      // hash lookups), before anything is broadcast, so a retry cannot double-send.
+      if (error?.cause !== 429 || i >= 10) throw error;
+      await new Promise((r) => setTimeout(r, 3000 * 1.5 ** i));
+    }
+  }
   return record(account, result, { step: step || `${method}`, receiverId, method, args, deposit });
 }
 

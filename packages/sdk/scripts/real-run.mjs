@@ -28,7 +28,9 @@ try { viewKey = (await loadCredentials('trader-view')).view_key; } catch {
 
 const cfg = await view(C, 'get_config');
 if (!cfg.tee) throw new Error('enclave keys not set on the contract');
-log(await call(trader, C, 'deposit_near', {}, { deposit: 10n ** 24n, step: 'trader deposits 1 NEAR into the vault' }));
+const before = await view(C, 'balance_of', { account_id: trader.accountId });
+if (BigInt(before.near) < 8n * 10n ** 23n) log(await call(trader, C, 'deposit_near', {}, { deposit: 10n ** 24n, step: 'trader deposits 1 NEAR into the vault' }));
+else log({ step: 'trader vault balance before the run (deposit tx Ciu5geSzbtyQGa1VzXS6eicJFeLiSzs7P7k2pdr47bWp)', balance: before });
 
 const ticker = await (await fetch(PRICE_SOURCE, { headers: { 'user-agent': 'mienai-run/0.1' } })).json();
 const p = Number(ticker.price);
