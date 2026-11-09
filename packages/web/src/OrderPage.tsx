@@ -4,6 +4,7 @@ import { useConfig, useQuote, useStats } from './live';
 import { Copy, Icon, Link, Num, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
 import type { Wallet } from './wallet';
+import { art } from './art';
 
 const CHECK_LABEL: Record<string, string> = {
   wasm_hash_pinned: 'Executed WASM equals the hash pinned on the contract',
@@ -30,12 +31,7 @@ export function Certificate({ att, pinned, subject }: { att: Attestation; pinned
   return <article className="cert" aria-labelledby="cert-h">
     <div className="cert-inner">
       <header className="cert-head">
-        <svg className="cert-seal" viewBox="0 0 80 80" aria-hidden="true">
-          <circle cx="40" cy="40" r="36" fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 3" />
-          <circle cx="40" cy="40" r="29" fill="currentColor" opacity=".12" />
-          <path d="M40 22l12 5v9c0 8-5 14-12 17-7-3-12-9-12-17v-9z" fill="none" stroke="currentColor" strokeWidth="2" />
-          <path d="M34 39l4.5 4.5L47 35" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <img className="cert-seal" src={art('seal').src} alt="" aria-hidden="true" />
         <div>
           <p className="label">Certificate of sealed execution</p>
           <h3 id="cert-h">Intel TDX · OutLayer run #{att.request_id}</h3>
@@ -86,7 +82,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
     return <>
       <section className="order-hero">
         <div className="pnl osum">
-          <header><h1>Order №{o.id}</h1><span className={`st st-${o.status === 'Open' ? 'armed' : o.status.toLowerCase()}`}><i />{o.status === 'Open' ? 'Armed' : o.status}</span></header>
+          <header><img className="osum-art" src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" /><h1>Order №{o.id}</h1><span className={`st st-${o.status === 'Open' ? 'armed' : o.status.toLowerCase()}`}><i />{o.status === 'Open' ? 'Armed' : o.status}</span></header>
           <dl className="osum-grid">
             <div><dt>Market</dt><dd>NEAR / USD</dd></div>
             <div><dt>Type</dt><dd>{p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</dd></div>

@@ -9,7 +9,7 @@ import { art } from './art';
 
 function Art({ subject, className, fallback }: { subject: string; className?: string; fallback?: string }) {
   const a = art(subject, fallback);
-  return <div className={`art ${a.generated ? 'art-gen' : 'art-fallback'} ${className ?? ''}`} aria-hidden="true"><img src={a.src} alt="" loading="lazy" decoding="async" /></div>;
+  return <div className={`art ${a.generated ? 'art-gen' : 'art-fallback'} ${className ?? ''}`} aria-hidden="true"><img src={a.src} alt="" decoding="async" /></div>;
 }
 
 const TECH = [
@@ -76,7 +76,7 @@ export default function Landing() {
       <div className="l-nav-in">
         <Link to="/" aria-label="Mienai home"><Wordmark /></Link>
         <nav aria-label="Primary" className="l-links">
-          <a href="#product">Product</a><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#tech">NEAR tech</a>
+          <a href="#product">Product</a><a href="#hunter">Privacy</a><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#tech">NEAR tech</a>
         </nav>
         <Link to="/app" className="btn btn-primary btn-sm">Launch app</Link>
       </div>
@@ -108,6 +108,35 @@ export default function Landing() {
           <div><dt>Levels visible on chain</dt><dd className="mint">{s ? 0 : stat(undefined)}</dd></div>
           <div><dt>Enclave runs · rejected</dt><dd>{s ? <>{s.requests_total}<small> · {s.rejected_reports}</small></> : stat(undefined)}</dd></div>
         </dl>
+      </section>
+
+      <section className="l-sec" id="hunter">
+        <header className="l-head l-head-row hunter-head">
+          <div><p className="kicker">What a stop hunter sees</p><h2>The whale reads the chain. It finds no levels.</h2></div>
+          <Art subject="whale" className="whale" />
+        </header>
+        <div className="views">
+          <article className="view">
+            <Art subject="camera" className="view-art" />
+            <p className="kicker">Public contract state · live</p>
+            <h3>Ciphertexts and counts</h3>
+            {!orders.data ? <State kind={orders.error ? 'error' : 'loading'} title={orders.error ? 'Could not read the contract' : 'Reading the book…'}>{orders.error}</State>
+              : <ul className="view-rows">{[...orders.data].reverse().slice(0, 5).map((o) => <li key={o.id}><span className="mono">№{o.id}</span><code>{o.ct.slice(0, 30)}</code>{o.fire ? <span className="mono mint">{e6(o.fire.trigger_e6)}</span> : <Hidden label="" />}</li>)}</ul>}
+            <p className="view-foot">Levels visible on chain: <b className="mint">{s ? 0 : '…'}</b> · a level is published only after its order fires</p>
+          </article>
+          <article className="view view-enc">
+            <Art subject="enclave" className="view-art" />
+            <p className="kicker">Inside Intel TDX · last check</p>
+            <h3>Only the enclave opens them</h3>
+            {s?.last_check ? <dl className="view-kv">
+              <div><dt>Price read</dt><dd className="mono">{e6(s.last_check.price_e6)} USD</dd></div>
+              <div><dt>Orders opened</dt><dd className="mono">{s.last_check.checked}</dd></div>
+              <div><dt>Fired</dt><dd className="mono">{s.last_check.fired.length ? s.last_check.fired.map((i) => `№${i}`).join(', ') : 'none'}</dd></div>
+              <div><dt>When</dt><dd className="mono">{ago(nsToMs(s.last_check.block_ts))} · block {s.last_check.block_height}</dd></div>
+              <div><dt>Band report (k = {s.bands?.k ?? 5})</dt><dd className="mono">{s.bands ? `${s.bands.suppressed} of ${s.bands.total} suppressed` : 'none yet'}</dd></div>
+            </dl> : <State kind={stats.error ? 'error' : 'loading'} title={stats.error ? 'Could not read the contract' : 'Reading the last check…'}>{stats.error}</State>}
+          </article>
+        </div>
       </section>
 
       <section className="l-sec center" id="product">
@@ -155,7 +184,7 @@ export default function Landing() {
       </section>
 
       <section className="cta">
-        <Art subject="tripwire" className="cta-art" fallback="mienai-hero.webp" />
+        <Art subject="tripwire" className="cta-art" />
         <div><h2>Set a stop the market can’t see.</h2><p>Live on NEAR testnet. Connect a testnet wallet, deposit and seal.</p><Link to="/app" className="btn btn-primary btn-lg">Launch app <Icon name="arrow" size={17} /></Link></div>
       </section>
     </main>

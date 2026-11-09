@@ -7,6 +7,7 @@ import Chart, { type ChartMark } from './Chart';
 import { Icon, Link, Num, State, Tx, Wordmark, shortHex } from './ui';
 import { VaultSheet, viewKeyFor } from './Sheets';
 import type { Wallet } from './wallet';
+import { art } from './art';
 
 export type Plain = { cond: string; trigger_e6: number; amount: string; side?: string };
 export function decrypt(o: Order, account: string): Plain | null {
@@ -201,7 +202,7 @@ function EnclaveBox({ config, stats, wallet }: { config: Config | null; stats: S
   const [err, setErr] = useState('');
   const pinned = config?.enclave_hash;
   return <div className="vault-box enclave-box">
-    <div className="vb-head"><span>Enclave · Intel TDX</span>{pinned ? (pinned === enclaveUpload.sha256 ? <span className="ok-chip"><Icon name="check" size={12} />hash = build</span> : <span className="bad-chip">hash ≠ build</span>) : null}</div>
+    <div className="vb-head"><span className="vb-title"><img src={art('enclave').src} alt="" aria-hidden="true" />Enclave · Intel TDX</span>{pinned ? (pinned === enclaveUpload.sha256 ? <span className="ok-chip"><Icon name="check" size={12} />hash = build</span> : <span className="bad-chip">hash ≠ build</span>) : null}</div>
     <div className="frow"><span>Last check</span><b className="mono">{stats?.last_check ? `${e6(stats.last_check.price_e6)} · ${ago(nsToMs(stats.last_check.block_ts))}` : stats ? 'none yet' : '…'}</b></div>
     <div className="frow"><span>Runs / rejected</span><b className="mono">{stats ? `${stats.requests_total} / ${stats.rejected_reports}` : '…'}</b></div>
     <div className="frow"><span>Pinned WASM</span><b className="mono">{pinned ? short(pinned, 6) : '…'}</b></div>
@@ -218,7 +219,7 @@ function typeLabel(p: Plain | null) { return p ? (p.cond === 'lte' ? 'Sealed sto
 function AttRow({ r }: { r: OutlayerRun }) {
   const q = useQuote(r.tx);
   return <tr>
-    <td><b>{r.kind === 'Keys' ? 'Key publication' : r.kind === 'Check' ? 'Price check' : 'Band report'}</b><small>{r.label}</small></td>
+    <td><span className="ocell"><img src={art(r.attestation ? 'seal' : 'enclave').src} alt="" aria-hidden="true" /><span><b>{r.kind === 'Keys' ? 'Key publication' : r.kind === 'Check' ? 'Price check' : 'Band report'}</b><small>{r.label}</small></span></span></td>
     <td className="mono">{utc(Date.parse(r.at))}</td>
     <td>{r.attestation ? <span className="ok-chip"><Icon name="check" size={12} />{Object.values(r.attestation.checks).filter(Boolean).length}/{Object.keys(r.attestation.checks).length} · TCB {r.attestation.tcb.status}</span> : <span className="dim">quote only</span>}</td>
     <td className="mono">{q.data ? shortHex(q.data.quoteSha256, 10, 6) : q.error ? <span className="dim">unavailable</span> : '…'}</td>
@@ -243,7 +244,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
       {tab === 'open' && (!orders ? loading(ordersErr, 'orders') : !open.length ? <State kind="empty" title={wallet.account ? 'No open sealed orders' : 'No armed orders on chain'}>Seal a stop or take-profit in the order panel.</State> : <table className="tbl">
         <thead><tr><th>Order</th><th>Market</th><th>Type</th><th>Side</th><th>Size</th><th>Trigger</th><th>Status</th><th>Placed (UTC)</th><th /></tr></thead>
         <tbody>{open.map((o) => { const p = decrypt(o, wallet.account); return <tr key={o.id}>
-          <td><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></td>
+          <td><span className="ocell"><img src={art('slip').src} alt="" aria-hidden="true" /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
           <td>NEAR/USD</td>
           <td>{typeLabel(p)}</td>
           <td>{p ? <span className="down">Sell</span> : <Hidden label="" />}</td>
@@ -257,7 +258,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
       {tab === 'history' && (!orders ? loading(ordersErr, 'orders') : !hist.length ? <State kind="empty" title="No fired or cancelled orders yet" /> : <table className="tbl">
         <thead><tr><th>Order</th><th>Type</th><th>Trigger</th><th>Price read</th><th>Filled</th><th>Status</th><th>Time (UTC)</th><th>Tx</th><th /></tr></thead>
         <tbody>{hist.map((o) => { const f = o.fire; return <tr key={o.id}>
-          <td><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></td>
+          <td><span className="ocell"><img src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" className={f ? '' : 'faded'} /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
           <td>{f ? (f.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</td>
           <td>{f ? <span className="mono mint">{e6(f.trigger_e6)} <small className="dim">revealed</small></span> : <Hidden label="never revealed" />}</td>
           <td className="mono">{f ? e6(f.price_e6) : '—'}</td>
