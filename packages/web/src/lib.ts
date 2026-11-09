@@ -1,0 +1,86 @@
+import deployment from '../../../deployments/testnet-2026-11-09.json';
+import run from '../../../deployments/real-run-2026-11-09.json';
+import enclaveUpload from '../../../deployments/enclave-fastfs.json';
+
+export const CONTRACT: string = import.meta.env.VITE_MIENAI_CONTRACT || deployment.contract_id;
+export const TOKEN: string = deployment.token_id;
+export const RPC = 'https://test.rpc.fastnear.com';
+export const PRICE_SOURCE = 'https://api.exchange.coinbase.com/products/NEAR-USD/ticker';
+export { deployment, run, enclaveUpload };
+
+export const txUrl = (h: string) => `https://testnet.nearblocks.io/txns/${h}`;
+export const accountUrl = (a: string) => `https://testnet.nearblocks.io/address/${a}`;
+
+export type FireRecord = {
+  request: number; path: string; plaintext: string; cond: 'lte' | 'gte'; trigger_e6: number; side: 'sell' | 'buy'; amount: string;
+  price_e6: number; price_ts_ms: number; trade_id: number; source: string; block_height: string; block_ts: string;
+  filled_in: string; filled_out: string; note: string; report_sha256: string; outlayer_request: string;
+};
+export type Order = { id: number; owner: string; ct: string; commit: string; view_ct: string | null; created_ns: string; status: 'Open' | 'Fired' | 'Unfilled' | 'Cancelled'; fire: FireRecord | null };
+export type TeeKeys = { order_pub: string; attest_pub: string; request: number; set_at_ns: string };
+export type Config = { owner: string; token: string; outlayer: string; enclave_url: string; enclave_hash: string; tee: TeeKeys | null; price_source: string; max_price_age_s: number; fee_bps: number; order_deposit: string; max_open: number };
+export type CheckSummary = { request: number; path: string; price_e6: number; price_ts_ms: number; trade_id: number; checked: number; unreadable: number; fired: number[]; block_height: string; block_ts: string; outlayer_request: string };
+export type Stats = { orders_total: number; open: number; fired: number; unfilled: number; cancelled: number; checks: number; rejected_reports: number; requests_total: number; last_check: CheckSummary | null; pool: { near: string; usd: string }; bands: null | { request: number; price_e6: number; k: number; width_e6: number; bands: string; suppressed: number; total: number; block_height: string } };
+export type Balance = { near: string; usd: string };
+
+/** FastNEAR first; a 429 from it carries no CORS header and surfaces as a network error, so fall over to the next RPC. */
+export const RPCS = ['https://rpc.testnet.near.org', 'https://near-testnet.drpc.org', RPC];
+let preferred = 0;
+export async function view<T>(method: string, args: object = {}, contract = CONTRACT): Promise<T> {
+  const body = JSON.stringify({ jsonrpc: '2.0', id: 'mienai-web', method: 'query', params: { request_type: 'call_function', finality: 'final', account_id: contract, method_name: method, args_base64: btoa(JSON.stringify(args)) } });
+  let last: Error = new Error('NEAR testnet RPC unreachable');
+  for (let i = 0; i < RPCS.length; i++) {
+    const idx = (preferred + i) % RPCS.length;
+    try {
+      const res = await fetch(RPCS[idx], { method: 'POST', headers: { 'content-type': 'application/json' }, body });
+      if (!res.ok) { last = new Error(`NEAR testnet RPC HTTP ${res.status}`); continue; }
+      const json = await res.json();
+      if (json.error || json.result?.error) throw new Error(`${method}: ${JSON.stringify(json.error || json.result.error).slice(0, 160)}`);
+      preferred = idx;
+      return JSON.parse(new TextDecoder().decode(new Uint8Array(json.result.result))) as T;
+    } catch (e) {
+      if ((e as Error).message.startsWith(`${method}:`)) throw e;
+      last = e as Error;
+    }
+  }
+  throw last;
+}
+
+export type Ticker = { price: string; time: string; trade_id: number };
+export async function ticker(): Promise<Ticker> {
+  const res = await fetch(PRICE_SOURCE, { headers: { accept: 'application/json' } });
+  if (!res.ok) throw new Error(`Coinbase HTTP ${res.status}`);
+  return res.json();
+}
+
+const YOCTO = 10n ** 24n;
+export function near(yocto: string | bigint, digits = 4): string {
+  const v = BigInt(yocto);
+  const whole = v / YOCTO;
+  const frac = (v % YOCTO).toString().padStart(24, '0').slice(0, digits);
+  return `${whole}.${frac}`;
+}
+export const usd6 = (units: string | number, digits = 4) => (Number(units) / 1e6).toFixed(digits);
+export const e6 = (v: number) => (v / 1e6).toFixed(4);
+export function toYocto(decimal: string): string {
+  const m = /^(\d+)(?:\.(\d{0,24}))?$/.exec(decimal.trim());
+  if (!m) throw new Error('Enter an amount like 0.5');
+  return (BigInt(m[1]) * YOCTO + BigInt((m[2] || '').padEnd(24, '0'))).toString();
+}
+export const short = (s: string, n = 6) => (s.length > n * 2 + 1 ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
+export const shortAccount = (a: string) => (a.length > 22 ? `${a.slice(0, 12)}…${a.slice(-8)}` : a);
+export const ago = (ms: number) => {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)}m ago`;
+  if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+  return `${Math.round(s / 86400)}d ago`;
+};
+export const nsToMs = (ns: string) => Number(BigInt(ns) / 1_000_000n);
+
+/** The keeper check that fired the recorded stop, its attestation and the step list. */
+type Step = { step: string; tx?: string; explorer?: string; ok?: boolean; return?: string | null; at?: string; attestation?: Attestation; last_check?: CheckSummary };
+export type Attestation = { request_id: number; attestation_id: number; tx: string; block_height: number; wasm_hash: string; input_hash: string; output_hash: string; measurements: { mrtd: string; rtmr3: string }; tcb: { status?: string; error?: string }; checks: Record<string, boolean>; ok: boolean; source: string };
+export const runSteps = (run as unknown as { steps: Step[] }).steps.filter((s) => s.tx);
+export const firedStep = (run as unknown as { steps: Step[] }).steps.find((s) => s.attestation);
+export const deploySteps = (deployment as unknown as { steps: Step[] }).steps;
