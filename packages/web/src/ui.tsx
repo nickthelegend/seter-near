@@ -1,5 +1,5 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
-import { e6, near, nsToMs, txUrl, type Order } from './lib';
+import { txUrl } from './lib';
 
 /* ---------- routing ---------- */
 export function navigate(path: string) {
@@ -74,55 +74,6 @@ export function State({ kind, title, children, action }: { kind: 'loading' | 'em
     <span className="state-mark" aria-hidden="true">{kind === 'loading' ? <i className="pulse" /> : kind === 'error' ? '!' : kind === 'setup' ? <Icon name="lock" size={16} /> : <Icon name="eye" size={16} />}</span>
     <div><h3>{title}</h3>{children && <p>{children}</p>}{action}</div>
   </div>;
-}
-
-/* ---------- the k-anonymity meter ---------- */
-/** k cells: how many armed orders the enclave can hide this one among, against the k it needs before it publishes a band. */
-export function KMeter({ order, crowd, k }: { order: Pick<Order, 'status'>; crowd: number | null; k: number | null }) {
-  const K = k ?? 5;
-  const fired = order.status === 'Fired';
-  const gone = order.status === 'Cancelled' || order.status === 'Unfilled';
-  const filled = fired ? K : gone ? 0 : Math.min(crowd ?? 0, K);
-  const label = fired ? 'Revealed after it fired' : gone ? 'Withdrawn · never revealed' : crowd === null ? 'Reading the crowd' : `Hidden among ${crowd} armed order${crowd === 1 ? '' : 's'}`;
-  return <div className={`kmeter ${fired ? 'is-fired' : gone ? 'is-gone' : ''}`}>
-    <div className="kmeter-row"><span>{label}</span><span className="mono">{k === null ? 'k …' : `band at k = ${K}`}</span></div>
-    <div className="kmeter-cells" role="img" aria-label={`${filled} of ${K}`}>{Array.from({ length: K }, (_, i) => <i key={i} className={i < filled ? 'on' : ''} />)}</div>
-  </div>;
-}
-
-/* ---------- a sealed order as a ticket stub ---------- */
-export type Plain = { cond: string; trigger_e6: number; amount: string; side?: string };
-export const statusWord = (s: Order['status']) => (s === 'Open' ? 'Armed' : s);
-const stamp = (ms: number) => new Date(ms).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false }).replace(',', ' ·').toUpperCase();
-
-export function Ticket({ order, plain, crowd, k, compact = false }: { order: Order; plain: Plain | null; crowd: number | null; k: number | null; compact?: boolean }) {
-  const f = order.fire;
-  const p = f ? { cond: f.cond, trigger_e6: f.trigger_e6, amount: f.amount, side: f.side } : plain;
-  const tone = order.status === 'Fired' ? 'fired' : order.status === 'Open' ? 'armed' : 'gone';
-  return <article className={`tkt tkt-${tone}${compact ? ' tkt-compact' : ''}`}>
-    <div className="tkt-main">
-      <header className="tkt-top">
-        <span className="pair"><i aria-hidden="true" />NEAR / USD</span>
-        <span className={`status status-${tone}`}><i aria-hidden="true" />{statusWord(order.status)}</span>
-      </header>
-      <h3>{p ? <>{(p.side ?? 'sell') === 'sell' ? 'Sell' : 'Buy'} {near(p.amount, 2)} NEAR</> : 'Side and size sealed'}</h3>
-      <p className="tkt-kind">{p ? (p.cond === 'lte' ? 'Stop-loss · fires at or below' : 'Take-profit · fires at or above') : 'Stop-loss or take-profit · only the enclave knows'}</p>
-      <div className="tkt-trigger">
-        <span className="label">Trigger · USD per NEAR</span>
-        {f ? <span className="tkt-big is-revealed"><Num value={e6(f.trigger_e6)} /><small>read {e6(f.price_e6)}</small></span>
-          : p ? <span className="tkt-big"><Num value={e6(p.trigger_e6)} /><small className="only-you"><Icon name="lock" size={12} />only you see this</small></span>
-          : <span className="tkt-big"><Redacted size="lg" label="trigger hidden" /></span>}
-      </div>
-      {!compact && <KMeter order={order} crowd={crowd} k={k} />}
-      {tone === 'fired' && <span className="stamp" aria-hidden="true">Fired</span>}
-    </div>
-    <Link to={`/order/${order.id}`} className="tkt-stub" aria-label={`View order ${order.id}`}>
-      <span className="label">Order</span>
-      <b className="tkt-no">№{String(order.id).padStart(2, '0')}</b>
-      <span className="tkt-when mono">{stamp(nsToMs(order.created_ns))} UTC</span>
-      <span className="tkt-view">View <Icon name="arrow" size={15} /></span>
-    </Link>
-  </article>;
 }
 
 /* ---------- sheet ---------- */

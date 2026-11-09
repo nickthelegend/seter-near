@@ -1,168 +1,173 @@
-import { useMemo } from 'react';
-import { CONTRACT, TOKEN, accountUrl, ago, deployment, e6, enclaveUpload, firedStep, nsToMs, runSteps, shortAccount, type Order } from './lib';
+import { CONTRACT, TOKEN, accountUrl, ago, deployment, e6, enclaveUpload, firedStep, near, nsToMs, runSteps, short } from './lib';
 import { useConfig, useOrders, useStats, useTicker } from './live';
-import { Icon, Link, Num, Redacted, State, Tx, Wordmark } from './ui';
-import { EnclavePanel } from './Console';
+import { useCandles, useStats24h } from './market';
+import Chart from './Chart';
+import { Icon, Link, Num, State, Tx, Wordmark } from './ui';
+import { Hidden } from './Terminal';
 import { Certificate } from './OrderPage';
+import { art } from './art';
 
-function HangingTicket({ o, i }: { o: Order; i: number }) {
-  const fired = o.status === 'Fired';
-  return <Link to={`/order/${o.id}`} className={`hang hang-${fired ? 'fired' : o.status === 'Open' ? 'armed' : 'gone'}`} aria-label={`Order ${o.id}, ${o.status}`}>
-    <i className="hang-clip" aria-hidden="true" />
-    <span className="hang-slip" style={{ rotate: `${[-4, 3, -2, 5, -3, 2][i % 6]}deg` }}>
-      <span className="hang-no">№{String(o.id).padStart(2, '0')}</span>
-      <span className="hang-st">{fired ? 'Fired' : o.status === 'Open' ? 'Armed' : o.status}</span>
-      {o.fire ? <b className="hang-val">{e6(o.fire.trigger_e6)}</b> : <Redacted size="sm" label="hidden" />}
-    </span>
-  </Link>;
+function Art({ subject, className, fallback }: { subject: string; className?: string; fallback?: string }) {
+  const a = art(subject, fallback);
+  return <div className={`art ${a.generated ? 'art-gen' : 'art-fallback'} ${className ?? ''}`} aria-hidden="true"><img src={a.src} alt="" loading="lazy" decoding="async" /></div>;
 }
 
 const TECH = [
-  { code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE run', body: 'check() calls OutLayer with a WasmUrl pinned by SHA-256. OutLayer yields, a TDX worker runs the enclave, and the result resumes into the contract’s callback.' },
-  { code: '#[private] fn on_result', title: 'Promise origin', body: 'The only door for a result is the promise of the contract’s own request. Calling on_result directly fails: “Method on_result is private”.' },
-  { code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key OutLayer’s keystore releases only to this WASM hash called by this contract. The contract verifies it before anything moves.' },
-  { code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE from the WASM hash and the calling contract. Another build or caller derives another key and opens nothing.' },
-  { code: 'callers.contract.only', title: 'Who may run it', body: 'The manifest, covered by the WASM hash, admits runs only from the Mienai contract, with HTTPS egress only to api.exchange.coinbase.com.' },
-  { code: 'NEP-141 · x·y = k', title: 'Settlement on testnet', body: 'NEAR Intents has no testnet, so a fire swaps against the vault’s NEAR / tUSD constant-product pool (0.3% fee). tUSD is a test token.' },
+  { icon: 'cube', code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE execution', body: 'check() asks OutLayer to run a WASM pinned by SHA-256. A TDX worker runs it and the result resumes into the contract’s callback.' },
+  { icon: 'lock', code: '#[private] fn on_result', title: 'Promise-origin check', body: 'The only door for a result is the promise of the contract’s own request. A direct call fails with “Method on_result is private”.' },
+  { icon: 'seal', code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key OutLayer’s keystore releases only to this WASM hash, called by this contract.' },
+  { icon: 'eye', code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE from the WASM hash and the calling contract. Any other build or caller opens nothing.' },
+  { icon: 'ban', code: 'callers.contract.only', title: 'Locked-down runs', body: 'The manifest admits runs only from the Mienai contract, with HTTPS egress only to api.exchange.coinbase.com.' },
+  { icon: 'wallet', code: 'NEP-141 · x·y = k', title: 'Testnet settlement', body: 'NEAR Intents has no testnet, so a fire swaps on the vault’s NEAR / tUSD pool (0.3% fee). tUSD is a test token.' },
 ];
+
+/** A live, read-only preview of the terminal: real Coinbase candles, the sealed book and the order panel's sealed tab. */
+function TerminalPreview() {
+  const c = useCandles('1h');
+  const d = useStats24h();
+  const t = useTicker();
+  const stats = useStats();
+  const orders = useOrders();
+  const last = t.data ? Number(t.data.price) : d.data?.last ?? null;
+  const chg = d.data && last ? ((last - d.data.open) / d.data.open) * 100 : null;
+  const armed = (orders.data ?? []).filter((o) => o.status === 'Open');
+  const fired = (orders.data ?? []).filter((o) => o.fire);
+  return <div className="frame" aria-label="Live preview of the Mienai terminal">
+    <div className="frame-bar"><i /><i /><i /><span className="mono">mienai · trade NEAR/USD</span></div>
+    <div className="prev">
+      <div className="prev-mbar">
+        <b>NEAR / USD</b>
+        <span className={`mono ${chg === null ? '' : chg >= 0 ? 'up' : 'down'}`}>{last ? last.toFixed(4) : '…'}</span>
+        <span className="mono dim">{chg === null ? '' : `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% 24h`}</span>
+        <span className="mono dim prev-src">Coinbase</span>
+      </div>
+      <div className="prev-chart">{c.data ? <Chart data={c.data.slice(-120)} enclavePrice={stats.data?.last_check ? stats.data.last_check.price_e6 / 1e6 : null} marks={fired.map((o) => ({ time: Math.floor(nsToMs(o.fire!.block_ts) / 1000), label: `№${o.id} fired`, tone: 'fire' as const }))} compact /> : <State kind={c.error ? 'error' : 'loading'} title={c.error ? 'Candles unavailable' : 'Loading candles…'}>{c.error}</State>}</div>
+      <div className="prev-side">
+        <p className="prev-h">Sealed book</p>
+        <ul>{armed.slice(0, 4).map((o) => <li key={o.id}><span className="mono">№{o.id}</span><Hidden label="" /><span className="mono dim">{ago(nsToMs(o.created_ns))}</span></li>)}{orders.data && !armed.length && <li className="dim">No armed orders</li>}</ul>
+        <p className="prev-mid mono">{last ? last.toFixed(4) : '…'}</p>
+        <ul>{fired.slice(0, 2).map((o) => <li key={o.id}><span className="mono">№{o.id}</span><span className="mono mint">{e6(o.fire!.trigger_e6)}</span><span className="mono dim">fired</span></li>)}</ul>
+      </div>
+      <div className="prev-form">
+        <div className="prev-tabs"><span>Market</span><span>Limit</span><span className="on"><Icon name="lock" size={11} />Sealed stop</span></div>
+        <div className="prev-field"><span>Trigger</span><Hidden label="sealed" /></div>
+        <div className="prev-field"><span>Chain sees</span><code>ciphertext · 276 chars</code></div>
+        <Link to="/app" className="btn btn-primary btn-block btn-sm">Seal order</Link>
+      </div>
+    </div>
+  </div>;
+}
 
 export default function Landing() {
   const ticker = useTicker();
+  const d = useStats24h();
   const stats = useStats();
   const orders = useOrders();
   const config = useConfig();
-  const price = ticker.data ? Number(ticker.data.price) : null;
-  const hanging = useMemo(() => [...(orders.data ?? [])].sort((a, b) => Number(b.status === 'Open') - Number(a.status === 'Open') || b.id - a.id).slice(0, 5), [orders.data]);
-  const fired = orders.data?.find((o) => o.fire);
-  const latest = orders.data?.[orders.data.length - 1];
   const s = stats.data;
-  const c = s?.last_check;
+  const price = ticker.data ? Number(ticker.data.price) : null;
+  const chg = d.data && price ? ((price - d.data.open) / d.data.open) * 100 : null;
+  const fired = orders.data?.find((o) => o.fire);
   const att = firedStep?.attestation;
+  const stat = (v: number | undefined) => (s ? v : stats.error ? '—' : '…');
 
   return <>
     <header className="l-nav">
-      <Link to="/" aria-label="Mienai home"><Wordmark /></Link>
-      <nav aria-label="Primary">
-        <a href="#how" className="l-link">How it works</a>
-        <a href="#proof" className="l-link">Proof</a>
-        <Link to="/app" className="btn btn-light btn-sm">Open console</Link>
-      </nav>
+      <div className="l-nav-in">
+        <Link to="/" aria-label="Mienai home"><Wordmark /></Link>
+        <nav aria-label="Primary" className="l-links">
+          <a href="#product">Product</a><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#tech">NEAR tech</a>
+        </nav>
+        <Link to="/app" className="btn btn-primary btn-sm">Launch app</Link>
+      </div>
     </header>
 
-    <main id="main">
-      <section className="hero">
-        <div className="hero-object" aria-hidden="true"><img src="/art/mienai-feature-enclave.webp" alt="" fetchPriority="high" /></div>
+    <main id="main" className="l-main">
+      <section className="hero-card">
+        <Art subject="enclave" className="hero-art" />
         <div className="hero-copy">
-          <p className="eyebrow mono"><span lang="ja">見えない</span> · sealed orders · NEAR testnet</p>
-          <h1>Your stop-loss is <span className="h-sealed">invisible</span><br />until it fires.</h1>
-          <p className="hero-lede">Stop hunters push the price to where stops sit. With Mienai the level is sealed to an Intel TDX enclave; the chain stores only ciphertext.</p>
-          <div className="hero-cta">
-            <Link to="/app" className="btn btn-primary btn-lg">Seal a stop <Icon name="arrow" size={17} /></Link>
-            <a href="#hunter" className="btn btn-quiet btn-lg">What a stop hunter sees</a>
-          </div>
+          <p className="pill-live"><i className="live" />Live on NEAR testnet · OutLayer TEE (Intel TDX)</p>
+          <h1>Stop-losses the market can’t see.</h1>
+          <p className="hero-lede">Mienai seals your stop or take-profit to an enclave. The chain stores only ciphertext, so nobody can hunt your level. It is revealed only after it fires, with an Intel TDX attestation.</p>
+          <div className="hero-cta"><Link to="/app" className="btn btn-primary btn-lg">Start trading <Icon name="arrow" size={17} /></Link><a href="#proof" className="btn btn-ghost btn-lg">See a real fire</a></div>
         </div>
-        <div className="wire" aria-label="Live order book hanging on the NEAR price line">
-          <div className="wire-label mono"><i className="live" />NEAR / USD {price ? <b><Num value={price.toFixed(4)} /></b> : <b>{ticker.error ? 'unavailable' : '…'}</b>}<span>Coinbase · live</span></div>
-          <div className="wire-line" aria-hidden="true" />
-          <div className="wire-tickets">{orders.data ? hanging.map((o, i) => <HangingTicket key={o.id} o={o} i={i} />) : <span className="wire-wait mono">{orders.error ? 'contract unreadable' : 'reading the book…'}</span>}</div>
-          <p className="wire-note">{s ? <>{s.open} armed · {s.fired} fired · <b>0 levels on chain</b></> : 'Reading the contract…'}</p>
+      </section>
+
+      <section className="tiles" aria-label="Live markets">
+        <div className="tile"><span className="coin" aria-hidden="true">N</span><div><b>NEAR / USD</b><small>Coinbase last</small></div><p className="mono">{price ? <Num value={price.toFixed(4)} /> : '…'}<small className={chg === null ? '' : chg >= 0 ? 'up' : 'down'}>{chg === null ? '' : `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`}</small></p></div>
+        <div className="tile"><span className="coin coin-lock" aria-hidden="true"><Icon name="lock" size={16} /></span><div><b>Sealed orders armed</b><small>levels visible on chain: 0</small></div><p className="mono">{stat(s?.open)}</p></div>
+        <div className="tile"><span className="coin coin-eye" aria-hidden="true"><Icon name="eye" size={16} /></span><div><b>Last enclave check</b><small>{s?.last_check ? ago(nsToMs(s.last_check.block_ts)) : 'price read inside TDX'}</small></div><p className="mono">{s?.last_check ? e6(s.last_check.price_e6) : stat(undefined)}</p></div>
+      </section>
+
+      <section className="l-sec bigstats" aria-label="Live contract stats">
+        <h2>Live on NEAR testnet</h2>
+        <p className="l-lede">Read from <a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer" className="mono">{CONTRACT}</a> every 15 seconds.</p>
+        <dl>
+          <div><dt>Orders sealed</dt><dd>{stat(s?.orders_total)}</dd></div>
+          <div><dt>Fired and audited</dt><dd>{stat(s?.fired)}</dd></div>
+          <div><dt>Levels visible on chain</dt><dd className="mint">{s ? 0 : stat(undefined)}</dd></div>
+          <div><dt>Enclave runs · rejected</dt><dd>{s ? <>{s.requests_total}<small> · {s.rejected_reports}</small></> : stat(undefined)}</dd></div>
+        </dl>
+      </section>
+
+      <section className="l-sec center" id="product">
+        <p className="kicker">Sealed orders · public settlement</p>
+        <h2>Trade without showing your hand.</h2>
+        <p className="l-lede">A familiar terminal: Coinbase NEAR/USD candles, a sealed book whose levels nobody can read, and an order panel with sealed stop and take-profit orders.</p>
+        <TerminalPreview />
+      </section>
+
+      <section className="l-sec" aria-label="Features">
+        <div className="features">
+          <article className="feat"><Art subject="envelope" className="feat-art" /><div><p className="kicker">Hidden</p><h3>Invisible until it fires</h3><p>Trigger, side and size are encrypted in your browser to the enclave’s X25519 key and bound to your account. Anyone reading the contract sees ciphertext and a commitment.</p></div></article>
+          <article className="feat"><Art subject="tripwire" className="feat-art" /><div><p className="kicker">Executed</p><h3>Checked inside Intel TDX</h3><p>On each check, OutLayer runs the pinned enclave. It reads the Coinbase price inside TDX, opens every order and reports only the ones the price crossed.</p></div></article>
+          <article className="feat"><Art subject="seal" className="feat-art" /><div><p className="kicker">Proven</p><h3>Audited after the fact</h3><p>The contract accepts a fire only with the enclave’s signature, a fresh price and a matching commitment. Then the trigger is published so anyone can check the crossing.</p></div></article>
         </div>
       </section>
 
       <section className="l-sec" id="how">
-        <header className="l-head"><p className="eyebrow mono">How it works</p><h2>Seal. Watch. Fire, then reveal.</h2></header>
-        <div className="bento">
-          <article className="b-card b-seal">
-            <span className="b-n mono">01</span>
-            <h3>Sealed in your browser</h3>
-            <p>Trigger, side and size are encrypted to the enclave’s X25519 key, bound to your account. The contract keeps the ciphertext and a SHA-256 commitment.</p>
-            <div className="b-live">
-              <p className="label">Latest order on chain · №{latest?.id ?? '—'}</p>
-              {latest ? <code className="cipher cipher-flow">{latest.ct.slice(0, 180)}</code> : <p className="dim">{orders.error || 'Loading'}</p>}
-            </div>
-            <img className="b-art b-art-shield" src="/art/mienai-st-shield.webp" alt="" aria-hidden="true" />
-          </article>
-          <article className="b-card b-watch">
-            <img className="b-photo" src="/art/mienai-feature-tripwire.webp" alt="" aria-hidden="true" />
-            <span className="b-n mono">02</span>
-            <h3>The enclave watches</h3>
-            <p>A keeper pays for a check. OutLayer runs the pinned WASM in Intel TDX; it reads NEAR/USD from Coinbase inside the enclave and opens every order. Unfired levels never leave it.</p>
-            <div className="b-live">
-              <p className="label">Last check · price read in the TEE</p>
-              {c ? <><p className="b-big"><Num value={e6(c.price_e6)} /></p><p className="dim">opened {c.checked} · fired {c.fired.length} · {ago(nsToMs(c.block_ts))}</p></> : <p className="dim">{stats.error || 'Loading'}</p>}
-            </div>
-          </article>
-          <article className="b-card b-fire">
-            <img className="b-art b-art-ticket" src="/art/mienai-st-ticket.webp" alt="" aria-hidden="true" />
-            <span className="b-n mono">03</span>
-            <h3>Fire, then reveal</h3>
-            <p>A crossed order returns signed by the enclave into a private callback. The contract checks signature, freshness, commitment and the crossing, swaps, then publishes the trigger.</p>
-            {fired?.fire ? <div className="b-reveal"><div><span className="label">Trigger №{fired.id}</span><b><Num value={e6(fired.fire.trigger_e6)} /></b></div><div><span className="label">Price read</span><b className="mint"><Num value={e6(fired.fire.price_e6)} /></b></div></div> : <p className="dim">{orders.data ? 'Nothing has fired yet.' : 'Loading'}</p>}
-          </article>
-          <article className="b-card b-band">
-            <span className="b-n mono">04</span>
-            <h3>Only crowds get counted</h3>
-            <p>The enclave can publish how many stops sit in each $0.05 band, but only for bands with at least k = {s?.bands?.k ?? 5} orders. A lone stop is never located.</p>
-            {s?.bands ? <><div className="bandgrid" role="img" aria-label={`${s.bands.suppressed} of ${s.bands.total} suppressed`}>{Array.from({ length: Math.max(s.bands.total, s.bands.k) }, (_, i) => <i key={i} className={i < s.bands!.total ? (i < s.bands!.total - s.bands!.suppressed ? 'pub' : 'sup') : ''} />)}</div><p className="dim">{s.bands.suppressed} of {s.bands.total} orders suppressed in the last report</p></> : <p className="dim">{s ? 'No band report yet.' : 'Loading'}</p>}
-          </article>
-        </div>
-      </section>
-
-      <section className="l-sec" id="hunter">
-        <header className="l-head l-head-row">
-          <div><p className="eyebrow mono">Live · {CONTRACT}</p><h2>Two views of the same contract.</h2></div>
-          <Link to="/app" className="l-more">Open the console <Icon name="arrow" size={16} /></Link>
-        </header>
-        <div className="views">
-          <div className="hunter">
-            <img className="hunter-cam" src="/art/mienai-st-camera.webp" alt="" aria-hidden="true" />
-            <header><Icon name="eye" size={18} /><div><h3>What a stop hunter sees</h3><p>The contract’s public state, read live. Anyone can call these views.</p></div></header>
-            <dl className="tally">
-              <div><dt>Orders</dt><dd>{s ? s.orders_total : '—'}</dd></div>
-              <div><dt>Armed</dt><dd>{s ? s.open : '—'}</dd></div>
-              <div><dt>Cancelled</dt><dd>{s ? s.cancelled : '—'}</dd></div>
-              <div><dt>Levels visible</dt><dd className="mint">{s ? 0 : '—'}</dd></div>
-            </dl>
-            {!orders.data ? <State kind={orders.error ? 'error' : 'loading'} title={orders.error ? 'Could not read the contract' : 'Reading the book…'}>{orders.error}</State>
-              : <ul className="book">{[...orders.data].reverse().slice(0, 6).map((o) => <li key={o.id}>
-                <span className="mono book-no">№{String(o.id).padStart(2, '0')}</span>
-                <span className="book-ct"><code>{o.ct.slice(0, 40)}</code><small className="mono">{shortAccount(o.owner)}</small></span>
-                <span>{o.fire ? <b className="mono mint">{o.fire.cond === 'lte' ? '≤' : '≥'} {e6(o.fire.trigger_e6)}</b> : <Redacted size="sm" />}</span>
-              </li>)}</ul>}
-          </div>
-          <EnclavePanel config={config.data} configError={config.error} stats={s} />
-        </div>
+        <header className="l-head"><p className="kicker">How it works</p><h2>Seal, check, fire and reveal.</h2></header>
+        <ol className="steps">
+          <li><span className="mono">01</span><h3>Seal</h3><p><code>place_order(ct, commit, view_ct)</code> stores the ciphertext, a SHA-256 commitment and a copy only your device can open.</p></li>
+          <li><span className="mono">02</span><h3>Check</h3><p>Anyone can pay about 0.02 NEAR for <code>check()</code>. The enclave reads Coinbase NEAR-USD inside TDX and opens every armed order.</p></li>
+          <li><span className="mono">03</span><h3>Fire and reveal</h3><p>A crossed order returns signed into <code>on_result</code>. The contract verifies everything, swaps on the vault pool and records the trigger.</p></li>
+        </ol>
       </section>
 
       <section className="l-sec" id="proof">
-        <header className="l-head"><p className="eyebrow mono">Live proof · recorded 9 Nov 2026</p><h2>A real stop, fired by a real price.</h2><p className="l-lede">Sealed while NEAR traded at 3.6021. The first enclave check read 3.6003 and fired nothing; the second read 3.5886 and fired it.</p></header>
+        <header className="l-head l-head-row"><div><p className="kicker">Live proof · recorded 9 Nov 2026</p><h2>A real stop, fired by a real price.</h2></div><p className="l-lede">Sealed while NEAR traded at 3.6021. The first enclave check read 3.6003 and fired nothing; the second read 3.5886 and fired it.</p></header>
         <div className="proof">
-          {att && fired?.fire ? <Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The pinned program ran inside Intel TDX, read NEAR/USD at ${e6(fired.fire.price_e6)} and fired order №${fired.id} at its sealed trigger ${e6(fired.fire.trigger_e6)}.`} /> : <State kind="empty" title="No recorded fire yet" />}
-          <ol className="rail">
-            {runSteps.map((st) => <li key={st.tx} className={st.attestation ? 'is-fire' : ''}>
-              <span className="rail-dot" aria-hidden="true" />
-              <div><p>{st.step.replace('; trigger hidden on chain', '').replace(' (OutLayer TEE run)', '')}</p><span className="mono dim">{st.at ? new Date(st.at).toISOString().slice(11, 19) + ' UTC' : ''}{st.last_check ? ` · read ${e6(st.last_check.price_e6)}` : ''}</span></div>
+          {att && fired?.fire ? <Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The pinned program ran inside Intel TDX, read NEAR/USD at ${e6(fired.fire.price_e6)} and fired order №${fired.id} at its sealed trigger ${e6(fired.fire.trigger_e6)}, selling ${near(fired.fire.filled_in, 2)} NEAR.`} /> : <State kind={orders.error ? 'error' : 'loading'} title={orders.error ? 'Could not read the contract' : 'Reading the fired order…'}>{orders.error}</State>}
+          <div className="pnl runlist">
+            <p className="runlist-h">Recorded transactions</p>
+            <ol>{runSteps.map((st) => <li key={st.tx} className={st.attestation ? 'is-fire' : ''}>
+              <span className="mono dim">{st.at ? new Date(st.at).toISOString().slice(11, 19) : ''}</span>
+              <p>{st.step.replace('; trigger hidden on chain', '').replace(' (OutLayer TEE run)', '')}{st.last_check ? <small className="mono"> · read {e6(st.last_check.price_e6)}</small> : null}</p>
               <Tx hash={st.tx!} />
-            </li>)}
-          </ol>
+            </li>)}</ol>
+          </div>
         </div>
       </section>
 
       <section className="l-sec" id="tech">
-        <header className="l-head"><p className="eyebrow mono">The NEAR tech, concretely</p><h2>Two independent origin checks, both on chain.</h2></header>
-        <dl className="spec">{TECH.map((t) => <div key={t.code}><dt><code>{t.code}</code></dt><dd><b>{t.title}</b><span>{t.body}</span></dd></div>)}</dl>
-        <p className="l-foot-note">Contracts <a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">{CONTRACT}</a> (vault) and <a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer">{TOKEN}</a> (tUSD). Enclave hash <span className="mono">{(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 16)}…</span>. Mainnet execution through NEAR Intents is <b>Setup required: NEAR_MAINNET_ACCOUNT</b>.</p>
+        <header className="l-head center"><p className="kicker">The NEAR tech, concretely</p><h2>Two independent origin checks, both on chain.</h2></header>
+        <div className="tech">{TECH.map((t) => <article key={t.code}><span className="tech-ic"><Icon name={t.icon} size={18} /></span><h3>{t.title}</h3><p>{t.body}</p><code>{t.code}</code></article>)}</div>
       </section>
 
-      <section className="closer">
-        <img src="/art/mienai-hero.webp" alt="" aria-hidden="true" />
-        <div><h2>Set a stop the market can’t see.</h2><Link to="/app" className="btn btn-primary btn-lg">Open the console <Icon name="arrow" size={17} /></Link></div>
+      <section className="cta">
+        <Art subject="tripwire" className="cta-art" fallback="mienai-hero.webp" />
+        <div><h2>Set a stop the market can’t see.</h2><p>Live on NEAR testnet. Connect a testnet wallet, deposit and seal.</p><Link to="/app" className="btn btn-primary btn-lg">Launch app <Icon name="arrow" size={17} /></Link></div>
       </section>
     </main>
+
     <footer className="l-foot">
-      <Wordmark small />
-      <p>Sealed stop and limit orders on NEAR testnet, fired by an attested OutLayer enclave. MIT · © 2026 Nivesh Gajengi · tUSD has no value.</p>
-      <div className="l-foot-links"><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Contract <Icon name="external" size={12} /></a><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={12} /></a></div>
+      <div className="l-foot-in">
+        <div className="l-foot-brand"><Wordmark small /><p>Sealed stop and take-profit orders on NEAR testnet, fired by an attested OutLayer enclave.</p></div>
+        <div><h4>Product</h4><Link to="/app">Trade NEAR/USD</Link><a href="#how">How it works</a><a href="#proof">Proof</a></div>
+        <div><h4>Contracts</h4><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Vault {short(CONTRACT, 8)}</a><a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer">tUSD {short(TOKEN, 8)}</a><span className="mono">WASM {(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 12)}…</span></div>
+        <div><h4>Status</h4><span>Mainnet via NEAR Intents: <b>Setup required: NEAR_MAINNET_ACCOUNT</b></span><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={11} /></a></div>
+      </div>
+      <p className="l-legal">MIT · © 2026 Nivesh Gajengi · NEAR testnet only; tUSD has no value.</p>
     </footer>
   </>;
 }

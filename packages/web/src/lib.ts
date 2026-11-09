@@ -1,6 +1,7 @@
 import deployment from '../../../deployments/testnet-2026-11-09.json';
 import run from '../../../deployments/real-run-2026-11-09.json';
 import enclaveUpload from '../../../deployments/enclave-fastfs.json';
+import book from '../../../deployments/book-2026-11-09.json';
 
 export const CONTRACT: string = import.meta.env.VITE_MIENAI_CONTRACT || deployment.contract_id;
 export const TOKEN: string = deployment.token_id;
@@ -137,3 +138,10 @@ export async function fetchQuote(tx: string): Promise<LiveQuote> {
   const hex = (o: number, n = 48) => Array.from(quote.subarray(o, o + n), (b) => b.toString(16).padStart(2, '0')).join('');
   return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id) };
 }
+
+/** Every recorded OutLayer TEE run (keys, checks, band report) with its transaction. */
+export type OutlayerRun = { tx: string; at: string; kind: 'Keys' | 'Check' | 'Bands'; label: string; attestation: Attestation | null; price_e6?: number };
+export const outlayerRuns: OutlayerRun[] = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((book as unknown as { steps: RecStep[] }).steps ?? [])]
+  .filter((s) => s.tx && s.at && ['refresh_keys', 'check', 'publish_bands'].includes(s.method ?? ''))
+  .map((s) => ({ tx: s.tx!, at: s.at!, kind: s.method === 'refresh_keys' ? 'Keys' : s.method === 'check' ? 'Check' : 'Bands', label: s.step.replace(' (OutLayer TEE run)', '').replace(' (OutLayer TEE run, k = 5)', ''), attestation: s.attestation ?? null, price_e6: s.last_check?.price_e6 }) as OutlayerRun)
+  .reverse();

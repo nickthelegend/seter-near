@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
 import { useConfig, useQuote, useStats } from './live';
-import { Copy, Icon, Link, Num, Redacted, State, Ticket, Tx, shortHex } from './ui';
-import { TopBar, decrypt } from './Console';
+import { Copy, Icon, Link, Num, State, Tx, shortHex } from './ui';
+import { AppHeader, Hidden, decrypt } from './Terminal';
 import type { Wallet } from './wallet';
 
 const CHECK_LABEL: Record<string, string> = {
@@ -76,15 +76,28 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
   const body = (() => {
     if (err) return <State kind="error" title="Could not read this order">{err}</State>;
     if (o === undefined) return <State kind="loading" title={`Reading order №${id} from NEAR testnet…`} />;
-    if (o === null) return <State kind="empty" title={`No order №${id} on the contract`} action={<Link to="/app" className="btn btn-ghost btn-sm">Back to the console</Link>} />;
+    if (o === null) return <State kind="empty" title={`No order №${id} on the contract`} action={<Link to="/app" className="btn btn-ghost btn-sm">Back to trading</Link>} />;
     const f = o.fire;
     const att = f ? attestationFor(f.request) : null;
     const placeTx = txForOrder(o.id);
     const fireTx = f ? txForRequest(f.request) : undefined;
     const c = stats.data?.last_check;
+    const p = decrypt(o, wallet.account);
     return <>
       <section className="order-hero">
-        <div className="order-ticket"><Ticket order={o} plain={decrypt(o, wallet.account)} crowd={stats.data?.open ?? null} k={stats.data?.bands?.k ?? null} /></div>
+        <div className="pnl osum">
+          <header><h1>Order №{o.id}</h1><span className={`st st-${o.status === 'Open' ? 'armed' : o.status.toLowerCase()}`}><i />{o.status === 'Open' ? 'Armed' : o.status}</span></header>
+          <dl className="osum-grid">
+            <div><dt>Market</dt><dd>NEAR / USD</dd></div>
+            <div><dt>Type</dt><dd>{p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</dd></div>
+            <div><dt>Side</dt><dd>{p ? 'Sell NEAR → tUSD' : <Hidden label="" />}</dd></div>
+            <div><dt>Size</dt><dd className="mono">{p ? `${near(p.amount, 4)} NEAR` : <Hidden label="" />}</dd></div>
+            <div><dt>Trigger</dt><dd className="mono">{f ? <span className="mint">{e6(f.trigger_e6)} · revealed</span> : p ? <>{e6(p.trigger_e6)} <small className="dim">only you</small></> : <Hidden />}</dd></div>
+            <div><dt>Placed (UTC)</dt><dd className="mono">{new Date(nsToMs(o.created_ns)).toISOString().slice(0, 19).replace('T', ' ')}</dd></div>
+            <div><dt>Owner</dt><dd className="mono"><a href={accountUrl(o.owner)} target="_blank" rel="noreferrer">{o.owner}</a></dd></div>
+            <div><dt>Commitment</dt><dd className="mono">{shortHex(o.commit, 10, 6)}</dd></div>
+          </dl>
+        </div>
         <div className="verdict">
           {f ? <>
             <p className="label">The crossing, published after the fire</p>
@@ -128,7 +141,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
           <dl className="facts">
             <div><dt>Owner</dt><dd><a href={accountUrl(o.owner)} target="_blank" rel="noreferrer" className="mono">{o.owner}</a></dd></div>
             <div><dt>Sealed</dt><dd className="mono">{new Date(nsToMs(o.created_ns)).toISOString().replace('T', ' ').slice(0, 19)} UTC</dd></div>
-            <div><dt>Trigger</dt><dd>{f ? <span className="mono mint">{e6(f.trigger_e6)} (revealed)</span> : <Redacted size="sm" />}</dd></div>
+            <div><dt>Trigger</dt><dd>{f ? <span className="mono mint">{e6(f.trigger_e6)} (revealed)</span> : <Hidden />}</dd></div>
             <div><dt>Placed in</dt><dd>{placeTx ? <Tx hash={placeTx} /> : <span className="dim">tx not recorded in this app</span>}</dd></div>
           </dl>
           <p className="label">Ciphertext · {o.ct.length} chars</p>
@@ -140,10 +153,10 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
       </section>
     </>;
   })();
-  return <div className="console">
-    <TopBar wallet={wallet} />
+  return <div className="term-page">
+    <AppHeader wallet={wallet} />
     <main className="order" id="main">
-      <Link to="/app" className="back"><Icon name="back" size={16} />Console</Link>
+      <Link to="/app" className="back"><Icon name="back" size={16} />Trade</Link>
       {body}
     </main>
   </div>;
