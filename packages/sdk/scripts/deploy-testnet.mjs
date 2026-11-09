@@ -1,4 +1,4 @@
-// Deploys tUSD and the Mienai vault on testnet, pins the uploaded enclave, asks the enclave for its
+// Deploys tUSD and the Seter vault on testnet, pins the uploaded enclave, asks the enclave for its
 // keys (a real OutLayer run) and seeds the test pool at the live Coinbase price.
 // Prereqs: .near-credentials/{deployer,token}.json (create-account.mjs), deployments/enclave-fastfs.json (upload-enclave.mjs),
 // both contracts built (pnpm build:contract).
@@ -28,8 +28,8 @@ const deploy = async (account, wasm, step) => must(record(account, await account
 
 await deploy(tokenAcct, tokenWasm, 'deploy tUSD (test NEP-141)');
 must(await call(tokenAcct, tokenAcct.accountId, 'new', { owner_id: tokenAcct.accountId }, { step: 'init tUSD' }));
-await deploy(deployer, mienaiWasm, 'deploy Mienai vault');
-must(await call(deployer, deployer.accountId, 'new', { owner_id: deployer.accountId, token_id: tokenAcct.accountId, outlayer_id: 'outlayer.testnet', enclave_url: enclave.url, enclave_hash: enclave.sha256 }, { step: 'init Mienai with the pinned enclave' }));
+await deploy(deployer, mienaiWasm, 'deploy Seter vault');
+must(await call(deployer, deployer.accountId, 'new', { owner_id: deployer.accountId, token_id: tokenAcct.accountId, outlayer_id: 'outlayer.testnet', enclave_url: enclave.url, enclave_hash: enclave.sha256 }, { step: 'init Seter with the pinned enclave' }));
 must(await call(deployer, deployer.accountId, 'refresh_keys', {}, { deposit: 20n * 10n ** 21n, gas: 300_000_000_000_000n, step: 'enclave keys (OutLayer TEE run)' }));
 const config = await view(deployer.accountId, 'get_config');
 if (!config.tee) throw new Error(`enclave keys not set: ${JSON.stringify(await view(deployer.accountId, 'get_request', { id: 1 }))}`);

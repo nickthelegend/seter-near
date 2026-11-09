@@ -4,7 +4,7 @@ The [event instructions](https://nearhackathon.com/HACKATHON.md) require the hum
 
 | Field | Value |
 | --- | --- |
-| Project name (2–80 characters) | TBD by Nick (suggested: Mienai) |
+| Project name (2–80 characters) | TBD by Nick (suggested: Seter) |
 | Team lead name (2–80 characters) | TBD by Nick |
 | Contact email (max 160 characters) | TBD by Nick |
 | Team size (`1`, `2 - 4`, `4 - 6`, `6 - 8`, `8+`) | TBD by Nick |
@@ -12,7 +12,7 @@ The [event instructions](https://nearhackathon.com/HACKATHON.md) require the hum
 | Mainnet NEAR account for prize payout | TBD by Nick |
 | Public repository URL | TBD by Nick |
 | Public X demo post URL | TBD by Nick |
-| What they built (20–2000 characters) | TBD by Nick. Draft: "Mienai hides stop-loss and take-profit levels from stop hunters. Orders are sealed in the browser to an OutLayer TEE program; the NEAR contract stores only ciphertexts and commitments. The enclave reads NEAR/USD from Coinbase inside Intel TDX and reports only crossed orders, signed with a key bound to its WASM hash. The contract accepts the report only through its private OutLayer callback, checks signature, freshness, commitment and crossing, swaps on a test NEP-141 pool, and publishes the trigger for audit. A real stop fired on testnet on a real price crossing, with a verified TDX attestation." |
+| What they built (20–2000 characters) | TBD by Nick. Draft: "Seter hides stop-loss and take-profit levels from stop hunters. Orders are sealed in the browser to an OutLayer TEE program; the NEAR contract stores only ciphertexts and commitments. The enclave reads NEAR/USD from Coinbase inside Intel TDX and reports only crossed orders, signed with a key bound to its WASM hash. The contract accepts the report only through its private OutLayer callback, checks signature, freshness, commitment and crossing, swaps on a test NEP-141 pool, and publishes the trigger for audit. A real stop fired on testnet on a real price crossing, with a verified TDX attestation." |
 | Consent | TBD by Nick |
 | Other project disclosure under Q-015 | TBD by Nick |
 

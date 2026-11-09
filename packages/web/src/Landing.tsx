@@ -17,7 +17,7 @@ const TECH = [
   { icon: 'lock', code: '#[private] fn on_result', title: 'Promise-origin check', body: 'The only door for a result is the promise of the contract’s own request. A direct call fails with “Method on_result is private”.' },
   { icon: 'seal', code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key OutLayer’s keystore releases only to this WASM hash, called by this contract.' },
   { icon: 'eye', code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE from the WASM hash and the calling contract. Any other build or caller opens nothing.' },
-  { icon: 'ban', code: 'callers.contract.only', title: 'Locked-down runs', body: 'The manifest admits runs only from the Mienai contract, with HTTPS egress only to api.exchange.coinbase.com.' },
+  { icon: 'ban', code: 'callers.contract.only', title: 'Locked-down runs', body: 'The manifest admits runs only from the Seter contract, with HTTPS egress only to api.exchange.coinbase.com.' },
   { icon: 'wallet', code: 'NEP-141 · x·y = k', title: 'Testnet settlement', body: 'NEAR Intents has no testnet, so a fire swaps on the vault’s NEAR / tUSD pool (0.3% fee). tUSD is a test token.' },
 ];
 
@@ -32,8 +32,8 @@ function TerminalPreview() {
   const chg = d.data && last ? ((last - d.data.open) / d.data.open) * 100 : null;
   const armed = (orders.data ?? []).filter((o) => o.status === 'Open');
   const fired = (orders.data ?? []).filter((o) => o.fire);
-  return <div className="frame" aria-label="Live preview of the Mienai terminal">
-    <div className="frame-bar"><i /><i /><i /><span className="mono">mienai · trade NEAR/USD</span></div>
+  return <div className="frame" aria-label="Live preview of the Seter terminal">
+    <div className="frame-bar"><i /><i /><i /><span className="mono">seter · trade NEAR/USD</span></div>
     <div className="prev">
       <div className="prev-mbar">
         <b>NEAR / USD</b>
@@ -74,7 +74,7 @@ export default function Landing() {
   return <>
     <header className="l-nav">
       <div className="l-nav-in">
-        <Link to="/" aria-label="Mienai home"><Wordmark /></Link>
+        <Link to="/" aria-label="Seter home"><Wordmark /></Link>
         <nav aria-label="Primary" className="l-links">
           <a href="#product">Product</a><a href="#hunter">Privacy</a><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#tech">NEAR tech</a>
         </nav>
@@ -88,7 +88,7 @@ export default function Landing() {
         <div className="hero-copy">
           <p className="pill-live"><i className="live" />Live on NEAR testnet · OutLayer TEE (Intel TDX)</p>
           <h1>Stop-losses the market can’t see.</h1>
-          <p className="hero-lede">Mienai seals your stop or take-profit to an enclave. The chain stores only ciphertext, so nobody can hunt your level. It is revealed only after it fires, with an Intel TDX attestation.</p>
+          <p className="hero-lede">Seter seals your stop or take-profit to an enclave. The chain stores only ciphertext, so nobody can hunt your level. It is revealed only after it fires, with an Intel TDX attestation.</p>
           <div className="hero-cta"><Link to="/app" className="btn btn-primary btn-lg">Start trading <Icon name="arrow" size={17} /></Link><a href="#proof" className="btn btn-ghost btn-lg">See a real fire</a></div>
         </div>
       </section>

@@ -23,7 +23,7 @@ const utc = (ms: number) => new Date(ms).toISOString().slice(0, 16).replace('T',
 /* ---------------- header ---------------- */
 export function AppHeader({ wallet, onVault }: { wallet: Wallet; onVault?: () => void }) {
   return <header className="ahead">
-    <Link to="/" aria-label="Mienai home"><Wordmark small /></Link>
+    <Link to="/" aria-label="Seter home"><Wordmark small /></Link>
     <nav className="ahead-nav" aria-label="App">
       <Link to="/app" aria-current={location.pathname.startsWith('/app') ? 'page' : undefined}>Trade</Link>
       <Link to="/#how">How it works</Link>
@@ -152,7 +152,7 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
     {!sealed ? <div className="form-body">
       <div className="notice">
         <h3>{kind === 'market' ? 'Market orders' : 'Limit orders'} are not offered here</h3>
-        <p>A {kind} order shows its price to everyone before it fills, which is exactly what stop hunters read. Mienai only takes sealed orders: a stop or take-profit whose trigger stays encrypted until the enclave fires it, then settles on the vault’s NEAR / tUSD test pool.</p>
+        <p>A {kind} order shows its price to everyone before it fills, which is exactly what stop hunters read. Seter only takes sealed orders: a stop or take-profit whose trigger stays encrypted until the enclave fires it, then settles on the vault’s NEAR / tUSD test pool.</p>
         <button className="btn btn-primary btn-block" onClick={() => pick(kind === 'limit' ? 'tp' : 'stop')}><Icon name="lock" size={15} />Use a sealed {kind === 'limit' ? 'take-profit' : 'stop'}</button>
       </div>
     </div> : <div className="form-body">

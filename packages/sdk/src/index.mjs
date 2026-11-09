@@ -1,4 +1,4 @@
-// Shared constants and read-only chain helpers for Mienai. No keys are handled here.
+// Shared constants and read-only chain helpers for Seter. No keys are handled here.
 export const TESTNET_RPC = globalThis.process?.env?.NEAR_TESTNET_RPC || 'https://test.rpc.fastnear.com';
 export const OUTLAYER_TESTNET = 'outlayer.testnet';
 export const OUTLAYER_TESTNET_API = 'https://testnet-api.outlayer.ai';

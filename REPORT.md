@@ -1,4 +1,4 @@
-# Mienai report (2026-11-09)
+# Seter report (2026-11-09)
 
 **Status:** live on NEAR testnet. A real sealed stop fired when the live NEAR/USD price crossed it, and its Intel TDX attestation passed all six checks.
 

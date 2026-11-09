@@ -1,4 +1,4 @@
-// Client-side sealing of Mienai orders to the enclave's X25519 key. Mirrors packages/enclave/src/core.rs.
+// Client-side sealing of Seter orders to the enclave's X25519 key. Mirrors packages/enclave/src/core.rs.
 //   blob = 0x01 ‖ eph_pub(32) ‖ nonce(24) ‖ XChaCha20-Poly1305(plaintext) ; key = HKDF-SHA256(shared, salt = eph ‖ tee, "mienai-order-v1")
 //   aad  = "mienai:order:v1:" + owner        commit = sha256("mienai:commit:v1:" ‖ owner ‖ 0x00 ‖ plaintext)
 // The view copy is sealed to a 32-byte key that stays on the user's device (XChaCha20-Poly1305, aad "mienai:view:v1:" + owner).

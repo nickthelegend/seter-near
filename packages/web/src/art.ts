@@ -1,5 +1,5 @@
 // Generated 3D art lands in public/art as mienai-gen-<subject>.webp; until a file exists the page uses the
-// nearest existing Mienai art, never a broken image.
+// nearest existing Seter art, never a broken image.
 const files = __ART__;
 const FALLBACK: Record<string, string> = {
   enclave: 'mienai-feature-enclave.webp', envelope: 'mienai-hero.webp', slip: 'mienai-og.webp', 'slip-fired': 'mienai-og.webp',

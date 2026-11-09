@@ -1,10 +1,13 @@
-# Mienai (見えない, "invisible")
+# Seter (סֵתֶר, Hebrew for "hidden / secret place")
+
+Formerly Mienai; on-chain account IDs keep the old prefix.
+The `mienai:` domain-separation strings in the sealing format and the `@mienai/*` package scopes are also unchanged, because the deployed enclave and contract check those strings and the builds reference those scopes.
 
 **Your stop-loss is invisible until it fires.**
 
 Large traders push prices to where stop-losses and liquidation levels sit, trigger them, and buy the forced selling cheaply: stop hunting. That works because stop levels are visible, on a centralized exchange's books or in a DeFi contract's state.
 
-With Mienai, a stop-loss or take-profit is encrypted in the browser to a program running in an OutLayer TEE (Intel TDX). The NEAR contract stores only the ciphertext and a commitment hash. On each check the enclave reads NEAR/USD from Coinbase, opens every order, and reports only the ones whose trigger the price crossed. The contract accepts that report only through a verified OutLayer callback carrying the enclave's signature, swaps the order, and then publishes the trigger so anyone can audit that the price really crossed it.
+With Seter, a stop-loss or take-profit is encrypted in the browser to a program running in an OutLayer TEE (Intel TDX). The NEAR contract stores only the ciphertext and a commitment hash. On each check the enclave reads NEAR/USD from Coinbase, opens every order, and reports only the ones whose trigger the price crossed. The contract accepts that report only through a verified OutLayer callback carrying the enclave's signature, swaps the order, and then publishes the trigger so anyone can audit that the price really crossed it.
 
 Everything below runs on NEAR testnet and was run for real on 9 Nov 2026.
 
@@ -12,7 +15,7 @@ Everything below runs on NEAR testnet and was run for real on 9 Nov 2026.
 
 | What | Account / value | Explorer |
 | --- | --- | --- |
-| Mienai vault contract | `mienai-3013a230.testnet` | [nearblocks](https://testnet.nearblocks.io/address/mienai-3013a230.testnet) |
+| Seter vault contract | `mienai-3013a230.testnet` | [nearblocks](https://testnet.nearblocks.io/address/mienai-3013a230.testnet) |
 | tUSD test NEP-141 (6 decimals, no value) | `mienai-ad65ebef.testnet` | [nearblocks](https://testnet.nearblocks.io/address/mienai-ad65ebef.testnet) |
 | Enclave WASM (FastFS) | sha256 `791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386` | [upload tx](https://testnet.nearblocks.io/txns/98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu) |
 | OutLayer | `outlayer.testnet` | — |
@@ -40,7 +43,7 @@ The TDX attestation of check #2 was verified independently (`packages/sdk/src/at
 
 ### Why only the enclave can read the orders
 
-- The X25519 secret is `mac("orders", "mienai/x25519-order-key/v1")` from an OutLayer **encryption key** declared `bind: "wasm"`, `caller: "predecessor"`. OutLayer's keystore derives it inside the TEE from the WASM hash and the account that called OutLayer, the Mienai contract. Another build, or a run started by anyone else, derives a different key and opens nothing.
+- The X25519 secret is `mac("orders", "mienai/x25519-order-key/v1")` from an OutLayer **encryption key** declared `bind: "wasm"`, `caller: "predecessor"`. OutLayer's keystore derives it inside the TEE from the WASM hash and the account that called OutLayer, the Seter contract. Another build, or a run started by anyone else, derives a different key and opens nothing.
 - The report key is an OutLayer **signing key** with the same binding. The contract learns both public keys from an attested `keys` run that can only reach it through the private callback.
 - The manifest embedded in the WASM (covered by its hash) admits runs only from `mienai-3013a230.testnet` (`callers.contract.only`) and allows HTTPS only to `api.exchange.coinbase.com`.
 - The WASM build is reproducible: `bash scripts/build-enclave.sh` prints the hash pinned on the contract (rust 1.95.0, `Cargo.lock`, paths remapped).
@@ -93,7 +96,7 @@ Do X → see Y:
 
 - One price source (Coinbase NEAR-USD last trade). A second source and a median would be stronger.
 - A keeper must pay for checks (about 0.001 NEAR of OutLayer compute plus gas per check); nothing runs on a timer by itself.
-- The fill happens on Mienai's own test pool, so the execution itself is public once it fires. Private execution would need Confidential Intents on mainnet.
+- The fill happens on Seter's own test pool, so the execution itself is public once it fires. Private execution would need Confidential Intents on mainnet.
 - The browser keeps the view key in `localStorage`; losing it loses the owner's local copy of the levels, not the order.
 - Up to 16 open orders per contract (one enclave run reads all of them).
 

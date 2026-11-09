@@ -47,7 +47,7 @@ export function Mark({ size = 30 }: { size?: number }) {
   </svg>;
 }
 export function Wordmark({ small = false }: { small?: boolean }) {
-  return <span className={`wordmark${small ? ' wordmark--sm' : ''}`}><Mark size={small ? 24 : 30} /><b>Mienai</b><i lang="ja">見えない</i></span>;
+  return <span className={`wordmark${small ? ' wordmark--sm' : ''}`}><Mark size={small ? 24 : 30} /><b>Seter</b></span>;
 }
 
 /* ---------- numbers and values ---------- */
