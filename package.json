@@ -1,0 +1,15 @@
+{
+  "name": "mienai",
+  "private": true,
+  "packageManager": "pnpm@10.29.2",
+  "scripts": {
+    "build:enclave": "bash scripts/build-enclave.sh",
+    "build:contract": "cd packages/contract && cargo near build non-reproducible-wasm && cd ../token && cargo near build non-reproducible-wasm",
+    "test:enclave": "cd packages/enclave && cargo test",
+    "test:contract": "cd packages/contract && cargo test",
+    "test:sdk": "pnpm --filter @mienai/sdk test",
+    "test": "pnpm build:enclave && pnpm test:enclave && pnpm build:contract && pnpm test:contract && pnpm test:sdk",
+    "build": "pnpm --filter @mienai/web build",
+    "dev": "pnpm --filter @mienai/web dev"
+  }
+}
