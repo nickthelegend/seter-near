@@ -10,8 +10,8 @@ All counts below are from runs on 2026-11-09. No test mocks an external API: pri
 | SDK | `pnpm test:sdk` | 5 | 5 pass |
 | Reproducible enclave build | `bash scripts/build-enclave.sh` from a fresh copy at another path | 1 | hash `791b4f6c…` matches the contract |
 | Web build | `pnpm build` (tsc + vite build) | 1 | passes |
-| Web render (headless Chrome, `/`, `/app`, `/order/1`, `/order/3` and the seal sheet, 1440 / 390 / 375) | see below | 15 | root rendered, no page errors, no horizontal overflow |
-| **Total** | | **36** | **36 pass** |
+| Web render (headless Chrome, `/`, `/app`, `/order/1`, `/order/3` at 1440 / 390 / 375, plus the terminal's bottom tabs and Limit tab at 1440 / 390) | see below | 14 | root rendered, no page errors, no horizontal overflow |
+| **Total** | | **35** | **35 pass** |
 
 ## What the tests cover (brief item → test)
 
@@ -38,14 +38,14 @@ The sandbox replaces exactly one thing: the enclave's public key is written into
 - `deployments/outlayer-direct-*.json`: the two probe runs.
 
 ## Web QA
-Headless Chrome (playwright-core, channel chrome) against `vite preview --port 5203` after `tsc -b && vite build`, 10 Nov 2026 (UI rebuild):
+Headless Chrome (playwright-core, channel chrome) against `vite preview --port 5203` after `tsc -b && vite build`, 10 Nov 2026 (trading-terminal rebuild):
 
 | Route | 1440x900 | 390x844 | 375x812 |
 | --- | --- | --- | --- |
 | `/` | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
-| `/app` | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
+| `/app` (terminal) | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
 | `/order/1` (fired, certificate with live TDX quote hash) | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
 | `/order/3` (armed) | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
-| `/app` with the seal sheet open | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
+| `/app` bottom tabs (Order history, Enclave log, Attestations) and the Limit tab | 0 page errors, no overflow | 0 page errors, no overflow | — |
 
-The browser console can show a failed fetch when a public testnet RPC answers HTTP 429 (those replies carry no CORS header); the app then falls over to the next RPC (FastNEAR, then dRPC, then `rpc.testnet.near.org`) and renders live data. The order certificate fetches the TDX quote from `testnet-api.outlayer.ai` (CORS open) and hashes it with WebCrypto. The wallet flow (MyNearWallet) was not clicked through by the agent; see BLOCKED.md.
+Live sources in the browser: NEAR testnet RPC (FastNEAR, then dRPC, then `rpc.testnet.near.org` when one answers HTTP 429 without CORS headers, which shows as a console fetch error before the fallback succeeds), Coinbase Exchange `NEAR-USD` ticker, stats and candles (CORS open), and `testnet-api.outlayer.ai` attestations (CORS open; the TDX quote is hashed with WebCrypto). The wallet flow (MyNearWallet) was not clicked through by the agent; see BLOCKED.md.
