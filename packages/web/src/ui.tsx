@@ -40,11 +40,7 @@ export function Icon({ name, size = 18 }: { name: string; size?: number }) {
 
 /* ---------- brand ---------- */
 export function Mark({ size = 30 }: { size?: number }) {
-  return <svg className="mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-    <rect width="32" height="32" rx="9" fill="#16131e" />
-    <path d="M16 6l8 3.4v5.8c0 5.3-3.4 9.3-8 11.6-4.6-2.3-8-6.3-8-11.6V9.4z" fill="none" stroke="#b9adff" strokeWidth="1.8" />
-    <path d="M4 16.5h24" stroke="#d6ad55" strokeWidth="1.8" strokeLinecap="round" />
-  </svg>;
+  return <img className="mark" src="/art/seter-mark.webp" width={size} height={size} alt="" aria-hidden="true" />;
 }
 export function Wordmark({ small = false }: { small?: boolean }) {
   return <span className={`wordmark${small ? ' wordmark--sm' : ''}`}><Mark size={small ? 24 : 30} /><b>Seter</b></span>;
