@@ -1,0 +1,10 @@
+{
+  "url": "https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm",
+  "sha256": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386",
+  "bytes": 496390,
+  "tx": {
+    "hash": "98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu",
+    "explorer": "https://testnet.nearblocks.io/txns/98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu"
+  },
+  "uploaded_at": "2026-11-09T17:14:16.082Z"
+}

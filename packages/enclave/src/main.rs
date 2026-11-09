@@ -151,6 +151,12 @@ mod tests {
     }
 
     #[test]
+    fn commitment_vector_matches_contract_and_sdk() {
+        let pt = r#"{"v":1,"cond":"lte","trigger_e6":3500000,"side":"sell","amount":"1","salt":"00112233445566778899aabbccddeeff"}"#;
+        assert_eq!(core::commitment("alice.testnet", pt.as_bytes()), "0ddc05f14be95cea75b956d8e81da516232638132e0614b049c4a1b771d538f3");
+    }
+
+    #[test]
     fn real_coinbase_ticker_parses() {
         let p = core::parse_ticker(T1).unwrap();
         assert_eq!(p.price_e6, 3_589_200);
