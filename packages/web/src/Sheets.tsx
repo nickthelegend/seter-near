@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CONTRACT, TOKEN, near, toYocto, usd6, type Balance } from './lib';
 import { Icon, Num, Sheet, State } from './ui';
 import type { Wallet } from './wallet';
+import { WithLogo } from './logos';
 
 export const viewKeyFor = (account: string) => { try { return localStorage.getItem(`mienai:view:${account}`) || ''; } catch { return ''; } };
 
@@ -31,8 +32,8 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
     <h2 className="sheet-title">Your vault</h2>
     {!wallet.account ? <State kind="setup" title="No wallet connected" action={<button className="btn btn-primary" onClick={wallet.connect} disabled={!wallet.ready}>Connect with MyNearWallet</button>}>Orders sell from a balance held by the contract. A testnet account is free at testnet.mynearwallet.com.</State> : <>
       <dl className="receipt">
-        <div><dt>NEAR in vault</dt><dd>{balance ? <Num value={near(balance.near)} /> : '…'}</dd></div>
-        <div><dt>tUSD in vault <small>test token, no value</small></dt><dd>{balance ? <Num value={usd6(balance.usd)} /> : '…'}</dd></div>
+        <div><dt><WithLogo sym="NEAR" size={20}>NEAR in vault</WithLogo></dt><dd>{balance ? <Num value={near(balance.near)} /> : '…'}</dd></div>
+        <div><dt><WithLogo sym="tUSD" size={20}>tUSD in vault</WithLogo> <small>test token, no value</small></dt><dd>{balance ? <Num value={usd6(balance.usd)} /> : '…'}</dd></div>
       </dl>
       <div className="seg" role="tablist" aria-label="Vault action">
         {(['deposit', 'withdraw'] as const).map((m) => <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>{m === 'deposit' ? 'Deposit' : 'Withdraw'}</button>)}

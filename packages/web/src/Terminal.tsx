@@ -8,6 +8,7 @@ import { Icon, Link, Num, State, Tx, Wordmark, shortHex } from './ui';
 import { VaultSheet, viewKeyFor } from './Sheets';
 import type { Wallet } from './wallet';
 import { art } from './art';
+import { PairLogo, WithLogo } from './logos';
 
 export type Plain = { cond: string; trigger_e6: number; amount: string; side?: string };
 export function decrypt(o: Order, account: string): Plain | null {
@@ -49,7 +50,7 @@ function MarketBar({ stats }: { stats: Stats | null }) {
   const up = (chg ?? 0) >= 0;
   const cell = (label: string, value: React.ReactNode, cls = '') => <div className={`mb-cell ${cls}`}><span>{label}</span><b>{value}</b></div>;
   return <section className="mbar dark" aria-label="Market">
-    <div className="mb-pair"><span className="coin" aria-hidden="true">N</span><div><b>NEAR / USD</b><small>Sealed spot · vault</small></div></div>
+    <div className="mb-pair"><PairLogo base="NEAR" quote="USD" size={28} /><div><b>NEAR / USD</b><small>Sealed spot · vault</small></div></div>
     <div className={`mb-last ${chg === null ? '' : up ? 'up' : 'down'}`}>{last ? <Num value={last.toFixed(4)} /> : <span className="dim">{t.error ? 'unavailable' : '…'}</span>}<small>Coinbase last</small></div>
     <div className="mb-cells">
       {cell('24h change', chg === null ? '…' : <span className={up ? 'up' : 'down'}>{up ? '+' : ''}{chg.toFixed(4)} / {up ? '+' : ''}{pct!.toFixed(2)}%</span>)}
@@ -156,19 +157,19 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
         <button className="btn btn-primary btn-block" onClick={() => pick(kind === 'limit' ? 'tp' : 'stop')}><Icon name="lock" size={15} />Use a sealed {kind === 'limit' ? 'take-profit' : 'stop'}</button>
       </div>
     </div> : <div className="form-body">
-      <div className="side-row"><span className="side-chip">Sell NEAR → tUSD</span><span className="dim small">{kind === 'stop' ? 'fires if price ≤ trigger' : 'fires if price ≥ trigger'}</span></div>
-      <div className="frow"><span>Available</span><b className="mono">{wallet.account ? (availNear !== null ? `${availNear.toFixed(4)} NEAR` : '…') : 'Connect to see'}</b></div>
+      <div className="side-row"><span className="side-chip"><span>Sell <WithLogo sym="NEAR">NEAR</WithLogo> → <WithLogo sym="tUSD">tUSD</WithLogo></span></span><span className="dim small">{kind === 'stop' ? 'fires if price ≤ trigger' : 'fires if price ≥ trigger'}</span></div>
+      <div className="frow"><span>Available</span><b className="mono">{wallet.account ? (availNear !== null ? <WithLogo sym="NEAR">{availNear.toFixed(4)} NEAR</WithLogo> : '…') : 'Connect to see'}</b></div>
       {!config ? <State kind={configError ? 'error' : 'loading'} title={configError ? 'Could not read the enclave key' : 'Reading the enclave key…'}>{configError}</State>
         : !config.tee ? <State kind="setup" title="Setup required: enclave keys">The enclave has not published its keys yet (owner runs refresh_keys).</State>
         : <>
           <label className="fld">
             <span>Trigger price</span>
-            <div className="fld-in"><button type="button" className="step" onClick={() => nudge(-0.005)} aria-label="Lower the trigger by 0.5%">−</button><input inputMode="decimal" value={trigger} onChange={(e) => setTrigger(e.target.value.trim())} aria-label="Trigger price in USD per NEAR" /><em>USD</em><button type="button" className="step" onClick={() => nudge(0.005)} aria-label="Raise the trigger by 0.5%">+</button></div>
+            <div className="fld-in"><button type="button" className="step" onClick={() => nudge(-0.005)} aria-label="Lower the trigger by 0.5%">−</button><input inputMode="decimal" value={trigger} onChange={(e) => setTrigger(e.target.value.trim())} aria-label="Trigger price in USD per NEAR" /><em><WithLogo sym="USD">USD</WithLogo></em><button type="button" className="step" onClick={() => nudge(0.005)} aria-label="Raise the trigger by 0.5%">+</button></div>
             <small className={wrong ? 'warn' : ''}>{dist === null ? 'Live price loading' : <>{Math.abs(dist).toFixed(2)}% {dist < 0 ? 'below' : 'above'} last {price!.toFixed(4)}{wrong ? ' · would fire on the next check' : ''}</>}</small>
           </label>
           <label className="fld">
             <span>Amount</span>
-            <div className="fld-in"><input inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value.trim())} aria-label="Amount of NEAR to sell" /><em>NEAR</em></div>
+            <div className="fld-in"><input inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value.trim())} aria-label="Amount of NEAR to sell" /><em><WithLogo sym="NEAR">NEAR</WithLogo></em></div>
           </label>
           <div className="pcts">{[25, 50, 75, 100].map((p) => <button key={p} type="button" disabled={!availNear} onClick={() => availNear && setSize((availNear * p / 100).toFixed(4))}>{p === 100 ? 'Max' : `${p}%`}</button>)}</div>
           <div className="chain-sees">
@@ -177,9 +178,9 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
             <div className="cs-you"><span>You see</span><b className="mono">{cond === 'lte' ? '≤' : '≥'} {valid ? Number(trigger).toFixed(4) : '—'} · {valid ? Number(size) : '—'} NEAR</b></div>
           </div>
           <dl className="summ">
-            <div><dt>Est. proceeds at trigger</dt><dd className="mono">{valid ? `${(Number(size) * Number(trigger)).toFixed(4)} tUSD` : '—'}</dd></div>
+            <div><dt>Est. proceeds at trigger</dt><dd className="mono">{valid ? <WithLogo sym="tUSD">{(Number(size) * Number(trigger)).toFixed(4)} tUSD</WithLogo> : '—'}</dd></div>
             <div><dt>Pool fee</dt><dd className="mono">{config.fee_bps / 100}%</dd></div>
-            <div><dt>Storage deposit</dt><dd className="mono">0.02 NEAR</dd></div>
+            <div><dt>Storage deposit</dt><dd className="mono"><WithLogo sym="NEAR">0.02 NEAR</WithLogo></dd></div>
             <div><dt>Max price age</dt><dd className="mono">{config.max_price_age_s} s</dd></div>
           </dl>
           {err && <p className="sheet-err" role="alert">{err}</p>}
@@ -191,8 +192,8 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
     </div>}
     <div className="vault-box">
       <div className="vb-head"><span>Vault</span>{wallet.account ? <button className="link" onClick={onVault}>Deposit · Withdraw</button> : <button className="link" onClick={wallet.connect} disabled={!wallet.ready}>Connect</button>}</div>
-      <div className="frow"><span>NEAR</span><b className="mono">{wallet.account ? (balance ? near(balance.near) : '…') : '—'}</b></div>
-      <div className="frow"><span>tUSD <small className="dim">test token</small></span><b className="mono">{wallet.account ? (balance ? usd6(balance.usd) : '…') : '—'}</b></div>
+      <div className="frow"><span><WithLogo sym="NEAR">NEAR</WithLogo></span><b className="mono">{wallet.account ? (balance ? near(balance.near) : '…') : '—'}</b></div>
+      <div className="frow"><span><WithLogo sym="tUSD">tUSD</WithLogo> <small className="dim">test token</small></span><b className="mono">{wallet.account ? (balance ? usd6(balance.usd) : '…') : '—'}</b></div>
     </div>
     <EnclaveBox config={config} stats={stats} wallet={wallet} />
   </aside>;
@@ -245,10 +246,10 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
         <thead><tr><th>Order</th><th>Market</th><th>Type</th><th>Side</th><th>Size</th><th>Trigger</th><th>Status</th><th>Placed (UTC)</th><th /></tr></thead>
         <tbody>{open.map((o) => { const p = decrypt(o, wallet.account); return <tr key={o.id}>
           <td><span className="ocell"><img src={art('slip').src} alt="" aria-hidden="true" /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
-          <td>NEAR/USD</td>
+          <td><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR/USD</span></td>
           <td>{typeLabel(p)}</td>
           <td>{p ? <span className="down">Sell</span> : <Hidden label="" />}</td>
-          <td className="mono">{p ? `${near(p.amount, 2)} NEAR` : <Hidden label="" />}</td>
+          <td className="mono">{p ? <WithLogo sym="NEAR">{near(p.amount, 2)} NEAR</WithLogo> : <Hidden label="" />}</td>
           <td>{p ? <span className="mono">{e6(p.trigger_e6)} <small className="dim">only you</small></span> : <Hidden />}</td>
           <td><span className="st st-armed"><i />Armed</span></td>
           <td className="mono">{utc(nsToMs(o.created_ns))}</td>
@@ -262,7 +263,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
           <td>{f ? (f.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</td>
           <td>{f ? <span className="mono gold">{e6(f.trigger_e6)} <small className="dim">revealed</small></span> : <Hidden label="never revealed" />}</td>
           <td className="mono">{f ? e6(f.price_e6) : '—'}</td>
-          <td className="mono">{f ? `${near(f.filled_in, 2)} NEAR → ${usd6(f.filled_out)} tUSD` : '—'}</td>
+          <td className="mono">{f ? <><WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> → <WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></> : '—'}</td>
           <td><span className={`st st-${o.status.toLowerCase()}`}><i />{o.status}</span></td>
           <td className="mono">{f ? utc(nsToMs(f.block_ts)) : utc(nsToMs(o.created_ns))}</td>
           <td>{f && txForRequest(f.request) ? <Tx hash={txForRequest(f.request)!} /> : <span className="dim">—</span>}</td>

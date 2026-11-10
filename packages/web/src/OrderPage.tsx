@@ -5,6 +5,7 @@ import { Copy, Icon, Link, Num, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
 import type { Wallet } from './wallet';
 import { art } from './art';
+import { PairLogo, WithLogo } from './logos';
 
 const CHECK_LABEL: Record<string, string> = {
   wasm_hash_pinned: 'Executed WASM equals the hash pinned on the contract',
@@ -84,10 +85,10 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
         <div className="pnl osum">
           <header><img className="osum-art" src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" /><h1>Order №{o.id}</h1><span className={`st st-${o.status === 'Open' ? 'armed' : o.status.toLowerCase()}`}><i />{o.status === 'Open' ? 'Armed' : o.status}</span></header>
           <dl className="osum-grid">
-            <div><dt>Market</dt><dd>NEAR / USD</dd></div>
+            <div><dt>Market</dt><dd><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR / USD</span></dd></div>
             <div><dt>Type</dt><dd>{p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</dd></div>
-            <div><dt>Side</dt><dd>{p ? 'Sell NEAR → tUSD' : <Hidden label="" />}</dd></div>
-            <div><dt>Size</dt><dd className="mono">{p ? `${near(p.amount, 4)} NEAR` : <Hidden label="" />}</dd></div>
+            <div><dt>Side</dt><dd>{p ? <>Sell <WithLogo sym="NEAR">NEAR</WithLogo> → <WithLogo sym="tUSD">tUSD</WithLogo></> : <Hidden label="" />}</dd></div>
+            <div><dt>Size</dt><dd className="mono">{p ? <WithLogo sym="NEAR">{near(p.amount, 4)} NEAR</WithLogo> : <Hidden label="" />}</dd></div>
             <div><dt>Trigger</dt><dd className="mono">{f ? <span className="gold">{e6(f.trigger_e6)} · revealed</span> : p ? <>{e6(p.trigger_e6)} <small className="dim">only you</small></> : <Hidden />}</dd></div>
             <div><dt>Placed (UTC)</dt><dd className="mono">{new Date(nsToMs(o.created_ns)).toISOString().slice(0, 19).replace('T', ' ')}</dd></div>
             <div><dt>Owner</dt><dd className="mono"><a href={accountUrl(o.owner)} target="_blank" rel="noreferrer">{o.owner}</a></dd></div>
@@ -102,7 +103,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
               <i aria-hidden="true">{f.cond === 'lte' ? '≥' : '≤'}</i>
               <div><span>Price read in the TEE</span><b className="gold"><Num value={e6(f.price_e6)} /></b></div>
             </div>
-            <p className="verdict-note">Sold {near(f.filled_in, 2)} NEAR for <b>{usd6(f.filled_out)} tUSD</b> on the vault pool · Coinbase trade #{f.trade_id} · block {f.block_height}</p>
+            <p className="verdict-note">Sold <WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> for <b><WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></b> on the vault pool · Coinbase trade #{f.trade_id} · block {f.block_height}</p>
           </> : o.status === 'Open' ? <>
             <p className="label">Waiting inside the enclave</p>
             <p className="verdict-big">Armed and invisible.</p>

@@ -100,6 +100,21 @@ img.mark { display: block; flex: none; border-radius: 22%; object-fit: contain; 
 .bad-chip { background: var(--down-soft); color: var(--down); }
 .coin { width: 32px; height: 32px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; background: var(--ink); color: #fff; font-weight: 800; font-size: 14px; }
 .dark .coin { background: #fff; color: var(--night); }
+/* token logos: NEAR from @web3icons/core (MIT), a dollar disc for USD, tUSD = dollar disc + "test" */
+.tok { position: relative; flex: none; display: inline-grid; place-items: center; border-radius: 50%; vertical-align: middle; }
+.tok-near { background: #000; }
+.dark .tok-near, .verdict .tok-near, .prev-mbar .tok-near { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18); }
+.tok-near img { width: 60%; height: 60%; display: block; }
+.tok svg { width: 100%; height: 100%; display: block; }
+.tok-test i { display: none; }
+.tok-lg.tok-test i { display: block; position: absolute; right: -9px; bottom: -5px; padding: 0 3px; height: 12px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line-2); color: var(--muted); font: 700 7.5px/10px var(--mono); font-style: normal; letter-spacing: .04em; text-transform: uppercase; }
+.tpair { --ring: var(--surface); display: inline-flex; align-items: center; flex: none; vertical-align: middle; }
+.tpair .tok:first-child { z-index: 1; box-shadow: 0 0 0 1.5px var(--ring); }
+.tpair .tok + .tok { margin-left: calc(var(--s) * -.22); }
+.mbar .tpair, .prev-mbar .tpair, .verdict .tpair { --ring: var(--night); }
+.mbar .tpair .tok-near:first-child, .prev-mbar .tpair .tok-near:first-child, .verdict .tpair .tok-near:first-child { box-shadow: 0 0 0 1.5px var(--ring), inset 0 0 0 1px rgba(255, 255, 255, .22); }
+.tamt { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; white-space: nowrap; }
+.fld-in input { width: 0; } /* flex: 1 still fills the row; keeps the logo suffix from widening the panel at 375 px */
 .net { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
 
 /* states */

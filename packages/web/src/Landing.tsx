@@ -6,6 +6,7 @@ import { Icon, Link, Num, State, Tx, Wordmark, shortHex } from './ui';
 import { Hidden } from './Terminal';
 import { Certificate } from './OrderPage';
 import { art } from './art';
+import { PairLogo, TokenLogo } from './logos';
 
 const Art = ({ subject, className }: { subject: string; className?: string }) => <div className={`art ${className ?? ''}`} aria-hidden="true"><img src={art(subject).src} alt="" decoding="async" /></div>;
 
@@ -33,7 +34,7 @@ function TerminalPreview() {
     <div className="device-bar"><i /><i /><i /><span className="mono">seter · trade NEAR/USD</span></div>
     <div className="prev">
       <div className="prev-mbar">
-        <span className="coin" aria-hidden="true">N</span><b>NEAR / USD</b>
+        <PairLogo base="NEAR" quote="USD" size={24} /><b>NEAR / USD</b>
         <span className="mono prev-last">{last ? last.toFixed(4) : '…'}</span>
         <span className={`mono ${chg === null ? '' : chg >= 0 ? 'up' : 'down'}`}>{chg === null ? '' : `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`}</span>
         <span className="mono prev-src">Coinbase · live</span>
@@ -108,7 +109,7 @@ export default function Landing() {
       <TrustStrip />
 
       <dl className="numbers" aria-label="Live proof numbers">
-        <div><dt>NEAR / USD · Coinbase</dt><dd className="mono">{price ? <Num value={price.toFixed(4)} /> : '…'}</dd></div>
+        <div><dt><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR / USD · Coinbase</span></dt><dd className="mono">{price ? <Num value={price.toFixed(4)} /> : '…'}</dd></div>
         <div><dt>Orders sealed</dt><dd>{v(s?.orders_total)}</dd></div>
         <div><dt>Levels visible on chain</dt><dd className="gold">{s ? 0 : v(undefined)}</dd></div>
         <div><dt>Fired and audited</dt><dd>{v(s?.fired)}</dd></div>
@@ -175,7 +176,7 @@ export default function Landing() {
       <div className="l-foot-in">
         <div className="l-foot-brand"><Wordmark small /><p>Sealed stop and take-profit orders on NEAR testnet, fired by an attested OutLayer enclave.</p></div>
         <div><h4>Product</h4><Link to="/app">Trade NEAR/USD</Link><a href="#benefits">How it works</a><a href="#proof">Proof</a></div>
-        <div><h4>Contracts</h4><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Vault {short(CONTRACT, 8)}</a><a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer">tUSD {short(TOKEN, 8)}</a><span className="mono">WASM {(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 12)}…</span></div>
+        <div><h4>Contracts</h4><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Vault {short(CONTRACT, 8)}</a><a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer"><TokenLogo sym="tUSD" />tUSD {short(TOKEN, 8)}</a><span className="mono">WASM {(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 12)}…</span></div>
         <div><h4>Status</h4><span>Mainnet via NEAR Intents: <b>Setup required: NEAR_MAINNET_ACCOUNT</b></span><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={11} /></a></div>
       </div>
       <p className="l-legal">MIT · © 2026 Nivesh Gajengi · NEAR testnet only; tUSD has no value. Formerly Mienai; on-chain account IDs keep the old prefix.</p>
