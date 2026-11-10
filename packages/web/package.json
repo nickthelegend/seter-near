@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@mienai/sdk": "workspace:*",
-    "@near-wallet-selector/core": "^9.5.4",
-    "@near-wallet-selector/my-near-wallet": "^9.5.4",
+    "@near-wallet-selector/core": "10.1.4",
+    "@near-wallet-selector/meteor-wallet": "10.1.4",
     "@web3icons/core": "4.0.58",
     "buffer": "^6.0.3",
     "lightweight-charts": "5.2.1",

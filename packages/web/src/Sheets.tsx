@@ -30,7 +30,7 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
       <button className="icon-btn" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
     </header>
     <h2 className="sheet-title">Your vault</h2>
-    {!wallet.account ? <State kind="setup" title="No wallet connected" action={<button className="btn btn-primary" onClick={wallet.connect} disabled={!wallet.ready}>Connect with MyNearWallet</button>}>Orders sell from a balance held by the contract. A testnet account is free at testnet.mynearwallet.com.</State> : <>
+    {!wallet.account ? <State kind="setup" title="No wallet connected" action={<button className="btn btn-primary" onClick={wallet.connect} disabled={!wallet.ready}>Connect with Meteor Wallet</button>}>Orders sell from a balance held by the contract. A testnet account is free in Meteor Wallet (wallet.meteorwallet.app).</State> : <>
       <dl className="receipt">
         <div><dt><WithLogo sym="NEAR" size={20}>NEAR in vault</WithLogo></dt><dd>{balance ? <Num value={near(balance.near)} /> : '…'}</dd></div>
         <div><dt><WithLogo sym="tUSD" size={20}>tUSD in vault</WithLogo> <small>test token, no value</small></dt><dd>{balance ? <Num value={usd6(balance.usd)} /> : '…'}</dd></div>
