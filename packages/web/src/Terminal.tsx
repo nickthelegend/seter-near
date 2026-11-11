@@ -171,8 +171,8 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
     </div> : <div className="form-body">
       <div className="side-row"><span className="side-chip"><span>Sell <WithLogo sym="NEAR">NEAR</WithLogo> → <WithLogo sym="tUSD">tUSD</WithLogo></span></span><span className="dim small">{kind === 'stop' ? 'fires if price ≤ trigger' : 'fires if price ≥ trigger'}</span></div>
       <div className="frow"><span>Available</span><b className="mono">{wallet.account ? (availNear !== null ? <WithLogo sym="NEAR">{availNear.toFixed(4)} NEAR</WithLogo> : '…') : 'Connect to see'}</b></div>
-      {!config ? <State kind={configError ? 'error' : 'loading'} title={configError ? 'Could not read the enclave key' : 'Reading the enclave key…'}>{configError}</State>
-        : !config.tee ? <State kind="setup" title="Setup required: enclave keys">The enclave has not published its keys yet (owner runs refresh_keys).</State>
+      {!config ? <State kind={configError ? 'error' : 'loading'} art={configError ? 'warning' : undefined} title={configError ? 'Could not read the enclave key' : 'Reading the enclave key…'}>{configError}</State>
+        : !config.tee ? <State kind="setup" art="lock" title="Setup required: enclave keys">The enclave has not published its keys yet (owner runs refresh_keys).</State>
         : <>
           <label className="fld">
             <span>Trigger price</span>
@@ -266,14 +266,14 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
   const hist = (orders ?? []).filter((o) => o.status !== 'Open').sort((a, b) => b.id - a.id);
   const runs = outlayerRuns();
   const tabs: [Tab, string, number | null][] = [['open', 'Open orders', orders ? open.length : null], ['history', 'Order history', orders ? hist.length : null], ['log', 'Enclave log', log ? log.length : null], ['att', 'Attestations', runs.length]];
-  const loading = (e: string, what: string) => <State kind={e ? 'error' : 'loading'} title={e ? `Could not read ${what}` : `Reading ${what}…`}>{e}</State>;
+  const loading = (e: string, what: string) => <State kind={e ? 'error' : 'loading'} art={e ? 'warning' : undefined} title={e ? `Could not read ${what}` : `Reading ${what}…`}>{e}</State>;
   return <section className="pnl bottom" aria-label="Orders and enclave">
     <header className="pnl-tabs btabs" role="tablist">
       {tabs.map(([k, l, n]) => <button key={k} role="tab" aria-selected={tab === k} className={`pnl-tab ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>{l}{n !== null && <small>{n}</small>}</button>)}
       <span className="pnl-note">{wallet.account ? `Account ${shortAccount(wallet.account)}` : 'All accounts · not connected'}</span>
     </header>
     <div className="tbl-wrap">
-      {tab === 'open' && (!orders ? loading(ordersErr, 'orders') : !open.length ? <State kind="empty" title={wallet.account ? 'No open sealed orders' : 'No armed orders on chain'}>Seal a stop or take-profit in the order panel.</State> : <table className="tbl">
+      {tab === 'open' && (!orders ? loading(ordersErr, 'orders') : !open.length ? <State kind="empty" art="tray-empty" title={wallet.account ? 'No open sealed orders' : 'No armed orders on chain'}>Seal a stop or take-profit in the order panel.</State> : <table className="tbl">
         <thead><tr><th>Order</th><th>Market</th><th>Type</th><th>Side</th><th>Size</th><th>Trigger</th><th>Status</th><th>Placed (UTC)</th><th /></tr></thead>
         <tbody>{open.map((o) => { const p = decrypt(o, wallet.account); return <tr key={o.id}>
           <td><span className="ocell"><img src={art('slip').src} alt="" aria-hidden="true" /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
@@ -287,7 +287,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
           <td className="acts">{wallet.account === o.owner && <button className="btn btn-ghost btn-xs" disabled={pendingIds.includes(o.id)} onClick={() => cancel(o.id)}>{pendingIds.includes(o.id) ? 'Cancelling…' : 'Cancel'}</button>}<Link to={`/order/${o.id}`} className="btn btn-ghost btn-xs">View</Link></td>
         </tr>; })}</tbody>
       </table>)}
-      {tab === 'history' && (!orders ? loading(ordersErr, 'orders') : !hist.length ? <State kind="empty" title="No fired or cancelled orders yet" /> : <table className="tbl">
+      {tab === 'history' && (!orders ? loading(ordersErr, 'orders') : !hist.length ? <State kind="empty" art="tray-empty" title="No fired or cancelled orders yet" /> : <table className="tbl">
         <thead><tr><th>Order</th><th>Type</th><th>Trigger</th><th>Price read</th><th>Filled</th><th>Status</th><th>Time (UTC)</th><th>Tx</th><th /></tr></thead>
         <tbody>{hist.map((o) => { const f = o.fire; return <tr key={o.id}>
           <td><span className="ocell"><img src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" className={f ? '' : 'faded'} /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>

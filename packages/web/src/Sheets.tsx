@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { CONTRACT, TOKEN, near, toTokenUnits, toYocto, usd6, view, type Balance } from './lib';
-import { Icon, Num, Sheet, State } from './ui';
+import { Icon, Num, Obj, Sheet, State } from './ui';
 import type { Wallet } from './wallet';
 import { WithLogo } from './logos';
 
@@ -61,7 +61,7 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
       <button className="icon-btn" onClick={onClose} aria-label="Close"><Icon name="x" /></button>
     </header>
     <h2 className="sheet-title">Your vault</h2>
-    {!wallet.account ? <State kind="setup" title="No wallet connected" action={<button className="btn btn-primary" onClick={wallet.connect} disabled={!wallet.ready}>Connect with Meteor Wallet</button>}>Orders sell from a balance held by the contract. A testnet account is free in Meteor Wallet (wallet.meteorwallet.app).</State> : <>
+    {!wallet.account ? <State kind="setup" art="coin" title="No wallet connected" action={<button className="btn btn-primary" onClick={wallet.connect} disabled={!wallet.ready}>Connect with Meteor Wallet</button>}>Orders sell from a balance held by the contract. A testnet account is free in Meteor Wallet (wallet.meteorwallet.app).</State> : <>
       <dl className="receipt">
         <div><dt><WithLogo sym="NEAR" size={20}>NEAR in vault</WithLogo></dt><dd>{balance ? <Num value={near(balance.near)} /> : '…'}</dd></div>
         <div><dt><WithLogo sym="tUSD" size={20}>tUSD in vault</WithLogo> <small>test token, no value</small></dt><dd>{balance ? <Num value={usd6(balance.usd)} /> : '…'}</dd></div>
@@ -76,6 +76,7 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
       </div>
       <button className="btn btn-primary btn-block" disabled={busy} onClick={submit}>{busy ? 'Waiting for wallet…' : done || `${mode === 'deposit' ? 'Deposit' : 'Withdraw'} ${amount || '0'} ${asset}`}</button>
       {asset === 'tUSD' && mode === 'deposit' && <p className="sheet-note">Need test tUSD? <button className="link" disabled={busy || claimed} onClick={faucet}>{claimed ? '1,000 tUSD claimed' : 'Take 1,000 from the faucet'}</button> (once an hour).</p>}
+      {done && <p className="sheet-ok" role="status"><Obj name="success" size={40} float={false} />{done}</p>}
       {err && <p className="sheet-err" role="alert">{err}</p>}
       <details className="viewkey">
         <summary>View key on this device: {key ? 'present' : 'none yet'}</summary>

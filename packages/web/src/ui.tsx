@@ -76,9 +76,30 @@ export function Copy({ value, label }: { value: string; label: string }) {
 }
 export const shortHex = (h: string, a = 10, b = 6) => (h.length > a + b + 1 ? `${h.slice(0, a)}…${h.slice(-b)}` : h);
 
-export function State({ kind, title, children, action }: { kind: 'loading' | 'empty' | 'error' | 'setup'; title: string; children?: ReactNode; action?: ReactNode }) {
-  return <div className={`state state-${kind}`} role={kind === 'error' ? 'alert' : 'status'}>
-    <span className="state-mark" aria-hidden="true">{kind === 'loading' ? <i className="pulse" /> : kind === 'error' ? '!' : kind === 'setup' ? <Icon name="lock" size={16} /> : <Icon name="eye" size={16} />}</span>
+/* ---------- 3D objects (public/art/3d, frosted violet glass; see docs/ART-3D.md) ---------- */
+const OBJ_ALT = {
+  badge: 'Glass medal badge with a processor chip',
+  bell: 'Glass alarm bell ringing',
+  'candle-hidden': 'Glass candlestick with its level veiled',
+  certificate: 'Glass certificate with a seal',
+  coin: 'Glass coin sealed in a glass capsule',
+  'envelope-lock': 'Glass envelope sealed with a padlock',
+  'eye-slash': 'Glass eye with a slash through it',
+  lock: 'Glass padlock',
+  'shield-price': 'Glass shield in front of a price line',
+  success: 'Glass token with a check mark',
+  'tray-empty': 'Empty glass order tray',
+  warning: 'Glass warning sign',
+} as const;
+export type ObjName = keyof typeof OBJ_ALT;
+/** One frosted-glass 3D object, fixed size so nothing shifts; it floats gently unless reduced motion is on. */
+export function Obj({ name, size, className, float = true }: { name: ObjName; size: number; className?: string; float?: boolean }) {
+  return <img className={`obj${float ? ' obj-float' : ''}${className ? ` ${className}` : ''}`} src={`/art/3d/seter-3d-${name}.webp`} width={size} height={size} alt={OBJ_ALT[name]} decoding="async" />;
+}
+
+export function State({ kind, title, children, action, art }: { kind: 'loading' | 'empty' | 'error' | 'setup'; title: string; children?: ReactNode; action?: ReactNode; art?: ObjName }) {
+  return <div className={`state state-${kind}${art ? ' state-art' : ''}`} role={kind === 'error' ? 'alert' : 'status'}>
+    {art ? <Obj name={art} size={72} className="state-obj" /> : <span className="state-mark" aria-hidden="true">{kind === 'loading' ? <i className="pulse" /> : kind === 'error' ? '!' : kind === 'setup' ? <Icon name="lock" size={16} /> : <Icon name="eye" size={16} />}</span>}
     <div><h3>{title}</h3>{children && <p>{children}</p>}{action}</div>
   </div>;
 }

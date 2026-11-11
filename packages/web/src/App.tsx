@@ -23,6 +23,6 @@ export default function App() {
     <a className="skip" href="#main">Skip to content</a>
     {banner}
     {page === 'home' ? <Landing /> : page === 'app' ? <Terminal wallet={wallet} /> : page === 'order' ? <OrderPage id={orderId!} wallet={wallet} />
-      : <div className="term-page"><AppHeader wallet={wallet} /><main className="order" id="main"><State kind="empty" title="Page not found" action={<Link to="/app" className="btn btn-ghost btn-sm">Back to trading</Link>}>Check the address or return to trading.</State></main></div>}
+      : <div className="term-page"><AppHeader wallet={wallet} /><main className="order" id="main"><State kind="empty" art="eye-slash" title="Page not found" action={<Link to="/app" className="btn btn-ghost btn-sm">Back to trading</Link>}>Check the address or return to trading.</State></main></div>}
   </div>;
 }

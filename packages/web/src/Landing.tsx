@@ -2,7 +2,7 @@ import { CONTRACT, TOKEN, accountUrl, ago, deployment, e6, enclaveUpload, firedS
 import { useConfig, useOrders, useQuote, useStats, useTicker } from './live';
 import { useCandles, useStats24h } from './market';
 import Chart from './Chart';
-import { Icon, Link, Num, State, Tx, Wordmark, shortHex } from './ui';
+import { Icon, Link, Num, Obj, State, Tx, Wordmark, shortHex, type ObjName } from './ui';
 import { Hidden } from './Terminal';
 import { Certificate } from './OrderPage';
 import { art } from './art';
@@ -10,13 +10,13 @@ import { PairLogo, TokenLogo } from './logos';
 
 const Art = ({ subject, className }: { subject: string; className?: string }) => <div className={`art ${className ?? ''}`} aria-hidden="true"><img src={art(subject).src} alt="" decoding="async" /></div>;
 
-const TECH = [
-  { code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE execution', body: 'check() runs a WASM pinned by SHA-256 on an Intel TDX worker; the result resumes into the contract.' },
-  { code: '#[private] fn on_result', title: 'Promise-origin check', body: 'Callback results answer the contract’s own request. Signed reports can also use the relay.' },
-  { code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key released only to this WASM hash, called by this contract.' },
-  { code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE; any other build or caller opens nothing.' },
-  { code: 'callers.contract.only', title: 'Locked-down runs', body: 'Only the Seter contract may start runs; egress only to api.exchange.coinbase.com.' },
-  { code: 'NEP-141 · x·y = k', title: 'Testnet settlement', body: 'NEAR Intents has no testnet, so fires swap on the vault’s NEAR / tUSD test pool.' },
+const TECH: { code: string; title: string; body: string; obj: ObjName }[] = [
+  { code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE execution', body: 'check() runs a WASM pinned by SHA-256 on an Intel TDX worker; the result resumes into the contract.', obj: 'badge' },
+  { code: '#[private] fn on_result', title: 'Promise-origin check', body: 'Callback results answer the contract’s own request. Signed reports can also use the relay.', obj: 'success' },
+  { code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key released only to this WASM hash, called by this contract.', obj: 'certificate' },
+  { code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE; any other build or caller opens nothing.', obj: 'lock' },
+  { code: 'callers.contract.only', title: 'Locked-down runs', body: 'Only the Seter contract may start runs; egress only to api.exchange.coinbase.com.', obj: 'shield-price' },
+  { code: 'NEP-141 · x·y = k', title: 'Testnet settlement', body: 'NEAR Intents has no testnet, so fires swap on the vault’s NEAR / tUSD test pool.', obj: 'coin' },
 ];
 
 /** The real terminal, live and read-only, in a device frame. */
@@ -147,9 +147,9 @@ export default function Landing() {
       </section>
 
       <section className="l-sec" id="proof">
-        <header className="l-head"><p className="kicker">Live proof · NEAR testnet, 9 Nov 2026</p><h2>A real stop, fired by a real price.</h2></header>
+        <header className="l-head l-head-art"><div><p className="kicker">Live proof · NEAR testnet, 9 Nov 2026</p><h2>A real stop, fired by a real price.</h2></div><Obj name="candle-hidden" size={112} className="l-head-obj" /></header>
         <div className="proof">
-          {att && fired?.fire ? <Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The pinned program read NEAR/USD at ${e6(fired.fire.price_e6)} inside Intel TDX and fired order №${fired.id} at its sealed trigger ${e6(fired.fire.trigger_e6)}.`} /> : <State kind={orders.error ? 'error' : 'loading'} title={orders.error ? 'Could not read the contract' : 'Reading the fired order…'}>{orders.error}</State>}
+          {att && fired?.fire ? <Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The pinned program read NEAR/USD at ${e6(fired.fire.price_e6)} inside Intel TDX and fired order №${fired.id} at its sealed trigger ${e6(fired.fire.trigger_e6)}.`} /> : <State kind={orders.error ? 'error' : 'loading'} art={orders.error ? 'warning' : undefined} title={orders.error ? 'Could not read the contract' : 'Reading the fired order…'}>{orders.error}</State>}
           <div className="runlist">
             <p className="runlist-h">Recorded transactions</p>
             <ol>{runSteps.map((st) => <li key={st.tx} className={st.attestation ? 'is-fire' : ''}>
@@ -163,7 +163,7 @@ export default function Landing() {
 
       <section className="l-sec" id="tech">
         <header className="l-head"><p className="kicker">The NEAR tech</p><h2>Signed enclave reports, checked on chain.</h2></header>
-        <div className="tech">{TECH.map((x) => <article key={x.code}><h3>{x.title}</h3><p>{x.body}</p><code>{x.code}</code></article>)}</div>
+        <div className="tech">{TECH.map((x) => <article key={x.code}><Obj name={x.obj} size={72} className="tech-obj" /><h3>{x.title}</h3><p>{x.body}</p><code>{x.code}</code></article>)}</div>
       </section>
     </main>
 
