@@ -1,0 +1,327 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "token": "mienai-ad65ebef.testnet",
+  "account": "mienai-4e6b1225.testnet",
+  "at": "2026-11-11T16:12:17.985Z",
+  "wallet_before": "8877671913296656200000000",
+  "vault_before": {
+    "near": "600000000000000000000000",
+    "usd": "1272503"
+  },
+  "spend_cap_near": "0.3",
+  "steps": [
+    {
+      "step": "deposit_near",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "deposit_near",
+      "args": {},
+      "deposit": "30000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "DojcxjGb7UXWuUFFW9ToCysjQxKpUvA44cS2AXZTCADZ",
+      "explorer": "https://testnet.nearblocks.io/txns/DojcxjGb7UXWuUFFW9ToCysjQxKpUvA44cS2AXZTCADZ",
+      "at": "2026-11-11T16:12:21.686Z",
+      "ok": true,
+      "return": "{\"near\":\"630000000000000000000000\",\"usd\":\"1272503\"}",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "faucet",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "faucet",
+      "args": {},
+      "deposit": "10000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "LRJL55s6NTHiHEuA2PuA3r52ZM6tG8d9HPTo2t9hdPR",
+      "explorer": "https://testnet.nearblocks.io/txns/LRJL55s6NTHiHEuA2PuA3r52ZM6tG8d9HPTo2t9hdPR",
+      "at": "2026-11-11T16:12:25.580Z",
+      "ok": true,
+      "return": "\"1000000000\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"mienai-4e6b1225.testnet\",\"amount\":\"1000000000\",\"memo\":\"faucet\"}]}"
+      ]
+    },
+    {
+      "step": "ft_transfer_call",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "ft_transfer_call",
+      "args": {
+        "receiver_id": "mienai-3013a230.testnet",
+        "amount": "1000000",
+        "msg": "deposit"
+      },
+      "deposit": "1",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "Hzig1aUxz9nXbntjq4DkR1TQs1TgnK5YWNs6EhXeV1Pz",
+      "explorer": "https://testnet.nearblocks.io/txns/Hzig1aUxz9nXbntjq4DkR1TQs1TgnK5YWNs6EhXeV1Pz",
+      "at": "2026-11-11T16:12:30.909Z",
+      "ok": true,
+      "return": "\"1000000\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"mienai-4e6b1225.testnet\",\"new_owner_id\":\"mienai-3013a230.testnet\",\"amount\":\"1000000\"}]}"
+      ]
+    },
+    {
+      "step": "place_order",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_order",
+      "args": {
+        "ct": "AYDb+uXZud/pq3ZYKrIy4a5VoG5Mkkid5/xdtDQfAA4HOACarEXeussyMa2OtJKwXc9KlXJSbQnUYaz/DCmdiH3hpaHuvYTnvr8s/Zsm2126KDJZZ824lke2wusHGI3hqym72GWcsQAfpkZRmWQN4ghPPQ5VYQjnzfNmBiXxIvw2AjjCOASeaP0iggnpGE9rATw+31HYu7jGvBmULT7JbG37myA51NYp9XNZ397jfeNuzQ4Mt5xwJbSZRjuRn64lDahqDRP+TDvOAWW7Xg==",
+        "commit": "a37494c13a504e6aa17b0d9f615f92c15ea213016b4f4364c0b2e54ea2bb442e",
+        "view_ct": "9Y12dpEMdR0VKsJFGtbxeib2ft43uKS2L5JSkg+2tEHuhSvMO6GEFTczyTtdfp347DUM4MUX2mRbLyO7oIavgzp/ZV3xhpXMswoUGYEG3+bsbw2YDYctmwiS5l6uM2JZcm51aghRLh094rjiUpQNRkZNV5UAn9zQ6C6+E04Y7h1KU6v28cbtHMK01IH+FO9mqqxBNquAMmQyuaSl1hoylrJpCJkvsGICCQOicg=="
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "fybqco6wFRR61fusLmVkoHGXnYJffDqSrrWvJ3UGirK",
+      "explorer": "https://testnet.nearblocks.io/txns/fybqco6wFRR61fusLmVkoHGXnYJffDqSrrWvJ3UGirK",
+      "at": "2026-11-11T16:12:34.794Z",
+      "ok": true,
+      "return": "7",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":7,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    },
+    {
+      "step": "place_order",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_order",
+      "args": {
+        "ct": "AS/8MIEVB+nveh6bXEBrBapYAtGpFalpaa9+XavioNtgEHoSlPg/BHmbad7knPjcT20EswA87SrM/iXNFtCTaJhELn1hcK5mQwxiAT1IJd5t7gDbYLyDvizADRDU/1a7G3crNQIf0yAA6pHUIz2sggLBD3X9Mfu8uJEhjJ4CHHV1ufe3Fgnl902cvunGDG7yVH4dTjtJusfMlDPDLHkYP4hX6ciV3rtMjhFuEEGCuS3nD9VjBVRVIahQjq9ih0u/7xZYvjl4E4MueM3jwQ==",
+        "commit": "e9d201c1c1d4104b6f1c97c915c5978c3238b7f8df0a4693e9b8b00bfd4d240c",
+        "view_ct": "P7eVEE0+idctue/rOk8MR5sshDAraHIy78SNsOKTka26/xmF4PrLiG9X0VR9u7E2AEWmqEYAQDpikSgCz/l/gT+pLxip348muM6Rof4zddXgNcP+7QojjjF+pBbrV6wLcEx6AsqjMFjmEVwilAt6Igx8Qoz7kXyi18gBbl0WkuTY/l5krsNhqOQqTHAj/LKB13kizAluHuxDhAy/Yui0ckTo85wkOk5uIcd2RA=="
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "4j6KKERKofqgv41YF4ZsE8PFKLotqReydRVcUaAwfrdX",
+      "explorer": "https://testnet.nearblocks.io/txns/4j6KKERKofqgv41YF4ZsE8PFKLotqReydRVcUaAwfrdX",
+      "at": "2026-11-11T16:12:38.800Z",
+      "ok": true,
+      "return": "8",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":8,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    },
+    {
+      "step": "check",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "check",
+      "args": {},
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "7R5JiWnWsYcE9y4MsWd2cGP5ZxuzoaARPtgTvD5kxUi8",
+      "explorer": "https://testnet.nearblocks.io/txns/7R5JiWnWsYcE9y4MsWd2cGP5ZxuzoaARPtgTvD5kxUi8",
+      "at": "2026-11-11T16:13:29.591Z",
+      "ok": true,
+      "return": "\"fired 1\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":6,\"operation\":\"check\",\"orders\":5}]}",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":23781,\\\"sender_id\\\":\\\"mienai-4e6b1225.testnet\\\",\\\"predecessor_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\\\",\\\"hash\\\":\\\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":20000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"operation\\\\\\\":\\\\\\\"check\\\\\\\",\\\\\\\"contract\\\\\\\":\\\\\\\"mienai-3013a230.testnet\\\\\\\",\\\\\\\"request\\\\\\\":6,\\\\\\\"orders\\\\\\\":[{\\\\\\\"id\\\\\\\":3,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ATg7nsfayyBeeX2H/pIUvsO40HwPTzoU7T6in6fsNqdyjcLxQhMDTHnKYeHKqNkOSihyHhAz6FJ3EeX9ZiT1pNXt455bVq734+qrLU8u24tbWvTv1m1mzfig/pdVLWdgAQBuhotNQ8GU07lQSCPKo2DT2ISwSh7nSswttcaE8B1oZ8bdUXYfVK1EFoH2265f1nix0PBquTTtYLww59Cn6lLK65nxl0Tq9zzcjEsJBXx+w51hHb7v33pa8d0ApwfCHubhZQAi4EG5EQ6UdvM=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"22e2f6c6e412688e22c176e2d2e06d8b96a7aca1a66117c7a70a4f287733bea4\\\\\\\"},{\\\\\\\"id\\\\\\\":4,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AT7W/BO5TaJg+meXBPyJCw05bTE2W5MLTn01wLp8IR1aEDSnKiLSf6ShbzP4f6+NI7eXVbCmUJVvx6NDjFi7QZZsqWYFWsIT7MPjY5eUsih8Gc31XEL/LXu/C/vLLEmd1442prP0nQ9ADXt1d4xxI1d6aqcV4AD2H8VKSRamiPsF5pgsc6fqgptw82MZv40KxgNcalJ7mBzc8ueRCYifhMzOCrusuNbumrMa9xHcPKOwv8fdKEskqHt2uMVH/hWEPhPznMZFMruI4O74ZlY=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"0e81d20c079a1926830812fb6dd1e0cec6d6363dc6018712b646b450b3629a5d\\\\\\\"},{\\\\\\\"id\\\\\\\":5,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"Ab4aqTD+MxuJU4wKZUttGFq8cRQkoWwZwQJE9W4pcsNq4ghx6m+jVSeqQiJ9Dqb6PAO2s9hi0C/H7XcXNk58nVUWb+KbHrgBLB0V7oCzGhMQ7EaB148L7LTz0TnorzYr8cRXOfigk5CuecCeBtCMY5glgoFn8RRLjz4Zy6mu3Yz8+gy32E657Fo2vvW4tKCksybjUGoO/XpZ9B9ItWBECBZuPkFFry26YVr8fQk66R3XNeSqpOSuNdFrX76DeLMU4BfPm5Zi2D6E7OgUkA4=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"7f0cba6552dff0563e9a02742e6180aa75eda5c946c13173e1151e00b2c55900\\\\\\\"},{\\\\\\\"id\\\\\\\":7,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AYDb+uXZud/pq3ZYKrIy4a5VoG5Mkkid5/xdtDQfAA4HOACarEXeussyMa2OtJKwXc9KlXJSbQnUYaz/DCmdiH3hpaHuvYTnvr8s/Zsm2126KDJZZ824lke2wusHGI3hqym72GWcsQAfpkZRmWQN4ghPPQ5VYQjnzfNmBiXxIvw2AjjCOASeaP0iggnpGE9rATw+31HYu7jGvBmULT7JbG37myA51NYp9XNZ397jfeNuzQ4Mt5xwJbSZRjuRn64lDahqDRP+TDvOAWW7Xg==\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"a37494c13a504e6aa17b0d9f615f92c15ea213016b4f4364c0b2e54ea2bb442e\\\\\\\"},{\\\\\\\"id\\\\\\\":8,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AS/8MIEVB+nveh6bXEBrBapYAtGpFalpaa9+XavioNtgEHoSlPg/BHmbad7knPjcT20EswA87SrM/iXNFtCTaJhELn1hcK5mQwxiAT1IJd5t7gDbYLyDvizADRDU/1a7G3crNQIf0yAA6pHUIz2sggLBD3X9Mfu8uJEhjJ4CHHV1ufe3Fgnl902cvunGDG7yVH4dTjtJusfMlDPDLHkYP4hX6ciV3rtMjhFuEEGCuS3nD9VjBVRVIahQjq9ih0u/7xZYvjl4E4MueM3jwQ==\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"e9d201c1c1d4104b6f1c97c915c5978c3238b7f8df0a4693e9b8b00bfd4d240c\\\\\\\"}]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":null,\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"20000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794413560350701017,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":null,\\\"project_id\\\":null}\",\"data_id\":[81,166,150,255,184,217,196,21,100,68,100,145,172,240,189,14,155,111,102,204,209,89,220,39,92,138,209,61,68,217,237,97],\"timestamp\":1794413560350701017}]}",
+        "[[yNEAR charged: \"1082101800000000000000\"]]",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-4e6b1225.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\",\"hash\":\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":18044131,\"time_ms\":821,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1082101800000000000000\",\"payment_refunded\":\"18917898200000000000000\",\"compilation_note\":\"Cached WASM from 2026-11-09T17:16:17.890705+00:00\",\"timestamp\":1794413606101766647}]}",
+        "Execution completed successfully. Output: Json(703 bytes), Resources: { instructions: 18044131, time_ms: 821 }, Cost: 1082101800000000000000 yoctoNEAR, Refund: 18917898200000000000000 yoctoNEAR, Cached WASM from 2026-11-09T17:16:17.890705+00:00",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"check\",\"data\":[{\"request\":6,\"path\":\"callback\",\"price_e6\":3769300,\"fired\":[7]}]}"
+      ],
+      "last_check": {
+        "request": 6,
+        "path": "callback",
+        "price_e6": 3769300,
+        "price_ts_ms": 1794413602649,
+        "trade_id": 36464067,
+        "checked": 5,
+        "unreadable": 0,
+        "fired": [
+          7
+        ],
+        "block_height": "277238463",
+        "block_ts": "1794413606683532341",
+        "outlayer_request": "23781"
+      },
+      "attestation": {
+        "request_id": 23781,
+        "attestation_id": 56274,
+        "tx": "7R5JiWnWsYcE9y4MsWd2cGP5ZxuzoaARPtgTvD5kxUi8",
+        "caller": "mienai-4e6b1225.testnet",
+        "block_height": 277238386,
+        "timestamp": 1794413603,
+        "wasm_hash": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386",
+        "input_hash": "3a8e24bb55598d94cde2ce5fecf892fff754cbaf92d71e3ccf5ce584006e115c",
+        "output_hash": "96041670a1f377046940b6d2514c4594043a39a9833f03e9e8e6d702ca746646",
+        "measurements": {
+          "mrtd": "7fe60787222bd394cb516abca2435f22f035ab2cc9c0a4b4b3b148e46297f3d931a237b72f359052c6e657d8c1409173",
+          "rtmr3": "528235764e42c8ec9bbd3d58543dddba5f2eb43f18ad580385bd03991bbeaded7fde1b0f24697a4506742a44a7f7b884"
+        },
+        "report_data": "5d1d33c08675e842d42edad022b766766ac4a3b2cb371810764edb966348a554",
+        "tcb": {
+          "status": "UpToDate",
+          "advisory_ids": []
+        },
+        "checks": {
+          "wasm_hash_pinned": true,
+          "input_hash": true,
+          "output_hash": true,
+          "report_data_binds_task": true,
+          "measurements_approved_on_chain": true,
+          "intel_signature_chain": true
+        },
+        "ok": true,
+        "source": "https://testnet-api.outlayer.ai/attestations/by-tx/7R5JiWnWsYcE9y4MsWd2cGP5ZxuzoaARPtgTvD5kxUi8"
+      }
+    },
+    {
+      "step": "cancel_order",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "cancel_order",
+      "args": {
+        "id": 8
+      },
+      "deposit": "0",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "9TxhAMnq3nprg7HigmdYV5wtqebMZdVEcSJLiTFi7LrA",
+      "explorer": "https://testnet.nearblocks.io/txns/9TxhAMnq3nprg7HigmdYV5wtqebMZdVEcSJLiTFi7LrA",
+      "at": "2026-11-11T16:13:33.741Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_cancelled\",\"data\":[{\"id\":8}]}"
+      ]
+    },
+    {
+      "step": "withdraw_near",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "withdraw_near",
+      "args": {
+        "amount": "20000000000000000000000"
+      },
+      "deposit": "0",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "2aJAJyh9Nszev4dPASf2geruH4QpS7176zRo81pMozn2",
+      "explorer": "https://testnet.nearblocks.io/txns/2aJAJyh9Nszev4dPASf2geruH4QpS7176zRo81pMozn2",
+      "at": "2026-11-11T16:13:38.590Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "withdraw_usd",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "withdraw_usd",
+      "args": {
+        "amount": "1027987"
+      },
+      "deposit": "0",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "D2h6U2NTDWmzato9ndJqkbKfxB9Z2RsNCNh1x1Xuh9Bg",
+      "explorer": "https://testnet.nearblocks.io/txns/D2h6U2NTDWmzato9ndJqkbKfxB9Z2RsNCNh1x1Xuh9Bg",
+      "at": "2026-11-11T16:13:44.020Z",
+      "ok": true,
+      "return": "true",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"mienai-3013a230.testnet\",\"new_owner_id\":\"mienai-4e6b1225.testnet\",\"amount\":\"1027987\",\"memo\":\"mienai withdraw\"}]}"
+      ]
+    }
+  ],
+  "order_ids": [
+    7,
+    8
+  ],
+  "owner_view_round_trip": true,
+  "checked_orders": [
+    {
+      "id": 7,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "AYDb+uXZud/pq3ZYKrIy4a5VoG5Mkkid5/xdtDQfAA4HOACarEXeussyMa2OtJKwXc9KlXJSbQnUYaz/DCmdiH3hpaHuvYTnvr8s/Zsm2126KDJZZ824lke2wusHGI3hqym72GWcsQAfpkZRmWQN4ghPPQ5VYQjnzfNmBiXxIvw2AjjCOASeaP0iggnpGE9rATw+31HYu7jGvBmULT7JbG37myA51NYp9XNZ397jfeNuzQ4Mt5xwJbSZRjuRn64lDahqDRP+TDvOAWW7Xg==",
+      "commit": "a37494c13a504e6aa17b0d9f615f92c15ea213016b4f4364c0b2e54ea2bb442e",
+      "view_ct": "9Y12dpEMdR0VKsJFGtbxeib2ft43uKS2L5JSkg+2tEHuhSvMO6GEFTczyTtdfp347DUM4MUX2mRbLyO7oIavgzp/ZV3xhpXMswoUGYEG3+bsbw2YDYctmwiS5l6uM2JZcm51aghRLh094rjiUpQNRkZNV5UAn9zQ6C6+E04Y7h1KU6v28cbtHMK01IH+FO9mqqxBNquAMmQyuaSl1hoylrJpCJkvsGICCQOicg==",
+      "created_ns": "1794413551846313901",
+      "status": "Fired",
+      "fire": {
+        "request": 6,
+        "path": "callback",
+        "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":4337600,\"side\":\"sell\",\"amount\":\"10000000000000000000000\",\"salt\":\"36fd338294423a04ddbaa5cc72d4a18c\"}",
+        "cond": "lte",
+        "trigger_e6": 4337600,
+        "side": "sell",
+        "amount": "10000000000000000000000",
+        "price_e6": 3769300,
+        "price_ts_ms": 1794413602649,
+        "trade_id": 36464067,
+        "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+        "block_height": "277238463",
+        "block_ts": "1794413606683532341",
+        "filled_in": "10000000000000000000000",
+        "filled_out": "27987",
+        "note": "sold NEAR for tUSD on the test pool",
+        "report_sha256": "a2abccbe32c0bb6febf034356d8623466a2b0f358aec9226c1d56dfbb3d60ff7",
+        "outlayer_request": "23781"
+      }
+    },
+    {
+      "id": 8,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "AS/8MIEVB+nveh6bXEBrBapYAtGpFalpaa9+XavioNtgEHoSlPg/BHmbad7knPjcT20EswA87SrM/iXNFtCTaJhELn1hcK5mQwxiAT1IJd5t7gDbYLyDvizADRDU/1a7G3crNQIf0yAA6pHUIz2sggLBD3X9Mfu8uJEhjJ4CHHV1ufe3Fgnl902cvunGDG7yVH4dTjtJusfMlDPDLHkYP4hX6ciV3rtMjhFuEEGCuS3nD9VjBVRVIahQjq9ih0u/7xZYvjl4E4MueM3jwQ==",
+      "commit": "e9d201c1c1d4104b6f1c97c915c5978c3238b7f8df0a4693e9b8b00bfd4d240c",
+      "view_ct": "P7eVEE0+idctue/rOk8MR5sshDAraHIy78SNsOKTka26/xmF4PrLiG9X0VR9u7E2AEWmqEYAQDpikSgCz/l/gT+pLxip348muM6Rof4zddXgNcP+7QojjjF+pBbrV6wLcEx6AsqjMFjmEVwilAt6Igx8Qoz7kXyi18gBbl0WkuTY/l5krsNhqOQqTHAj/LKB13kizAluHuxDhAy/Yui0ckTo85wkOk5uIcd2RA==",
+      "created_ns": "1794413556133191486",
+      "status": "Open",
+      "fire": null
+    }
+  ],
+  "orders_after": [
+    {
+      "id": 7,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "AYDb+uXZud/pq3ZYKrIy4a5VoG5Mkkid5/xdtDQfAA4HOACarEXeussyMa2OtJKwXc9KlXJSbQnUYaz/DCmdiH3hpaHuvYTnvr8s/Zsm2126KDJZZ824lke2wusHGI3hqym72GWcsQAfpkZRmWQN4ghPPQ5VYQjnzfNmBiXxIvw2AjjCOASeaP0iggnpGE9rATw+31HYu7jGvBmULT7JbG37myA51NYp9XNZ397jfeNuzQ4Mt5xwJbSZRjuRn64lDahqDRP+TDvOAWW7Xg==",
+      "commit": "a37494c13a504e6aa17b0d9f615f92c15ea213016b4f4364c0b2e54ea2bb442e",
+      "view_ct": "9Y12dpEMdR0VKsJFGtbxeib2ft43uKS2L5JSkg+2tEHuhSvMO6GEFTczyTtdfp347DUM4MUX2mRbLyO7oIavgzp/ZV3xhpXMswoUGYEG3+bsbw2YDYctmwiS5l6uM2JZcm51aghRLh094rjiUpQNRkZNV5UAn9zQ6C6+E04Y7h1KU6v28cbtHMK01IH+FO9mqqxBNquAMmQyuaSl1hoylrJpCJkvsGICCQOicg==",
+      "created_ns": "1794413551846313901",
+      "status": "Fired",
+      "fire": {
+        "request": 6,
+        "path": "callback",
+        "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":4337600,\"side\":\"sell\",\"amount\":\"10000000000000000000000\",\"salt\":\"36fd338294423a04ddbaa5cc72d4a18c\"}",
+        "cond": "lte",
+        "trigger_e6": 4337600,
+        "side": "sell",
+        "amount": "10000000000000000000000",
+        "price_e6": 3769300,
+        "price_ts_ms": 1794413602649,
+        "trade_id": 36464067,
+        "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+        "block_height": "277238463",
+        "block_ts": "1794413606683532341",
+        "filled_in": "10000000000000000000000",
+        "filled_out": "27987",
+        "note": "sold NEAR for tUSD on the test pool",
+        "report_sha256": "a2abccbe32c0bb6febf034356d8623466a2b0f358aec9226c1d56dfbb3d60ff7",
+        "outlayer_request": "23781"
+      }
+    },
+    {
+      "id": 8,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "AS/8MIEVB+nveh6bXEBrBapYAtGpFalpaa9+XavioNtgEHoSlPg/BHmbad7knPjcT20EswA87SrM/iXNFtCTaJhELn1hcK5mQwxiAT1IJd5t7gDbYLyDvizADRDU/1a7G3crNQIf0yAA6pHUIz2sggLBD3X9Mfu8uJEhjJ4CHHV1ufe3Fgnl902cvunGDG7yVH4dTjtJusfMlDPDLHkYP4hX6ciV3rtMjhFuEEGCuS3nD9VjBVRVIahQjq9ih0u/7xZYvjl4E4MueM3jwQ==",
+      "commit": "e9d201c1c1d4104b6f1c97c915c5978c3238b7f8df0a4693e9b8b00bfd4d240c",
+      "view_ct": "P7eVEE0+idctue/rOk8MR5sshDAraHIy78SNsOKTka26/xmF4PrLiG9X0VR9u7E2AEWmqEYAQDpikSgCz/l/gT+pLxip348muM6Rof4zddXgNcP+7QojjjF+pBbrV6wLcEx6AsqjMFjmEVwilAt6Igx8Qoz7kXyi18gBbl0WkuTY/l5krsNhqOQqTHAj/LKB13kizAluHuxDhAy/Yui0ckTo85wkOk5uIcd2RA==",
+      "created_ns": "1794413556133191486",
+      "status": "Cancelled",
+      "fire": null
+    }
+  ],
+  "vault_after": {
+    "near": "600000000000000000000000",
+    "usd": "1272503"
+  },
+  "wallet_after": "8812284902933900599999999",
+  "wallet_debit_yocto": "65387010362755600000001",
+  "restored_vault": true,
+  "within_cap": true
+}

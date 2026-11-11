@@ -246,7 +246,8 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
   const [err, setErr] = useState('');
   const open = (orders ?? []).filter((o) => o.status === 'Open').sort((a, b) => b.id - a.id);
   const hist = (orders ?? []).filter((o) => o.status !== 'Open').sort((a, b) => b.id - a.id);
-  const tabs: [Tab, string, number | null][] = [['open', 'Open orders', orders ? open.length : null], ['history', 'Order history', orders ? hist.length : null], ['log', 'Enclave log', log ? log.length : null], ['att', 'Attestations', outlayerRuns.length]];
+  const runs = outlayerRuns();
+  const tabs: [Tab, string, number | null][] = [['open', 'Open orders', orders ? open.length : null], ['history', 'Order history', orders ? hist.length : null], ['log', 'Enclave log', log ? log.length : null], ['att', 'Attestations', runs.length]];
   const loading = (e: string, what: string) => <State kind={e ? 'error' : 'loading'} title={e ? `Could not read ${what}` : `Reading ${what}…`}>{e}</State>;
   return <section className="pnl bottom" aria-label="Orders and enclave">
     <header className="pnl-tabs btabs" role="tablist">
@@ -293,7 +294,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
       </table>)}
       {tab === 'att' && <table className="tbl">
         <thead><tr><th>OutLayer run</th><th>Time (UTC)</th><th>Recorded verification</th><th>TDX quote SHA-256 (live)</th><th>Tx</th><th /></tr></thead>
-        <tbody>{outlayerRuns.map((r) => <AttRow key={r.tx} r={r} />)}</tbody>
+        <tbody>{runs.map((r) => <AttRow key={r.tx} r={r} />)}</tbody>
       </table>}
     </div>
     {err && <p className="sheet-err" role="alert">{err}</p>}

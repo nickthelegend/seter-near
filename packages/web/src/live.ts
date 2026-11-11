@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchQuote, view, ticker, type Balance, type Config, type LiveQuote, type Order, type Request, type Stats, type Ticker } from './lib';
+import { TRANSACTION_EVENT } from './receipts';
 
 export type Loadable<T> = { data: T | null; error: string; loading: boolean };
 const init = <T,>(): Loadable<T> => ({ data: null, error: '', loading: true });
@@ -22,8 +23,9 @@ export function usePoll<T>(fn: () => Promise<T>, everyMs: number, deps: unknown[
     active.current = true;
     setState(init<T>());
     run();
+    addEventListener(TRANSACTION_EVENT, run);
     const id = everyMs ? setInterval(() => { if (!document.hidden) run(); }, everyMs) : undefined;
-    return () => { active.current = false; ++latest.current; clearInterval(id); };
+    return () => { active.current = false; ++latest.current; clearInterval(id); removeEventListener(TRANSACTION_EVENT, run); };
   }, [run, everyMs]);
   return { ...state, refresh: run };
 }

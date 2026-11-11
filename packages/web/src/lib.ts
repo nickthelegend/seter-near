@@ -2,6 +2,8 @@ import deployment from '../../../deployments/testnet-2026-11-09.json';
 import run from '../../../deployments/real-run-2026-11-09.json';
 import enclaveUpload from '../../../deployments/enclave-fastfs.json';
 import book from '../../../deployments/book-2026-11-09.json';
+import qa from '../../../deployments/flow-qa-2026-11-11.json';
+import { readReceipts } from './receipts';
 
 export const CONTRACT: string = import.meta.env.VITE_MIENAI_CONTRACT || deployment.contract_id;
 export const TOKEN: string = deployment.token_id;
@@ -100,10 +102,10 @@ export type Request = { id: number; kind: 'Keys' | 'Check' | 'Bands'; caller: st
 export const OUTLAYER_API = 'https://testnet-api.outlayer.ai';
 /** Recorded transaction for a step, found in the run or book records. */
 type RecStep = { step: string; tx?: string; at?: string; method?: string; return?: string | null; args?: unknown; last_check?: CheckSummary; attestation?: Attestation };
-const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? [])];
-export const txForOrder = (id: number) => allSteps.find((s) => s.method === 'place_order' && s.return === String(id))?.tx;
-export const txForRequest = (request: number) => runSteps.find((s) => s.last_check?.request === request)?.tx;
-export const attestationFor = (request: number) => (firedStep?.last_check?.request === request ? firedStep.attestation ?? null : null);
+const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((qa as unknown as { steps: RecStep[] }).steps ?? [])];
+export const txForOrder = (id: number) => readReceipts(CONTRACT).find((r) => r.method === 'place_order' && r.order === id)?.tx ?? allSteps.find((s) => s.method === 'place_order' && s.return === String(id))?.tx;
+export const txForRequest = (request: number) => readReceipts(CONTRACT).find((r) => r.method === 'check' && r.request === request)?.tx ?? allSteps.find((s) => s.last_check?.request === request)?.tx;
+export const attestationFor = (request: number) => allSteps.find((s) => s.last_check?.request === request)?.attestation ?? null;
 
 export type EventKind = 'sealed' | 'checked' | 'fired' | 'attested' | 'cancelled';
 export type LogEvent = { key: string; at: number; kind: EventKind; title: string; detail: string; order?: number; tx?: string };
@@ -115,7 +117,7 @@ export function buildLog(orders: Order[], requests: Request[]): LogEvent[] {
     out.push({ key: `s${o.id}`, at: nsToMs(o.created_ns), kind: 'sealed', title: `Order №${o.id} sealed`, detail: `${o.ct.length}-char ciphertext · trigger hidden`, order: o.id, tx: txForOrder(o.id) });
     if (o.fire) out.push({ key: `f${o.id}`, at: nsToMs(o.fire.block_ts), kind: 'fired', title: `Order №${o.id} fired`, detail: `price ${e6(o.fire.price_e6)} crossed ${o.fire.cond === 'lte' ? '≤' : '≥'} ${e6(o.fire.trigger_e6)} · trigger revealed`, order: o.id, tx: txForRequest(o.fire.request) });
     if (o.status === 'Cancelled') {
-      const c = allSteps.find((s) => s.method === 'cancel_order' && s.at && String(JSON.stringify(s.args)).match(new RegExp(`id\\D+${o.id}\\b`)));
+      const c = readReceipts(CONTRACT).find((r) => r.method === 'cancel_order' && r.order === o.id) ?? allSteps.find((s) => s.method === 'cancel_order' && s.at && String(JSON.stringify(s.args)).match(new RegExp(`id\\D+${o.id}\\b`)));
       if (c?.at) out.push({ key: `c${o.id}`, at: Date.parse(c.at), kind: 'cancelled', title: `Order №${o.id} cancelled`, detail: 'its trigger was never revealed · recorded tx', order: o.id, tx: c.tx });
     }
   }
@@ -149,7 +151,11 @@ export async function fetchQuote(tx: string): Promise<LiveQuote> {
 
 /** Every recorded OutLayer TEE run (keys, checks, band report) with its transaction. */
 export type OutlayerRun = { tx: string; at: string; kind: 'Keys' | 'Check' | 'Bands'; label: string; attestation: Attestation | null; price_e6?: number };
-export const outlayerRuns: OutlayerRun[] = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((book as unknown as { steps: RecStep[] }).steps ?? [])]
+const recordedRuns: OutlayerRun[] = [...allSteps, ...((book as unknown as { steps: RecStep[] }).steps ?? [])]
   .filter((s) => s.tx && s.at && ['refresh_keys', 'check', 'publish_bands'].includes(s.method ?? ''))
   .map((s) => ({ tx: s.tx!, at: s.at!, kind: s.method === 'refresh_keys' ? 'Keys' : s.method === 'check' ? 'Check' : 'Bands', label: s.step.replace(' (OutLayer TEE run)', '').replace(' (OutLayer TEE run, k = 5)', ''), attestation: s.attestation ?? null, price_e6: s.last_check?.price_e6 }) as OutlayerRun)
   .reverse();
+export function outlayerRuns(): OutlayerRun[] {
+  const recent = readReceipts(CONTRACT).filter((r) => r.method === 'check').map((r): OutlayerRun => ({ tx: r.tx, at: r.at, kind: 'Check', label: 'Wallet price check', attestation: null }));
+  return [...new Map([...recent, ...recordedRuns].map((r) => [r.tx, r])).values()].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+}
