@@ -122,7 +122,7 @@ export function buildLog(orders: Order[], requests: Request[]): LogEvent[] {
   const out: LogEvent[] = [];
   for (const o of orders) {
     out.push({ key: `s${o.id}`, at: nsToMs(o.created_ns), kind: 'sealed', title: `Order №${o.id} sealed`, detail: `${o.ct.length}-char ciphertext · trigger hidden`, order: o.id, tx: txForOrder(o.id) });
-    if (o.fire) out.push({ key: `f${o.id}`, at: nsToMs(o.fire.block_ts), kind: 'fired', title: `Order №${o.id} fired`, detail: `price ${e6(o.fire.price_e6)} crossed ${o.fire.cond === 'lte' ? '≤' : '≥'} ${e6(o.fire.trigger_e6)} · trigger revealed`, order: o.id, tx: txForRequest(o.fire.request) });
+    if (o.fire) out.push({ key: `f${o.id}`, at: nsToMs(o.fire.block_ts), kind: 'fired', title: `Order №${o.id} ${o.status === 'Unfilled' ? 'crossed but did not fill' : 'fired'}`, detail: `price ${e6(o.fire.price_e6)} crossed ${o.fire.cond === 'lte' ? '≤' : '≥'} ${e6(o.fire.trigger_e6)} · trigger revealed`, order: o.id, tx: txForRequest(o.fire.request) });
     if (o.status === 'Cancelled') {
       const c = readReceipts(CONTRACT).find((r) => r.method === 'cancel_order' && r.order === o.id) ?? allSteps.find((s) => s.method === 'cancel_order' && s.at && String(JSON.stringify(s.args)).match(new RegExp(`id\\D+${o.id}\\b`)));
       if (c?.at) out.push({ key: `c${o.id}`, at: Date.parse(c.at), kind: 'cancelled', title: `Order №${o.id} cancelled`, detail: 'its trigger was never revealed · recorded tx', order: o.id, tx: c.tx });

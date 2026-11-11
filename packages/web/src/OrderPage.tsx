@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
 import { accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
-import { useConfig, useQuote, useStats } from './live';
+import { useConfig, usePoll, useQuote, useStats } from './live';
 import { Copy, Icon, Link, Num, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
 import type { Wallet } from './wallet';
@@ -65,22 +64,14 @@ export function Certificate({ att, pinned, subject }: { att: Attestation; pinned
 }
 
 export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }) {
-  const [o, setO] = useState<Order | null | undefined>(undefined);
-  const [err, setErr] = useState('');
+  const order = usePoll<Order | null>(() => view('get_order', { id }), 15_000, [id]);
+  const o = order.data;
+  const err = order.error;
   const stats = useStats();
   const config = useConfig();
-  useEffect(() => {
-    let current = true;
-    setO(undefined);
-    setErr('');
-    view<Order | null>('get_order', { id })
-      .then((order) => { if (current) setO(order); })
-      .catch((e) => { if (current) setErr(String(e.message || e)); });
-    return () => { current = false; };
-  }, [id]);
   const body = (() => {
     if (err) return <State kind="error" title="Could not read this order">{err}</State>;
-    if (o === undefined) return <State kind="loading" title={`Reading order №${id} from NEAR testnet…`} />;
+    if (order.loading) return <State kind="loading" title={`Reading order №${id} from NEAR testnet…`} />;
     if (o === null) return <State kind="empty" title={`No order №${id} on the contract`} action={<Link to="/app" className="btn btn-ghost btn-sm">Back to trading</Link>} />;
     const f = o.fire;
     const att = f ? attestationFor(f.request) : null;
@@ -105,13 +96,13 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
         </div>
         <div className="verdict">
           {f ? <>
-            <p className="label">The crossing, published after the fire</p>
+            <p className="label">The crossing, published after the check</p>
             <div className="cross">
               <div><span>Trigger</span><b><Num value={e6(f.trigger_e6)} /></b></div>
               <i aria-hidden="true">{f.cond === 'lte' ? '≥' : '≤'}</i>
               <div><span>Price read in the TEE</span><b className="gold"><Num value={e6(f.price_e6)} /></b></div>
             </div>
-            <p className="verdict-note">Sold <WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> for <b><WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></b> on the vault pool · Coinbase trade #{f.trade_id} · block {f.block_height}</p>
+            <p className="verdict-note">{o.status === 'Unfilled' ? <>The trigger crossed, but the order did not fill: {f.note}. Coinbase trade #{f.trade_id} · block {f.block_height}</> : <>Sold <WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> for <b><WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></b> on the vault pool · Coinbase trade #{f.trade_id} · block {f.block_height}</>}</p>
           </> : o.status === 'Open' ? <>
             <p className="label">Waiting inside the enclave</p>
             <p className="verdict-big">Armed and invisible.</p>
@@ -124,8 +115,8 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
         </div>
       </section>
 
-      {f && (att ? <section className="order-sec"><h2>The attestation</h2><Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The program pinned by SHA-256 ran inside an Intel TDX enclave, read NEAR/USD at ${e6(f.price_e6)} from Coinbase and fired order №${o.id}, whose trigger was ${e6(f.trigger_e6)}.`} /></section>
-        : <section className="order-sec"><h2>The attestation</h2><State kind="setup" title="No recorded attestation for this fire">The contract accepted the report only with a valid enclave signature (env::ed25519_verify) through its private callback. Verify the TDX quote with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State></section>)}
+      {f && (att ? <section className="order-sec"><h2>The attestation</h2><Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The program pinned by SHA-256 ran inside an Intel TDX enclave, read NEAR/USD at ${e6(f.price_e6)} from Coinbase and reported the crossing for order №${o.id}, whose trigger was ${e6(f.trigger_e6)}.`} /></section>
+        : <section className="order-sec"><h2>The attestation</h2><State kind="setup" title="No recorded attestation for this fire">The contract accepted the report with a valid enclave signature through its private callback or signed relay. Verify the TDX quote with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State></section>)}
 
       {f && <section className="order-sec">
         <h2>The fire</h2>
