@@ -1,5 +1,7 @@
 # Testing
 
+Latest: [11 Nov full-flow QA](FLOW-QA.md), including live script transactions, production Chrome at 1440/375, connected-state fixtures and the remaining human Meteor approval boundary. The results below remain historical.
+
 The suite results below were recorded on 2026-11-09; web QA was updated on 2026-11-10. Prices use real Coinbase responses pinned in `packages/enclave/fixtures/`, chain tests run on a real local nearcore (near-workspaces sandbox), and the end-to-end evidence is recorded testnet transactions. These historical results were not rerun for the submission-docs update.
 
 | Suite | Command | Tests | Result |
@@ -64,3 +66,22 @@ Checked against `vite build && vite preview` in headless Chrome at 1440×900 and
 
 Not done: a full Meteor sign-in and approval. Meteor's site sits behind Cloudflare, which shows headless Chrome "Sorry, you have been blocked", and signing in needs a person with a Meteor testnet account.
 
+
+## Real browser transactions with the QA signer (11 Nov 2026)
+
+`pnpm test:e2e` builds the normal app and asserts that every production artifact excludes `qa-signer`, `SETER_QA_SIGNER_TESTNET_ONLY`, `__SETER_QA_SIGNER__` and `QA signer`. It then builds a separate `--mode qa` artifact with `VITE_QA_SIGNER=1`. Setting the flag alone in a normal production build does not enable the signer.
+
+Prerequisites: Node 22+, pnpm 10, system Google Chrome (`channel: 'chrome'`), macOS `sysctl`/`lsof`, the shared `withChromeLock` helper, internet access, and this repo's existing funded `.near-credentials/trader.json`. The test reads that file in Node and passes the signing key through `page.addInitScript` directly into browser memory. It never prints the key, saves a credential copy, enables browser tracing/HAR/video, or uses a persistent browser profile.
+
+```bash
+pnpm install --frozen-lockfile
+pnpm test:e2e
+```
+
+The runner checks spendable funds before starting. The signer rejects non-`.testnet` accounts, mainnet RPCs, other contracts, non-demo methods, concurrent transactions and excess attachments. The runner counts the prior SDK QA debit and other browser QA ledgers toward the combined 0.3 testnet NEAR cap. It stops if funds or remaining budget are low.
+
+The browser connects through the same wallet interface, deposits NEAR and tUSD, seals a crossed stop and a distant take-profit, verifies local owner-view decryption, pays for the real enclave check, sees the fired stop and receipt links, cancels the take-profit, withdraws both asset deltas and checks that the original vault balances are restored. A faucet claim is made only if the demo account needs tUSD. It saves the deterministic transaction hash before the single broadcast, uses bounded read-only RPC fallback to wait for `FINAL` outcomes, and captures every major result at 1440x900 and 375x812. It closes its Chrome and preview server in `finally`.
+
+Public evidence defaults to `deployments/qa-browser-<UTC-date>.json`; screenshots and build logs go under the external `flow-qa/mienai/qa-signer/` directory named in [FLOW-QA.md](FLOW-QA.md). A completed ledger cannot be overwritten or replayed. `QA_DROP_SEND_RESPONSE=1` deliberately discards the first real broadcast response after the provider accepts it; the signer must recover by polling the saved hash, with no second broadcast. `pnpm test:e2e --resume` can continue a recorded interrupted run only when the last intended transaction has a known final outcome; it never repeats a recorded successful action. An uncertain outcome requires chain inspection first. `QA_EVIDENCE` and `QA_SCREENSHOTS` can select other public artifact paths; prior ledger spending still counts. `QA_TESTNET_RPC` accepts only the three explicit testnet endpoints. `CHROME_LOCK_PATH` can relocate the same shared lock helper.
+
+This signer tests actual browser encryption, wallet calls, chain results and refreshed positions. Human Meteor sign-in and approval remain a separate manual compatibility check. The first complete run passed; the balance-verification run exposed a delayed RPC outcome and resumed from its publicly recovered FINAL check without sending that check again. See the ledgers and recovery note in `FLOW-QA.md`.

@@ -7,12 +7,12 @@ Public stop levels can show other traders where forced selling will happen. Trad
 Run locally with Node 22+ and pnpm 10. No hosted demo URL is recorded in this repo. The read-only demo needs internet access to NEAR testnet, Coinbase and OutLayer; it needs no wallet or local contracts.
 
 1. From the repo root, run `pnpm install` - see the workspace dependencies install.
-2. Run `pnpm dev` - see Vite serve the app at `http://127.0.0.1:5201`.
+2. Run `pnpm build`, then `pnpm --filter @mienai/web preview` - see the production app served at `http://127.0.0.1:5201`.
 3. Open `http://127.0.0.1:5201/` - see the product page, live market data and recorded testnet proof.
 4. Open `http://127.0.0.1:5201/app` - see the trading terminal and sealed levels shown as `••••`. Open Order history - see the recorded fired stop.
 5. Open `http://127.0.0.1:5201/order/1` - see the recorded trigger of 3.5967, the enclave price of 3.5886 and its attestation certificate. The certificate shows recorded verification checks and fetches the quote from OutLayer to hash in the browser.
 
-To place your own testnet order, follow [Connecting a wallet](#connecting-a-wallet). A full Meteor sign-in and order approval still need a human check; see [TESTING.md](TESTING.md). For this local-only demo, the public X post must include a video ([official rule Q-012](https://nearhackathon.com/HACKATHON.md)).
+To place your own testnet order, follow [Connecting a wallet](#connecting-a-wallet). The real browser flow passes with the test-only QA signer (`pnpm test:e2e`); production uses Meteor. Human Meteor sign-in and approval remain a manual compatibility check. See [FLOW-QA.md](FLOW-QA.md) for results and receipts. For this local-only demo, the public X post must include a video ([official rule Q-012](https://nearhackathon.com/HACKATHON.md)).
 
 ## Live on NEAR testnet
 
@@ -53,6 +53,8 @@ The recorded enclave WASM hash is `791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21
 | Trader cancels the take-profit; its trigger was never revealed | [HojS7Jjq…](https://testnet.nearblocks.io/txns/HojS7Jjquqdz4nRgpm3uQa2ZPnZfEpyWA8bcpDNzizio) |
 
 The TDX attestation of check #2 was verified independently (`packages/sdk/src/attestation.mjs`): wasm hash pinned, input hash, output hash, `report_data` binds the task, measurements approved on `worker.outlayer.testnet`, Intel signature chain valid (TCB `UpToDate`). The full result is stored in the run record. Deploy steps and the pool seed are in `deployments/testnet-2026-11-09.json`; further sealed orders and the band report are in `deployments/book-2026-11-09.json`.
+
+The [11 Nov full-flow check](FLOW-QA.md) adds live deposits, encrypted stop/take-profit placement, a fired stop, cancellation and both withdrawals. Its [public evidence](deployments/flow-qa-2026-11-11.json) records the transactions, restored vault balances and six passing TDX checks.
 
 ## How it works
 
@@ -135,7 +137,7 @@ Built for NEAR HACKATHON 2026 (Nov 1-14). Submission deadline: 2026-11-14 23:59 
 
 For this submission, code before 2026-11-01 is baseline; only the NEAR work built during Nov 1-14 is claimed for judging. The available git history has no project commits before Nov 1. The first commit, `73cbc1d` (9 Nov 2026), contains only `LICENSE` and `.gitignore`. No `NOTICE` file is tracked. The MIT license names Nivesh Gajengi and the year 2026; it gives no earlier development date.
 
-The history records the OutLayer enclave, sealing SDK, NEAR vault, tUSD contract, tests, testnet deployments and web demo on Nov 9-10. Commit `bf32baa` renames Mienai to Seter during that same window. Mienai is this project's former name. No sibling repository is named in the README or identified as reused project code in the available history.
+The history records the OutLayer enclave, sealing SDK, NEAR vault, tUSD contract, tests, testnet deployments and web demo on Nov 9-10. Commit `bf32baa` renames Mienai to Seter during that same window. Mienai is this project's former name. The comment at the top of `packages/sdk/src/attestation.mjs` credits the attestation-verification method first worked out in the team's sibling project Kotoba. This repo does not establish Kotoba's development dates; that shared method is disclosed rather than claimed as new to Seter.
 
 To inspect the implementation added after the license-only scaffold, run `git diff 73cbc1d 271c504 -- packages scripts pnpm-lock.yaml pnpm-workspace.yaml`. These are fixed commits in this repo; the range covers the implementation through the Meteor Wallet update.
 

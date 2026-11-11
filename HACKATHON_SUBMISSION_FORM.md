@@ -31,6 +31,6 @@ stop levels shouldn't be a target. built Seter at NEAR HACKATHON: encrypted stop
 
 Post character count: **228** (limit: 280). The human publishes it.
 
-attach: video TBD
+attach: /Volumes/Extreme SSD/Projects/grokbot/videos/seter-near/seter-near-film-share.mp4
 
-No video was found under `/Volumes/Extreme SSD/Projects/grokbot/videos/seter-near/` or `/Volumes/Extreme SSD/Projects/grokbot/videos/mienai-near/` when preparing this pack.
+The 2:58.6 demo film is available locally in 1080p and a 1280-wide share copy. Nick still needs to post it on X and fill `demoUrl`.
