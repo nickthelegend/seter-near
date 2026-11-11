@@ -1,0 +1,470 @@
+{
+  "network": "testnet",
+  "at": "2026-11-11T17:14:03.093Z",
+  "contract": "mienai-3013a230.testnet",
+  "token": "mienai-ad65ebef.testnet",
+  "account": "mienai-4e6b1225.testnet",
+  "wallet_before": "8757111725274847699999998",
+  "vault_before": {
+    "near": "600000000000000000000000",
+    "usd": "1272503"
+  },
+  "prior_qa_spend_yocto": "120560188021808500000002",
+  "combined_spend_cap_near": "0.3",
+  "production_excludes_qa_signer": true,
+  "signer": "QA signer (real browser transactions)",
+  "status": "PASS",
+  "steps": [
+    {
+      "label": "deposit-near",
+      "method": "deposit_near",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "30000000000000000000000",
+      "tx": "7BgRoW7ks3qRYZivSTY64bPo2bYuMetnVygHTff8qvXc",
+      "explorer": "https://testnet.nearblocks.io/txns/7BgRoW7ks3qRYZivSTY64bPo2bYuMetnVygHTff8qvXc",
+      "at": "2026-11-11T17:14:30.205Z",
+      "final": true,
+      "ok": true,
+      "return": "{\"near\":\"630000000000000000000000\",\"usd\":\"1272503\"}",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "label": "deposit-tusd",
+      "method": "ft_transfer_call",
+      "receiver": "mienai-ad65ebef.testnet",
+      "deposit": "1",
+      "tx": "BtpzLiyLdD41HjcqJv3truM4bQH1eA4w1CEJzTUpGv8w",
+      "explorer": "https://testnet.nearblocks.io/txns/BtpzLiyLdD41HjcqJv3truM4bQH1eA4w1CEJzTUpGv8w",
+      "at": "2026-11-11T17:14:38.259Z",
+      "final": true,
+      "ok": true,
+      "return": "\"100000\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"mienai-4e6b1225.testnet\",\"new_owner_id\":\"mienai-3013a230.testnet\",\"amount\":\"100000\"}]}"
+      ]
+    },
+    {
+      "label": "sealed-stop",
+      "method": "place_order",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "20000000000000000000000",
+      "tx": "EeVtQW2QJur5mUEj3cNJCq8ZLKtjdNFw5r3gG38Jqjqd",
+      "explorer": "https://testnet.nearblocks.io/txns/EeVtQW2QJur5mUEj3cNJCq8ZLKtjdNFw5r3gG38Jqjqd",
+      "at": "2026-11-11T17:14:44.799Z",
+      "final": true,
+      "ok": true,
+      "return": "11",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":11,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    },
+    {
+      "label": "sealed-take-profit",
+      "method": "place_order",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "20000000000000000000000",
+      "tx": "nEVsuRE8zaTMnz96g44QQHNe8mjB4wUV9QDQmBRw3o5",
+      "explorer": "https://testnet.nearblocks.io/txns/nEVsuRE8zaTMnz96g44QQHNe8mjB4wUV9QDQmBRw3o5",
+      "at": "2026-11-11T17:14:51.443Z",
+      "final": true,
+      "ok": true,
+      "return": "12",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":12,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    },
+    {
+      "label": "enclave-check",
+      "method": "check",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "20000000000000000000000",
+      "tx": "9hEuZTjvik1ECo7Q4rYzhyqedrG1W8PEGo4dFBnaSbMD",
+      "explorer": "https://testnet.nearblocks.io/txns/9hEuZTjvik1ECo7Q4rYzhyqedrG1W8PEGo4dFBnaSbMD",
+      "at": "2026-11-11T17:16:22Z",
+      "final": true,
+      "ok": true,
+      "return": "\"fired 1\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":8,\"operation\":\"check\",\"orders\":5}]}",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":24005,\\\"sender_id\\\":\\\"mienai-4e6b1225.testnet\\\",\\\"predecessor_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\\\",\\\"hash\\\":\\\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":20000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"operation\\\\\\\":\\\\\\\"check\\\\\\\",\\\\\\\"contract\\\\\\\":\\\\\\\"mienai-3013a230.testnet\\\\\\\",\\\\\\\"request\\\\\\\":8,\\\\\\\"orders\\\\\\\":[{\\\\\\\"id\\\\\\\":3,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ATg7nsfayyBeeX2H/pIUvsO40HwPTzoU7T6in6fsNqdyjcLxQhMDTHnKYeHKqNkOSihyHhAz6FJ3EeX9ZiT1pNXt455bVq734+qrLU8u24tbWvTv1m1mzfig/pdVLWdgAQBuhotNQ8GU07lQSCPKo2DT2ISwSh7nSswttcaE8B1oZ8bdUXYfVK1EFoH2265f1nix0PBquTTtYLww59Cn6lLK65nxl0Tq9zzcjEsJBXx+w51hHb7v33pa8d0ApwfCHubhZQAi4EG5EQ6UdvM=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"22e2f6c6e412688e22c176e2d2e06d8b96a7aca1a66117c7a70a4f287733bea4\\\\\\\"},{\\\\\\\"id\\\\\\\":4,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AT7W/BO5TaJg+meXBPyJCw05bTE2W5MLTn01wLp8IR1aEDSnKiLSf6ShbzP4f6+NI7eXVbCmUJVvx6NDjFi7QZZsqWYFWsIT7MPjY5eUsih8Gc31XEL/LXu/C/vLLEmd1442prP0nQ9ADXt1d4xxI1d6aqcV4AD2H8VKSRamiPsF5pgsc6fqgptw82MZv40KxgNcalJ7mBzc8ueRCYifhMzOCrusuNbumrMa9xHcPKOwv8fdKEskqHt2uMVH/hWEPhPznMZFMruI4O74ZlY=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"0e81d20c079a1926830812fb6dd1e0cec6d6363dc6018712b646b450b3629a5d\\\\\\\"},{\\\\\\\"id\\\\\\\":5,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"Ab4aqTD+MxuJU4wKZUttGFq8cRQkoWwZwQJE9W4pcsNq4ghx6m+jVSeqQiJ9Dqb6PAO2s9hi0C/H7XcXNk58nVUWb+KbHrgBLB0V7oCzGhMQ7EaB148L7LTz0TnorzYr8cRXOfigk5CuecCeBtCMY5glgoFn8RRLjz4Zy6mu3Yz8+gy32E657Fo2vvW4tKCksybjUGoO/XpZ9B9ItWBECBZuPkFFry26YVr8fQk66R3XNeSqpOSuNdFrX76DeLMU4BfPm5Zi2D6E7OgUkA4=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"7f0cba6552dff0563e9a02742e6180aa75eda5c946c13173e1151e00b2c55900\\\\\\\"},{\\\\\\\"id\\\\\\\":11,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AW8Sv2WsbC54ip5S/cE+c0fSSDg4FdvkmpjKPWl9uftDmF1CqJtW9nRhxzAtLpzym4rAAY+ojPh+He009V6YJYSwnYjbT7jcDQ0El6gDZJ+aTk+IXBGwUFSotdafG9NM9U/VzXMV/pv1r+p8ffE6OMfxCCskGOtMvku/9eLlmlyPG6QixOi9mjK/+rZu9mqClqK0THHXqDhtdSLI+Pe9l+XvUJjtrTdeSFQT93VGNZu/dJNjxyeibxOFJOo4eD52sV0AYOrSDzsKUqjn/Q==\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"00dbd6a54387034d41911274a1eca3f841958c9cf5ffa049106782f771097d16\\\\\\\"},{\\\\\\\"id\\\\\\\":12,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ASAuVGsCL9PHaD343+zJf9435EdVcBiStiqn1gehQshFIalGuVscVWmVi+dOee54toAnpRVTnj2J+aYTEixlhpaKy2Isi8/3tmyAKPLxsKHnNdZ53GsmgQRtwyTZEsjEdjM/tRlL7XvgPbyjqi2l2SvI4pjIwDHqS6/A8WWQPfedQWwrolO1auC/kE4GwZMKEofST+nd+Yx12W8ekeEXQ6Q6nDagSG8nnp/RC0yEDLWd5OR3gB9cWqpesyvBwHutnyaOZ3TCdOVHVmS1xw==\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"d856d971782e66fcca90069c6a00c1d7cb07b30ffd8e766437c83deb2f8f6ccb\\\\\\\"}]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":null,\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"20000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794417296704578008,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":null,\\\"project_id\\\":null}\",\"data_id\":[153,95,210,127,81,52,49,77,7,134,9,242,20,147,128,125,147,211,239,185,210,212,163,15,36,247,5,140,6,21,118,34],\"timestamp\":1794417296704578008}]}",
+        "[[yNEAR charged: \"1124601800000000000000\"]]",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-4e6b1225.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\",\"hash\":\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":18040403,\"time_ms\":1246,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1124601800000000000000\",\"payment_refunded\":\"18875398200000000000000\",\"compilation_note\":\"Cached WASM from 2026-11-09T17:16:17.890705+00:00\",\"timestamp\":1794417381570629904}]}",
+        "Execution completed successfully. Output: Json(704 bytes), Resources: { instructions: 18040403, time_ms: 1246 }, Cost: 1124601800000000000000 yoctoNEAR, Refund: 18875398200000000000000 yoctoNEAR, Cached WASM from 2026-11-09T17:16:17.890705+00:00",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"check\",\"data\":[{\"request\":8,\"path\":\"callback\",\"price_e6\":3787200,\"fired\":[11]}]}"
+      ],
+      "recovered_from_final_rpc": true
+    },
+    {
+      "label": "cancel-take-profit",
+      "method": "cancel_order",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "0",
+      "tx": "8CG3Jzfff4NQGwVXxqzXu447V6F1wD6BDNG7JdDFNt5L",
+      "explorer": "https://testnet.nearblocks.io/txns/8CG3Jzfff4NQGwVXxqzXu447V6F1wD6BDNG7JdDFNt5L",
+      "at": "2026-11-11T17:22:20.551Z",
+      "final": true,
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_cancelled\",\"data\":[{\"id\":12}]}"
+      ]
+    },
+    {
+      "label": "withdraw-near-unaccepted-prepared",
+      "method": "withdraw_near",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "0",
+      "tx": "2iNno9ZLh3PxGXiFTZups78umTJWhphNzyMkHwfWN8Df",
+      "explorer": "https://testnet.nearblocks.io/txns/2iNno9ZLh3PxGXiFTZups78umTJWhphNzyMkHwfWN8Df",
+      "at": "2026-11-11T17:22:22.521Z",
+      "final": false,
+      "ok": null,
+      "return": null,
+      "failure": null,
+      "logs": [],
+      "rejection": "Not accepted: two RPCs returned UNKNOWN_TRANSACTION after the finality timeout.",
+      "read_only_confirmation": {
+        "at": "2026-11-11T17:28:12.788831+00:00",
+        "providers": [
+          "https://test.rpc.fastnear.com",
+          "https://near-testnet.drpc.org"
+        ],
+        "status": "UNKNOWN_TRANSACTION",
+        "vault_near": "620000000000000000000000",
+        "vault_usd": "1400165"
+      }
+    },
+    {
+      "label": "withdraw-near",
+      "method": "withdraw_near",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "0",
+      "tx": "AAibpMiipb2EeMWj9tr6p7CQh7wmeU5E54a2rmkouFBm",
+      "explorer": "https://testnet.nearblocks.io/txns/AAibpMiipb2EeMWj9tr6p7CQh7wmeU5E54a2rmkouFBm",
+      "at": "2026-11-11T17:32:51.521Z",
+      "final": true,
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "label": "withdraw-tusd",
+      "method": "withdraw_usd",
+      "receiver": "mienai-3013a230.testnet",
+      "deposit": "0",
+      "tx": "BeZqkwxH6jRkvCSbeF1BTX8Lg5TXnBQowtifaw34G5J",
+      "explorer": "https://testnet.nearblocks.io/txns/BeZqkwxH6jRkvCSbeF1BTX8Lg5TXnBQowtifaw34G5J",
+      "at": "2026-11-11T17:32:58.901Z",
+      "final": true,
+      "ok": true,
+      "return": "true",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"mienai-3013a230.testnet\",\"new_owner_id\":\"mienai-4e6b1225.testnet\",\"amount\":\"127662\",\"memo\":\"mienai withdraw\"}]}"
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "id": "landing",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/landing-1440.png"
+    },
+    {
+      "id": "landing",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/landing-375.png"
+    },
+    {
+      "id": "connected",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/connected-1440.png"
+    },
+    {
+      "id": "connected",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/connected-375.png"
+    },
+    {
+      "id": "near-deposited",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/near-deposited-1440.png"
+    },
+    {
+      "id": "near-deposited",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/near-deposited-375.png"
+    },
+    {
+      "id": "tusd-deposited",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/tusd-deposited-1440.png"
+    },
+    {
+      "id": "tusd-deposited",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/tusd-deposited-375.png"
+    },
+    {
+      "id": "sealed-stop",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/sealed-stop-1440.png"
+    },
+    {
+      "id": "sealed-stop",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/sealed-stop-375.png"
+    },
+    {
+      "id": "sealed-take-profit",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/sealed-take-profit-1440.png"
+    },
+    {
+      "id": "sealed-take-profit",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/sealed-take-profit-375.png"
+    },
+    {
+      "id": "armed-order",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/armed-order-1440.png"
+    },
+    {
+      "id": "armed-order",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/armed-order-375.png"
+    },
+    {
+      "id": "landing",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/landing-1440.png"
+    },
+    {
+      "id": "landing",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/landing-375.png"
+    },
+    {
+      "id": "connected",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/connected-1440.png"
+    },
+    {
+      "id": "connected",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/connected-375.png"
+    },
+    {
+      "id": "stop-fired-history",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/stop-fired-history-1440.png"
+    },
+    {
+      "id": "stop-fired-history",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/stop-fired-history-375.png"
+    },
+    {
+      "id": "fired-order-receipt",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-receipt-1440.png"
+    },
+    {
+      "id": "fired-order-receipt",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-receipt-375.png"
+    },
+    {
+      "id": "fired-order-chain-record",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-chain-record-1440.png"
+    },
+    {
+      "id": "fired-order-chain-record",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-chain-record-375.png"
+    },
+    {
+      "id": "cancelled-history",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/cancelled-history-1440.png"
+    },
+    {
+      "id": "cancelled-history",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/cancelled-history-375.png"
+    },
+    {
+      "id": "landing",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/landing-1440.png"
+    },
+    {
+      "id": "landing",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/landing-375.png"
+    },
+    {
+      "id": "connected",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/connected-1440.png"
+    },
+    {
+      "id": "connected",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/connected-375.png"
+    },
+    {
+      "id": "stop-fired-history",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/stop-fired-history-1440.png"
+    },
+    {
+      "id": "stop-fired-history",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/stop-fired-history-375.png"
+    },
+    {
+      "id": "fired-order-receipt",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-receipt-1440.png"
+    },
+    {
+      "id": "fired-order-receipt",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-receipt-375.png"
+    },
+    {
+      "id": "fired-order-chain-record",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-chain-record-1440.png"
+    },
+    {
+      "id": "fired-order-chain-record",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/fired-order-chain-record-375.png"
+    },
+    {
+      "id": "cancelled-history",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/cancelled-history-1440.png"
+    },
+    {
+      "id": "cancelled-history",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/cancelled-history-375.png"
+    },
+    {
+      "id": "near-withdrawn",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/near-withdrawn-1440.png"
+    },
+    {
+      "id": "near-withdrawn",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/near-withdrawn-375.png"
+    },
+    {
+      "id": "vault-restored",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/vault-restored-1440.png"
+    },
+    {
+      "id": "vault-restored",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/vault-restored-375.png"
+    },
+    {
+      "id": "signed-out",
+      "width": 1440,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/signed-out-1440.png"
+    },
+    {
+      "id": "signed-out",
+      "width": 375,
+      "path": "/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad/flow-qa/mienai/qa-signer/verified-balances/signed-out-375.png"
+    }
+  ],
+  "checks": [
+    "Non-testnet account and mainnet RPC refused before signing.",
+    "Browser deposits, owner-view decryption, stop execution, cancellation, receipt links, both withdrawals and vault restoration passed at 1440 and 375."
+  ],
+  "intent": null,
+  "faucet": "Existing demo account already funded with tUSD; no new faucet claim needed.",
+  "order_ids": {
+    "stop": 11,
+    "take_profit": 12
+  },
+  "recovery": {
+    "reason": "enclave-check: no FINAL result. Inspect saved hashes before retrying.",
+    "method": "Read-only RPC block/chunk lookup at the recorded request timestamp, then tx status FINAL. No second check was sent.",
+    "block": 277244681,
+    "hash": "9hEuZTjvik1ECo7Q4rYzhyqedrG1W8PEGo4dFBnaSbMD",
+    "nonce_attempt": {
+      "hash": "2iNno9ZLh3PxGXiFTZups78umTJWhphNzyMkHwfWN8Df",
+      "assessment": "Prepared attempt never appeared on chain. The signing helper reused a cached access-key nonce; clearing that cache before each new signature fixes the next attempt."
+    }
+  },
+  "dropped_send_response": {
+    "label": "cancel-take-profit",
+    "expected_failed_request": true
+  },
+  "vault_after": {
+    "near": "600000000000000000000000",
+    "usd": "1272503"
+  },
+  "orders_after": [
+    {
+      "id": 11,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "AW8Sv2WsbC54ip5S/cE+c0fSSDg4FdvkmpjKPWl9uftDmF1CqJtW9nRhxzAtLpzym4rAAY+ojPh+He009V6YJYSwnYjbT7jcDQ0El6gDZJ+aTk+IXBGwUFSotdafG9NM9U/VzXMV/pv1r+p8ffE6OMfxCCskGOtMvku/9eLlmlyPG6QixOi9mjK/+rZu9mqClqK0THHXqDhtdSLI+Pe9l+XvUJjtrTdeSFQT93VGNZu/dJNjxyeibxOFJOo4eD52sV0AYOrSDzsKUqjn/Q==",
+      "commit": "00dbd6a54387034d41911274a1eca3f841958c9cf5ffa049106782f771097d16",
+      "view_ct": "ToxIJkwA5kkdnYuzIo4iTBL7hVPpn+17ReJ6z0qJ0KZqUXtMi2uZYyXoP27wDN6gWzmBRhFKxRSwd6LVqaM7ca4499ZSACty5sEOrfruI+vf616TpR99fQIQPH4/r5cco+3JYIekZj5SiAMaCRbyv/B2kjMlaKR1FxtFZPuHyyMw8K6Gm4TNAKiTXtA5SXnEReQ3sKxxkaA/4K2IHEYHlm/0LIbassp6NPojtQ==",
+      "created_ns": "1794417282105344919",
+      "status": "Fired",
+      "fire": {
+        "request": 8,
+        "path": "callback",
+        "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":4356000,\"side\":\"sell\",\"amount\":\"10000000000000000000000\",\"salt\":\"0359915ccebfdecb7fb4895c643cdfde\"}",
+        "cond": "lte",
+        "trigger_e6": 4356000,
+        "side": "sell",
+        "amount": "10000000000000000000000",
+        "price_e6": 3787200,
+        "price_ts_ms": 1794417378544,
+        "trade_id": 36467570,
+        "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+        "block_height": "277244832",
+        "block_ts": "1794417382090842369",
+        "filled_in": "10000000000000000000000",
+        "filled_out": "27662",
+        "note": "sold NEAR for tUSD on the test pool",
+        "report_sha256": "1cd927583ca20c076b0c163e899f9a9012df7363fbfcf9f80746b1083b05b249",
+        "outlayer_request": "24005"
+      }
+    },
+    {
+      "id": 12,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "ASAuVGsCL9PHaD343+zJf9435EdVcBiStiqn1gehQshFIalGuVscVWmVi+dOee54toAnpRVTnj2J+aYTEixlhpaKy2Isi8/3tmyAKPLxsKHnNdZ53GsmgQRtwyTZEsjEdjM/tRlL7XvgPbyjqi2l2SvI4pjIwDHqS6/A8WWQPfedQWwrolO1auC/kE4GwZMKEofST+nd+Yx12W8ekeEXQ6Q6nDagSG8nnp/RC0yEDLWd5OR3gB9cWqpesyvBwHutnyaOZ3TCdOVHVmS1xw==",
+      "commit": "d856d971782e66fcca90069c6a00c1d7cb07b30ffd8e766437c83deb2f8f6ccb",
+      "view_ct": "+5d81u0RgQ8kmURwCWjdEAI54uqT5mA+lV2CUyD2QEYJFNkEzpfndJcbAgDYy7rdNIKtgeOoai/6eB0wXa8Nyp0+FzK9/90V5pPkEkhKcyYZHnMBb9yj8a/pBxKEuYt3KuBhuvlcKRAyvQDA2gr02hf9eTVcxSdyqAX828sS+pyY+vwpou5Jozp9vuHf/XIjhuPejxMjnU5T4vjKLPXXdpsr+ak1gKDF2sm8dA==",
+      "created_ns": "1794417288909257939",
+      "status": "Cancelled",
+      "fire": null
+    }
+  ],
+  "wallet_after": "8701902740908285299999997",
+  "browser_spend_yocto": "55208984366562400000001",
+  "combined_qa_spend_yocto": "175769172388370900000003",
+  "page_errors": [],
+  "failed_requests": []
+}
