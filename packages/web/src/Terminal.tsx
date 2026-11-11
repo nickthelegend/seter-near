@@ -199,7 +199,7 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
           {wallet.account
             ? <button className="btn btn-primary btn-block btn-lg" disabled={!preview || busy} onClick={place}>{busy ? 'Opening wallet…' : <><Icon name="lock" size={16} />Seal {kind === 'stop' ? 'stop' : 'take-profit'} order</>}</button>
             : <button className="btn btn-primary btn-block btn-lg" onClick={wallet.connect} disabled={!wallet.ready}>Connect wallet to seal</button>}
-          <p className="form-note">Encrypted in your browser to the enclave’s X25519 key. The NEAR contract stores only the ciphertext and a commitment.</p>
+          <p className="form-note">Encrypted in your browser to the enclave’s X25519 key. The contract stores ciphertext and a commitment; owner, time and status are public.</p>
         </>}
     </div>}
     <div className="vault-box">

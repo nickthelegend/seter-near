@@ -110,7 +110,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
           </> : <>
             <p className="label">{o.status}</p>
             <p className="verdict-big">Never revealed.</p>
-            <p className="verdict-note">The order left the book before any crossing; its trigger stays sealed forever.</p>
+            <p className="verdict-note">No crossing was published for this order. Its trigger remains encrypted.</p>
           </>}
         </div>
       </section>
