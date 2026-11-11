@@ -157,10 +157,10 @@ export async function fetchQuote(tx: string): Promise<LiveQuote> {
 }
 
 /** Every recorded OutLayer TEE run (keys, checks, band report) with its transaction. */
-export type OutlayerRun = { tx: string; at: string; kind: 'Keys' | 'Check' | 'Bands'; label: string; attestation: Attestation | null; price_e6?: number };
+export type OutlayerRun = { tx: string; at: string; kind: 'Keys' | 'Check' | 'Bands'; label: string; attestation: Attestation | null; price_e6?: number; order?: number };
 const recordedRuns: OutlayerRun[] = [...allSteps, ...((book as unknown as { steps: RecStep[] }).steps ?? [])]
   .filter((s) => s.tx && s.at && ['refresh_keys', 'check', 'publish_bands'].includes(s.method ?? ''))
-  .map((s) => ({ tx: s.tx!, at: s.at!, kind: s.method === 'refresh_keys' ? 'Keys' : s.method === 'check' ? 'Check' : 'Bands', label: s.step.replace(' (OutLayer TEE run)', '').replace(' (OutLayer TEE run, k = 5)', ''), attestation: s.attestation ?? null, price_e6: s.last_check?.price_e6 }) as OutlayerRun)
+  .map((s) => ({ tx: s.tx!, at: s.at!, kind: s.method === 'refresh_keys' ? 'Keys' : s.method === 'check' ? 'Check' : 'Bands', label: s.step.replace(' (OutLayer TEE run)', '').replace(' (OutLayer TEE run, k = 5)', ''), attestation: s.attestation ?? null, price_e6: s.last_check?.price_e6, order: s.last_check?.fired?.[0] }) as OutlayerRun)
   .reverse();
 export function outlayerRuns(): OutlayerRun[] {
   const recent = readReceipts(CONTRACT).filter((r) => r.method === 'check').map((r): OutlayerRun => ({ tx: r.tx, at: r.at, kind: 'Check', label: 'Wallet price check', attestation: null }));

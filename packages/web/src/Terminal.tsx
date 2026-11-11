@@ -213,13 +213,22 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
 
 function EnclaveBox({ config, stats, wallet }: { config: Config | null; stats: Stats | null; wallet: Wallet }) {
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+  async function check() {
+    if (pending.current) return;
+    pending.current = true; setBusy(true); setErr('');
+    try { await wallet.call('check', {}, toYocto('0.02'), 300); }
+    catch (e) { setErr((e as Error).message); }
+    finally { pending.current = false; setBusy(false); }
+  }
   const pinned = config?.enclave_hash;
   return <div className="vault-box enclave-box">
     <div className="vb-head"><span className="vb-title"><img src={art('enclave').src} alt="" aria-hidden="true" />Enclave · Intel TDX</span>{pinned ? (pinned === enclaveUpload.sha256 ? <span className="ok-chip"><Icon name="check" size={12} />hash = build</span> : <span className="bad-chip">hash ≠ build</span>) : null}</div>
     <div className="frow"><span>Last check</span><b className="mono">{stats?.last_check ? `${e6(stats.last_check.price_e6)} · ${ago(nsToMs(stats.last_check.block_ts))}` : stats ? 'none yet' : '…'}</b></div>
     <div className="frow"><span>Runs / rejected</span><b className="mono">{stats ? `${stats.requests_total} / ${stats.rejected_reports}` : '…'}</b></div>
     <div className="frow"><span>Pinned WASM</span><b className="mono">{pinned ? short(pinned, 6) : '…'}</b></div>
-    {wallet.account && <button className="btn btn-ghost btn-sm btn-block" onClick={() => wallet.call('check', {}, toYocto('0.02'), 300).catch((e) => setErr((e as Error).message))}><Icon name="eye" size={15} />Pay for a check · 0.02 NEAR</button>}
+    {wallet.account && <button className="btn btn-ghost btn-sm btn-block" disabled={busy} onClick={check}><Icon name="eye" size={15} />{busy ? 'Opening wallet…' : 'Pay for a check · 0.02 NEAR'}</button>}
     {err && <p className="sheet-err" role="alert">{err}</p>}
     <p className="form-note">Mainnet settlement through NEAR Intents: <b>Not built</b>.</p>
   </div>;
@@ -237,13 +246,22 @@ function AttRow({ r }: { r: OutlayerRun }) {
     <td>{r.attestation ? <span className="ok-chip"><Icon name="check" size={12} />{Object.values(r.attestation.checks).filter(Boolean).length}/{Object.keys(r.attestation.checks).length} · TCB {r.attestation.tcb.status}</span> : <span className="dim">quote only</span>}</td>
     <td className="mono">{q.data ? shortHex(q.data.quoteSha256, 10, 6) : q.error ? <span className="dim">unavailable</span> : '…'}</td>
     <td><Tx hash={r.tx} /></td>
-    <td>{r.attestation ? <Link to="/order/1" className="btn btn-ghost btn-xs">Certificate</Link> : <a className="btn btn-ghost btn-xs" href={`${OUTLAYER_API}/attestations/by-tx/${r.tx}`} target="_blank" rel="noreferrer">Raw <Icon name="external" size={11} /></a>}</td>
+    <td>{r.attestation && r.order !== undefined ? <Link to={`/order/${r.order}`} className="btn btn-ghost btn-xs">Certificate</Link> : <a className="btn btn-ghost btn-xs" href={`${OUTLAYER_API}/attestations/by-tx/${r.tx}`} target="_blank" rel="noreferrer">Raw <Icon name="external" size={11} /></a>}</td>
   </tr>;
 }
 
 function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Wallet; orders: Order[] | null; ordersErr: string; log: LogEvent[] | null; logErr: string }) {
   const [tab, setTab] = useState<Tab>('open');
   const [err, setErr] = useState('');
+  const [pendingIds, setPendingIds] = useState<number[]>([]);
+  const cancelling = useRef(new Set<number>());
+  async function cancel(id: number) {
+    if (cancelling.current.has(id)) return;
+    cancelling.current.add(id); setPendingIds([...cancelling.current]); setErr('');
+    try { await wallet.call('cancel_order', { id }, '0', 30); }
+    catch (e) { setErr((e as Error).message); }
+    finally { cancelling.current.delete(id); setPendingIds([...cancelling.current]); }
+  }
   const open = (orders ?? []).filter((o) => o.status === 'Open').sort((a, b) => b.id - a.id);
   const hist = (orders ?? []).filter((o) => o.status !== 'Open').sort((a, b) => b.id - a.id);
   const runs = outlayerRuns();
@@ -266,7 +284,7 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
           <td>{p ? <span className="mono">{e6(p.trigger_e6)} <small className="dim">only you</small></span> : <Hidden />}</td>
           <td><span className="st st-armed"><i />Armed</span></td>
           <td className="mono">{utc(nsToMs(o.created_ns))}</td>
-          <td className="acts">{wallet.account === o.owner && <button className="btn btn-ghost btn-xs" onClick={() => wallet.call('cancel_order', { id: o.id }, '0', 30).catch((e) => setErr((e as Error).message))}>Cancel</button>}<Link to={`/order/${o.id}`} className="btn btn-ghost btn-xs">View</Link></td>
+          <td className="acts">{wallet.account === o.owner && <button className="btn btn-ghost btn-xs" disabled={pendingIds.includes(o.id)} onClick={() => cancel(o.id)}>{pendingIds.includes(o.id) ? 'Cancelling…' : 'Cancel'}</button>}<Link to={`/order/${o.id}`} className="btn btn-ghost btn-xs">View</Link></td>
         </tr>; })}</tbody>
       </table>)}
       {tab === 'history' && (!orders ? loading(ordersErr, 'orders') : !hist.length ? <State kind="empty" title="No fired or cancelled orders yet" /> : <table className="tbl">
