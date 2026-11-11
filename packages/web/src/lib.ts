@@ -68,6 +68,14 @@ export function toYocto(decimal: string): string {
   if (!m) throw new Error('Enter an amount like 0.5');
   return (BigInt(m[1]) * YOCTO + BigInt((m[2] || '').padEnd(24, '0'))).toString();
 }
+/** Exact six-decimal token units; never rounds a small amount to zero or serializes NaN. */
+export function toTokenUnits(decimal: string): string {
+  const m = /^(\d+)(?:\.(\d{0,6}))?$/.exec(decimal.trim());
+  if (!m) throw new Error('Enter a positive tUSD amount with at most 6 decimal places.');
+  const units = BigInt(m[1]) * 1_000_000n + BigInt((m[2] || '').padEnd(6, '0'));
+  if (units <= 0n || units > (1n << 128n) - 1n) throw new Error('Enter a positive tUSD amount within the token limit.');
+  return units.toString();
+}
 export const short = (s: string, n = 6) => (s.length > n * 2 + 1 ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 export const shortAccount = (a: string) => (a.length > 22 ? `${a.slice(0, 12)}…${a.slice(-8)}` : a);
 export const ago = (ms: number) => {

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CONTRACT, TOKEN, near, toYocto, usd6, type Balance } from './lib';
+import { useRef, useState } from 'react';
+import { CONTRACT, TOKEN, near, toTokenUnits, toYocto, usd6, view, type Balance } from './lib';
 import { Icon, Num, Sheet, State } from './ui';
 import type { Wallet } from './wallet';
 import { WithLogo } from './logos';
@@ -12,17 +12,48 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
   const [asset, setAsset] = useState<'NEAR' | 'tUSD'>('NEAR');
   const [amount, setAmount] = useState('1');
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+  const [done, setDone] = useState('');
+  const [claimed, setClaimed] = useState(false);
   const [importKey, setImportKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const key = wallet.account ? viewKeyFor(wallet.account) : '';
   async function submit() {
+    if (pending.current) return;
     setErr('');
+    setDone('');
     try {
-      if (mode === 'deposit' && asset === 'NEAR') await wallet.call('deposit_near', {}, toYocto(amount), 30);
-      else if (mode === 'deposit') await wallet.call('ft_transfer_call', { receiver_id: CONTRACT, amount: String(Math.round(Number(amount) * 1e6)), msg: 'deposit' }, '1', 100, TOKEN);
-      else if (asset === 'NEAR') await wallet.call('withdraw_near', { amount: toYocto(amount) }, '0', 30);
-      else await wallet.call('withdraw_usd', { amount: String(Math.round(Number(amount) * 1e6)) }, '0', 60);
+      const units = asset === 'NEAR' ? toYocto(amount) : toTokenUnits(amount);
+      if (BigInt(units) <= 0n || BigInt(units) > (1n << 128n) - 1n) throw new Error('Enter a positive amount within the asset limit.');
+      if (mode === 'withdraw') {
+        if (!balance) throw new Error('Wait for your vault balance to load, then try again.');
+        if (BigInt(units) > BigInt(asset === 'NEAR' ? balance.near : balance.usd)) throw new Error(`Not enough ${asset} in your vault.`);
+      }
+      pending.current = true;
+      setBusy(true);
+      if (mode === 'deposit' && asset === 'NEAR') await wallet.call('deposit_near', {}, units, 30);
+      else if (mode === 'deposit') await wallet.call('ft_transfer_call', { receiver_id: CONTRACT, amount: units, msg: 'deposit' }, '1', 100, TOKEN);
+      else if (asset === 'NEAR') await wallet.call('withdraw_near', { amount: units }, '0', 30);
+      else {
+        const storage = await view('storage_balance_of', { account_id: wallet.account }, TOKEN);
+        if (!storage) {
+          const bounds = await view<{ min: string }>('storage_balance_bounds', {}, TOKEN);
+          await wallet.call('storage_deposit', { account_id: wallet.account, registration_only: true }, bounds.min, 30, TOKEN);
+        }
+        const result = await wallet.call('withdraw_usd', { amount: units }, '0', 60);
+        if (result && 'status' in result && typeof result.status === 'object' && 'SuccessValue' in result.status && atob(result.status.SuccessValue) === 'false') throw new Error('The token transfer failed. Your tUSD was returned to the vault.');
+      }
+      setDone(mode === 'deposit' ? 'Deposit complete' : 'Withdrawal complete');
     } catch (e) { setErr((e as Error).message); }
+    finally { pending.current = false; setBusy(false); }
+  }
+  async function faucet() {
+    if (pending.current) return;
+    pending.current = true; setBusy(true); setErr('');
+    try { await wallet.call('faucet', {}, toYocto('0.01'), 30, TOKEN); setClaimed(true); }
+    catch (e) { setErr((e as Error).message); }
+    finally { pending.current = false; setBusy(false); }
   }
   return <Sheet label="Vault" onClose={onClose}>
     <header className="sheet-head">
@@ -36,15 +67,15 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
         <div><dt><WithLogo sym="tUSD" size={20}>tUSD in vault</WithLogo> <small>test token, no value</small></dt><dd>{balance ? <Num value={usd6(balance.usd)} /> : '…'}</dd></div>
       </dl>
       <div className="seg" role="tablist" aria-label="Vault action">
-        {(['deposit', 'withdraw'] as const).map((m) => <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>{m === 'deposit' ? 'Deposit' : 'Withdraw'}</button>)}
+        {(['deposit', 'withdraw'] as const).map((m) => <button key={m} role="tab" disabled={busy} aria-selected={mode === m} className={mode === m ? 'on' : ''} onClick={() => { setMode(m); setDone(''); setErr(''); }}>{m === 'deposit' ? 'Deposit' : 'Withdraw'}</button>)}
       </div>
       <div className="field field-row">
         <label htmlFor="vault-amt" className="sr">Amount</label>
-        <input id="vault-amt" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.trim())} />
-        <select aria-label="Asset" value={asset} onChange={(e) => setAsset(e.target.value as 'NEAR' | 'tUSD')}><option>NEAR</option><option>tUSD</option></select>
+        <input id="vault-amt" inputMode="decimal" disabled={busy} value={amount} onChange={(e) => { setAmount(e.target.value.trim()); setDone(''); setErr(''); }} />
+        <select aria-label="Asset" disabled={busy} value={asset} onChange={(e) => { setAsset(e.target.value as 'NEAR' | 'tUSD'); setDone(''); setErr(''); }}><option>NEAR</option><option>tUSD</option></select>
       </div>
-      <button className="btn btn-primary btn-block" onClick={submit}>{mode === 'deposit' ? 'Deposit' : 'Withdraw'} {amount || '0'} {asset}</button>
-      {asset === 'tUSD' && mode === 'deposit' && <p className="sheet-note">Need test tUSD? <button className="link" onClick={() => wallet.call('faucet', {}, toYocto('0.01'), 30, TOKEN).catch((e) => setErr((e as Error).message))}>Take 1,000 from the faucet</button> (once an hour).</p>}
+      <button className="btn btn-primary btn-block" disabled={busy} onClick={submit}>{busy ? 'Waiting for wallet…' : done || `${mode === 'deposit' ? 'Deposit' : 'Withdraw'} ${amount || '0'} ${asset}`}</button>
+      {asset === 'tUSD' && mode === 'deposit' && <p className="sheet-note">Need test tUSD? <button className="link" disabled={busy || claimed} onClick={faucet}>{claimed ? '1,000 tUSD claimed' : 'Take 1,000 from the faucet'}</button> (once an hour).</p>}
       {err && <p className="sheet-err" role="alert">{err}</p>}
       <details className="viewkey">
         <summary>View key on this device: {key ? 'present' : 'none yet'}</summary>
