@@ -8,6 +8,11 @@ import { rememberReceipt } from './receipts';
  * "MyNearWallet can't connect to apps anymore" and sends people to Meteor. */
 export const WALLET = { id: 'meteor-wallet', name: 'Meteor Wallet', url: 'https://wallet.meteorwallet.app' } as const;
 
+export type WalletPort = Pick<InjectedWallet, 'getAccounts' | 'signIn' | 'signOut' | 'signAndSendTransaction' | 'signAndSendTransactions'>;
+const qaEnabled = import.meta.env.MODE === 'qa' && import.meta.env.VITE_QA_SIGNER === '1';
+const getQaWallet = () => qaEnabled ? import('./qa-signer').then((m) => m.getQaSigner()) : Promise.reject(new Error('Test wallet disabled'));
+const getWallet = async (): Promise<WalletPort> => qaEnabled ? getQaWallet() : (await getSelector()).wallet<InjectedWallet>(WALLET.id);
+
 let selectorPromise: Promise<WalletSelector> | null = null;
 // Loaded on demand so the landing page does not pay for the wallet bundle.
 const getSelector = () => (selectorPromise ??= Promise.all([import('@near-wallet-selector/core'), import('@near-wallet-selector/meteor-wallet')])
@@ -34,6 +39,11 @@ export function useWallet() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     let unsub: (() => void) | undefined;
+    if (qaEnabled) {
+      let active = true;
+      getQaWallet().then(async (w) => { const accounts = await w.getAccounts(); if (active) { setAccount(accounts[0]?.accountId || ''); setReady(true); } }).catch(() => { if (active) setError('QA signer unavailable: inject a funded testnet account and an allowed testnet RPC.'); });
+      return () => { active = false; };
+    }
     getSelector().then((s) => {
       setReady(true);
       const sync = () => setAccount(s.store.getState().accounts.find((a) => a.active)?.accountId ?? '');
@@ -45,19 +55,18 @@ export function useWallet() {
   }, []);
   async function connect() {
     setError('');
-    try { const w = await (await getSelector()).wallet<InjectedWallet>(WALLET.id); await w.signIn({ contractId: CONTRACT, methodNames: [] }); }
+    try { const w = await getWallet(); const accounts = await w.signIn({ contractId: CONTRACT, methodNames: [] }); if (qaEnabled) setAccount(accounts[0]?.accountId || ''); }
     catch (e) { setError(walletError(e, true).message); }
   }
   async function disconnect() {
-    try { const w = await (await getSelector()).wallet(); await w.signOut(); setAccount(''); }
+    try { const w = await getWallet(); await w.signOut(); setAccount(''); }
     catch (e) { setError(walletError(e).message); }
   }
   /** Calls with no deposit to the contract are signed by the function-call key Meteor issued at sign-in; anything that
    * attaches NEAR, or goes to another contract, opens Meteor for approval. */
   async function call(methodName: string, args: object, depositYocto: string, tgas = 50, receiverId = CONTRACT) {
     try {
-      const [selector, { actionCreators }] = await Promise.all([getSelector(), import('@near-wallet-selector/core')]);
-      const w = await selector.wallet();
+      const [w, { actionCreators }] = await Promise.all([getWallet(), import('@near-wallet-selector/core')]);
       const result = await w.signAndSendTransaction({ receiverId, actions: [actionCreators.functionCall(methodName, args, BigInt(tgas) * 10n ** 12n, BigInt(depositYocto))] });
       if (result && typeof result.status === 'object' && 'Failure' in result.status) throw new Error('ExecutionError');
       rememberReceipt(CONTRACT, methodName, args, receiverId, account, result);
