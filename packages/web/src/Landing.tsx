@@ -12,7 +12,7 @@ const Art = ({ subject, className }: { subject: string; className?: string }) =>
 
 const TECH = [
   { code: 'outlayer.testnet · request_execution', title: 'OutLayer TEE execution', body: 'check() runs a WASM pinned by SHA-256 on an Intel TDX worker; the result resumes into the contract.' },
-  { code: '#[private] fn on_result', title: 'Promise-origin check', body: 'Results enter only through the promise of the contract’s own request.' },
+  { code: '#[private] fn on_result', title: 'Promise-origin check', body: 'Callback results answer the contract’s own request. Signed reports can also use the relay.' },
   { code: 'env::ed25519_verify', title: 'Enclave signature', body: 'Every report is signed by a key released only to this WASM hash, called by this contract.' },
   { code: 'encryption_keys · bind: wasm', title: 'Keys only the build holds', body: 'The order key is derived inside the TEE; any other build or caller opens nothing.' },
   { code: 'callers.contract.only', title: 'Locked-down runs', body: 'Only the Seter contract may start runs; egress only to api.exchange.coinbase.com.' },
@@ -97,7 +97,7 @@ export default function Landing() {
         <div className="hero-copy">
           <p className="pill-live"><i className="live" />Live on NEAR testnet</p>
           <h1>Your stop-loss, <em>invisible</em> until it fires.</h1>
-          <p className="hero-lede">Sealed to an Intel TDX enclave. The chain sees only ciphertext, so no one can hunt your level.</p>
+          <p className="hero-lede">Sealed to an Intel TDX enclave. Your trigger stays encrypted until the order fires.</p>
           <div className="hero-cta"><Link to="/app" className="btn btn-primary btn-lg">Start trading <Icon name="arrow" size={17} /></Link><a href="#proof" className="btn btn-ghost btn-lg">See a real fire</a></div>
         </div>
         <Art subject="enclave" className="hero-art" />
@@ -111,7 +111,7 @@ export default function Landing() {
       <dl className="numbers" aria-label="Live proof numbers">
         <div><dt><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR / USD · Coinbase</span></dt><dd className="mono">{price ? <Num value={price.toFixed(4)} /> : '…'}</dd></div>
         <div><dt>Orders sealed</dt><dd>{v(s?.orders_total)}</dd></div>
-        <div><dt>Levels visible on chain</dt><dd className="gold">{s ? 0 : v(undefined)}</dd></div>
+        <div><dt>Open levels visible on chain</dt><dd className="gold">{s ? 0 : v(undefined)}</dd></div>
         <div><dt>Fired and audited</dt><dd>{v(s?.fired)}</dd></div>
         <div><dt>Enclave runs</dt><dd>{v(s?.requests_total)}<small>{s ? ` · ${s.rejected_reports} rejected` : ''}</small></dd></div>
       </dl>
@@ -131,7 +131,7 @@ export default function Landing() {
           <div className="ben-copy">
             <p className="kicker">02 · Unhuntable</p>
             <h2>Nothing for a stop hunter to see.</h2>
-            <p>The contract’s public state is ciphertext and counts. Levels stay hidden until they fire.</p>
+            <p>Orders are encrypted. Owner, timing and status remain public. Levels are revealed when they fire.</p>
             {orders.data && <ul className="ben-rows">{[...orders.data].reverse().slice(0, 4).map((o) => <li key={o.id}><span className="mono">№{o.id}</span><span className="mono dim">{shortHex(o.ct, 10, 4)}</span>{o.fire ? <span className="mono gold">{e6(o.fire.trigger_e6)}</span> : <Hidden label="" />}</li>)}</ul>}
           </div>
         </article>
@@ -162,7 +162,7 @@ export default function Landing() {
       </section>
 
       <section className="l-sec" id="tech">
-        <header className="l-head"><p className="kicker">The NEAR tech</p><h2>Two independent origin checks, both on chain.</h2></header>
+        <header className="l-head"><p className="kicker">The NEAR tech</p><h2>Signed enclave reports, checked on chain.</h2></header>
         <div className="tech">{TECH.map((x) => <article key={x.code}><h3>{x.title}</h3><p>{x.body}</p><code>{x.code}</code></article>)}</div>
       </section>
     </main>
@@ -177,7 +177,7 @@ export default function Landing() {
         <div className="l-foot-brand"><Wordmark small /><p>Sealed stop and take-profit orders on NEAR testnet, fired by an attested OutLayer enclave.</p></div>
         <div><h4>Product</h4><Link to="/app">Trade NEAR/USD</Link><a href="#benefits">How it works</a><a href="#proof">Proof</a></div>
         <div><h4>Contracts</h4><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Vault {short(CONTRACT, 8)}</a><a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer"><TokenLogo sym="tUSD" />tUSD {short(TOKEN, 8)}</a><span className="mono">WASM {(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 12)}…</span></div>
-        <div><h4>Status</h4><span>Mainnet via NEAR Intents: <b>Setup required: NEAR_MAINNET_ACCOUNT</b></span><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={11} /></a></div>
+        <div><h4>Status</h4><span>Mainnet via NEAR Intents: <b>Not built</b></span><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={11} /></a></div>
       </div>
       <p className="l-legal">MIT · © 2026 Nivesh Gajengi · NEAR testnet only; tUSD has no value. Formerly Mienai; on-chain account IDs keep the old prefix.</p>
     </footer>

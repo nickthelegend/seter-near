@@ -124,8 +124,8 @@ export function buildLog(orders: Order[], requests: Request[]): LogEvent[] {
   for (const r of requests) {
     const at = nsToMs(r.created_ns);
     if (r.kind === 'Keys') out.push({ key: `r${r.id}`, at, kind: 'attested', title: 'Enclave published its keys', detail: `attested OutLayer run · request ${r.id} · ${r.status.toLowerCase()}` });
-    else if (r.kind === 'Check') out.push({ key: `r${r.id}`, at, kind: 'checked', title: `Check ${r.id}: enclave opened ${r.order_ids.length} order${r.order_ids.length === 1 ? '' : 's'}`, detail: r.note.replace('callback: ', ''), tx: txForRequest(r.id) });
-    else out.push({ key: `r${r.id}`, at, kind: 'checked', title: `Band report ${r.id}: ${r.order_ids.length} orders counted`, detail: 'k-anonymous bands · no level published', });
+    else if (r.kind === 'Check') out.push({ key: `r${r.id}`, at, kind: 'checked', title: `Check ${r.id}: ${r.order_ids.length} orders requested`, detail: r.note.replace('callback: ', '') || r.status, tx: txForRequest(r.id) });
+    else out.push({ key: `r${r.id}`, at, kind: 'checked', title: `Band report ${r.id}: ${r.order_ids.length} orders requested`, detail: r.note || r.status });
   }
   const a = firedStep?.attestation;
   if (a) out.push({ key: `a${a.request_id}`, at: (a as unknown as { timestamp: number }).timestamp * 1000, kind: 'attested', title: 'TDX attestation verified', detail: `OutLayer run #${a.request_id} · TCB ${a.tcb.status ?? 'unknown'} · recorded check`, tx: a.tx });

@@ -59,7 +59,7 @@ function MarketBar({ stats }: { stats: Stats | null }) {
       {cell('24h volume (NEAR)', d.data ? Math.round(d.data.volume).toLocaleString('en-US') : '…')}
       {cell('Enclave read', stats?.last_check ? <>{e6(stats.last_check.price_e6)} <small>{ago(nsToMs(stats.last_check.block_ts))}</small></> : stats ? 'no check yet' : '…')}
       {cell('Armed', stats ? stats.open : '…')}
-      {cell('Levels on chain', stats ? <span className="gold">0</span> : '…')}
+      {cell('Open levels exposed', stats ? <span className="gold">0</span> : '…')}
       <div className="mb-cell"><span>Source</span><b><a href="https://api.exchange.coinbase.com/products/NEAR-USD/ticker" target="_blank" rel="noreferrer">Coinbase <Icon name="external" size={11} /></a></b></div>
     </div>
     {(d.error || t.error) && <p className="mb-err" role="status">{d.error || t.error}</p>}
@@ -104,7 +104,7 @@ function SealedBook({ orders, stats, last }: { orders: Order[] | null; stats: St
       <ul className="book-rows">{revealed.length ? revealed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span className="mono gold">{e6(o.fire!.trigger_e6)}</span><span className="mono">{near(o.fire!.amount, 2)}</span><span className="mono dim">{ago(nsToMs(o.fire!.block_ts))}</span></Link></li>) : <li className="book-empty dim">Nothing fired yet</li>}</ul>
     </>}
     <footer className="book-foot">
-      <div><span>Levels visible</span><b className="gold">{stats ? 0 : '…'}</b></div>
+      <div><span>Open levels visible</span><b className="gold">{stats ? 0 : '…'}</b></div>
       <div><span>Band report (k = {b?.k ?? 5})</span><b>{b ? `${b.suppressed}/${b.total} suppressed` : stats ? 'none yet' : '…'}</b></div>
     </footer>
   </section>;
@@ -221,7 +221,7 @@ function EnclaveBox({ config, stats, wallet }: { config: Config | null; stats: S
     <div className="frow"><span>Pinned WASM</span><b className="mono">{pinned ? short(pinned, 6) : '…'}</b></div>
     {wallet.account && <button className="btn btn-ghost btn-sm btn-block" onClick={() => wallet.call('check', {}, toYocto('0.02'), 300).catch((e) => setErr((e as Error).message))}><Icon name="eye" size={15} />Pay for a check · 0.02 NEAR</button>}
     {err && <p className="sheet-err" role="alert">{err}</p>}
-    <p className="form-note">Mainnet settlement through NEAR Intents: <b>Setup required: NEAR_MAINNET_ACCOUNT</b>.</p>
+    <p className="form-note">Mainnet settlement through NEAR Intents: <b>Not built</b>.</p>
   </div>;
 }
 
