@@ -164,3 +164,4 @@ MIT, Copyright (c) 2026 Nivesh Gajengi.
 - The NEAR token logo comes from [`@web3icons/core`](https://github.com/0xa3k5/web3icons) 4.0.58 (branded variant), MIT licensed and bundled into the web build (no hotlinking). The logo remains the trademark of its project and is used only to identify the asset.
 - The quote asset is the US dollar (Coinbase `NEAR-USD`). Fiat USD has no mark in that package, so the app draws a plain dollar disc for it.
 - tUSD is Seter's own test token with no value. It shows the same dollar disc, never a real stablecoin's logo; from 20 px up the logo carries a "test" tag, and the "tUSD" ticker is always written next to it.
+- 3D art generated with ChatGPT: the frosted violet glass objects in `packages/web/public/art/3d` (kit, prompts and placements in [docs/ART-3D.md](docs/ART-3D.md)).
