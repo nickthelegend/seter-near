@@ -61,7 +61,18 @@ export function Tx({ hash, label }: { hash: string; label?: string }) {
 }
 export function Copy({ value, label }: { value: string; label: string }) {
   const [done, setDone] = useState(false);
-  return <button className="copy" onClick={() => navigator.clipboard?.writeText(value).then(() => { setDone(true); setTimeout(() => setDone(false), 1400); })} aria-label={`Copy ${label}`}>{done ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}</button>;
+  const [failed, setFailed] = useState(false);
+  async function copy() {
+    setFailed(false);
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(value);
+      setDone(true);
+      setTimeout(() => setDone(false), 1400);
+    } catch { setFailed(true); }
+  }
+  const message = 'Copy is unavailable. Select the value and copy it manually.';
+  return <button className="copy" onClick={copy} title={failed ? message : `Copy ${label}`} aria-label={`Copy ${label}`}>{done ? <Icon name="check" size={14} /> : <Icon name="copy" size={14} />}{failed && <span className="sr" role="status">{message}</span>}</button>;
 }
 export const shortHex = (h: string, a = 10, b = 6) => (h.length > a + b + 1 ? `${h.slice(0, a)}…${h.slice(-b)}` : h);
 
