@@ -90,14 +90,14 @@ function ChartPanel({ stats, fired, requestsLog }: { stats: Stats | null; fired:
 }
 
 /* ---------------- sealed book ---------------- */
-function SealedBook({ orders, stats, last }: { orders: Order[] | null; stats: Stats | null; last: number | null }) {
+function SealedBook({ orders, error, stats, last }: { orders: Order[] | null; error: string; stats: Stats | null; last: number | null }) {
   const armed = (orders ?? []).filter((o) => o.status === 'Open').sort((a, b) => b.id - a.id);
   const revealed = (orders ?? []).filter((o) => o.fire).sort((a, b) => b.id - a.id);
   const b = stats?.bands;
   return <section className="pnl book" aria-label="Sealed book">
     <header className="pnl-tabs"><span className="pnl-tab on">Sealed book</span><span className="pnl-note">dark</span></header>
     <div className="book-cols mono"><span>Trigger</span><span>Size</span><span>Age</span></div>
-    {!orders ? <p className="book-empty dim">Loading…</p> : <>
+    {!orders ? <p className="book-empty dim" role={error ? 'alert' : 'status'}>{error || 'Loading…'}</p> : <>
       <ul className="book-rows">{armed.length ? armed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span><Hidden label="" /></span><span><Hidden label="" /></span><span className="mono dim">{ago(nsToMs(o.created_ns))}</span></Link></li>) : <li className="book-empty dim">No armed orders</li>}</ul>
       <div className="book-mid"><b className="mono">{last ? last.toFixed(4) : '…'}</b><span>Coinbase last · {armed.length} sealed level{armed.length === 1 ? '' : 's'} around it</span></div>
       <p className="book-sub mono">Revealed after firing</p>
@@ -336,7 +336,7 @@ export default function Terminal({ wallet }: { wallet: Wallet }) {
   const last = t.data ? Number(t.data.price) : null;
   const fired = (book.data ?? []).filter((o) => o.fire);
   const chart = <ChartPanel stats={stats.data} fired={fired} requestsLog={log} />;
-  const sealedBook = <SealedBook orders={book.data} stats={stats.data} last={last} />;
+  const sealedBook = <SealedBook orders={book.data} error={book.error} stats={stats.data} last={last} />;
   return <div className="term-page">
     <AppHeader wallet={wallet} onVault={() => setVault(true)} />
     <main className={`term ${wide ? 'term-wide' : ''}`} id="main">
