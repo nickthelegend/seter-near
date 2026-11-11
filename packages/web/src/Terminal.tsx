@@ -34,7 +34,7 @@ export function AppHeader({ wallet, onVault }: { wallet: Wallet; onVault?: () =>
       <span className="net"><i className="live" />NEAR testnet</span>
       {wallet.account && onVault && <button className="btn btn-ghost btn-sm" onClick={onVault}><Icon name="wallet" size={15} />Vault</button>}
       {wallet.account
-        ? <button className="btn btn-ghost btn-sm" onClick={wallet.disconnect} title="Sign out">{shortAccount(wallet.account)}</button>
+        ? <button className="btn btn-ghost btn-sm account-button" onClick={wallet.disconnect} title={`Sign out ${wallet.account}`}><span>{shortAccount(wallet.account)}</span></button>
         : <button className="btn btn-primary btn-sm" onClick={wallet.connect} disabled={!wallet.ready}>{wallet.ready ? 'Connect wallet' : 'Loading'}</button>}
     </div>
   </header>;
