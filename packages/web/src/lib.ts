@@ -29,31 +29,38 @@ export type Balance = { near: string; usd: string };
 /** FastNEAR first; a 429 from it carries no CORS header and surfaces as a network error, so fall over to the next RPC. */
 export const RPCS = [RPC, 'https://near-testnet.drpc.org', 'https://rpc.testnet.near.org'];
 let preferred = 0;
+/** Bound public reads so a stalled provider cannot leave a screen loading forever. */
+export async function publicJson(url: string, label: string, init: RequestInit = {}): Promise<any> {
+  try {
+    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(6000) });
+    if (!res.ok) throw new Error('HTTP error');
+    return await res.json();
+  } catch { throw new Error(`${label} is unavailable. Check your connection; the app will retry.`); }
+}
 export async function view<T>(method: string, args: object = {}, contract = CONTRACT): Promise<T> {
   const body = JSON.stringify({ jsonrpc: '2.0', id: 'mienai-web', method: 'query', params: { request_type: 'call_function', finality: 'final', account_id: contract, method_name: method, args_base64: btoa(JSON.stringify(args)) } });
-  let last: Error = new Error('NEAR testnet RPC unreachable');
   for (let i = 0; i < RPCS.length; i++) {
     const idx = (preferred + i) % RPCS.length;
+    let json;
     try {
-      const res = await fetch(RPCS[idx], { method: 'POST', headers: { 'content-type': 'application/json' }, body });
-      if (!res.ok) { last = new Error(`NEAR testnet RPC HTTP ${res.status}`); continue; }
-      const json = await res.json();
-      if (json.error || json.result?.error) throw new Error(`${method}: ${JSON.stringify(json.error || json.result.error).slice(0, 160)}`);
+      json = await publicJson(RPCS[idx], 'NEAR testnet', { method: 'POST', headers: { 'content-type': 'application/json' }, body });
+    } catch { continue; }
+    if (json.result?.error) throw new Error('The contract could not answer this request. Check the account or order and try again.');
+    if (json.error || !Array.isArray(json.result?.result)) continue;
+    try {
+      const value = JSON.parse(new TextDecoder().decode(new Uint8Array(json.result.result))) as T;
       preferred = idx;
-      return JSON.parse(new TextDecoder().decode(new Uint8Array(json.result.result))) as T;
-    } catch (e) {
-      if ((e as Error).message.startsWith(`${method}:`)) throw e;
-      last = e as Error;
-    }
+      return value;
+    } catch { /* try another provider if its response is incomplete */ }
   }
-  throw last;
+  throw new Error('NEAR testnet is unavailable. Check your connection; the app will retry.');
 }
 
 export type Ticker = { price: string; time: string; trade_id: number };
 export async function ticker(): Promise<Ticker> {
-  const res = await fetch(PRICE_SOURCE, { headers: { accept: 'application/json' } });
-  if (!res.ok) throw new Error(`Coinbase HTTP ${res.status}`);
-  return res.json();
+  const t = await publicJson(PRICE_SOURCE, 'Coinbase price', { headers: { accept: 'application/json' } });
+  if (!(Number(t.price) > 0) || !Number.isFinite(Number(t.price)) || !Number.isFinite(Date.parse(t.time)) || !Number.isSafeInteger(t.trade_id)) throw new Error('Coinbase returned an invalid price. The app will retry.');
+  return t as Ticker;
 }
 
 const YOCTO = 10n ** 24n;
@@ -141,10 +148,10 @@ export async function sha256Hex(data: ArrayBuffer | Uint8Array | string): Promis
 /** The TDX quote of an OutLayer run, fetched live from OutLayer's public API and hashed in the browser. */
 export type LiveQuote = { quoteSha256: string; quoteBytes: number; mrtd: string; rtmr3: string; reportData: string; wasm: string; requestId: number };
 export async function fetchQuote(tx: string): Promise<LiveQuote> {
-  const res = await fetch(`${OUTLAYER_API}/attestations/by-tx/${tx}`);
-  if (!res.ok) throw new Error(`OutLayer attestation API HTTP ${res.status}`);
-  const a = await res.json() as { tdx_quote: string; executed_wasm_sha256?: string; wasm_hash?: string; request_id: string | number };
-  const quote = Uint8Array.from(atob(a.tdx_quote), (c) => c.charCodeAt(0));
+  const a = await publicJson(`${OUTLAYER_API}/attestations/by-tx/${tx}`, 'OutLayer quote') as { tdx_quote: string; executed_wasm_sha256?: string; wasm_hash?: string; request_id: string | number };
+  let quote: Uint8Array;
+  try { quote = Uint8Array.from(atob(a.tdx_quote), (c) => c.charCodeAt(0)); } catch { throw new Error('OutLayer returned an invalid quote. Try reloading the page.'); }
+  if (quote.length < 632) throw new Error('OutLayer returned an incomplete quote. Try reloading the page.');
   const hex = (o: number, n = 48) => Array.from(quote.subarray(o, o + n), (b) => b.toString(16).padStart(2, '0')).join('');
   return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id) };
 }
