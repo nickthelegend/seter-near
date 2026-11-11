@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchQuote, view, ticker, type Balance, type Config, type LiveQuote, type Order, type Request, type Stats, type Ticker } from './lib';
 
 export type Loadable<T> = { data: T | null; error: string; loading: boolean };
@@ -7,15 +7,23 @@ const init = <T,>(): Loadable<T> => ({ data: null, error: '', loading: true });
 /** Polls one async source; keeps the last good value and shows the error next to it. */
 export function usePoll<T>(fn: () => Promise<T>, everyMs: number, deps: unknown[] = []): Loadable<T> & { refresh: () => void } {
   const [state, setState] = useState<Loadable<T>>(init);
+  const active = useRef(false);
+  const latest = useRef(0);
   const run = useCallback(() => {
-    fn().then((data) => setState({ data, error: '', loading: false })).catch((e: Error) => setState((s) => ({ data: s.data, error: e.message, loading: false })));
+    const request = ++latest.current;
+    fn().then((data) => {
+      if (active.current && request === latest.current) setState({ data, error: '', loading: false });
+    }).catch((e: unknown) => {
+      if (active.current && request === latest.current) setState((s) => ({ data: s.data, error: e instanceof Error ? e.message : 'Data could not be refreshed.', loading: false }));
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => {
+    active.current = true;
+    setState(init<T>());
     run();
-    if (!everyMs) return;
-    const id = setInterval(() => { if (!document.hidden) run(); }, everyMs);
-    return () => clearInterval(id);
+    const id = everyMs ? setInterval(() => { if (!document.hidden) run(); }, everyMs) : undefined;
+    return () => { active.current = false; ++latest.current; clearInterval(id); };
   }, [run, everyMs]);
   return { ...state, refresh: run };
 }
