@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { openView, orderPlaintext, sealToEnclave, commitment, newViewKey, sealView } from '@mienai/sdk/crypto';
-import { CONTRACT, OUTLAYER_API, accountUrl, ago, buildLog, e6, enclaveUpload, near, nsToMs, outlayerRuns, short, shortAccount, toYocto, txForRequest, usd6, type Balance, type Config, type LogEvent, type Order, type OutlayerRun, type Stats } from './lib';
-import { useBalance, useConfig, useMedia, useMine, useOrders, useQuote, useRequests, useStats, useTicker } from './live';
+import { CONTRACT, OUTLAYER_API, accountUrl, ago, buildLog, e6, enclaveUpload, near, nsToMs, outlayerRuns, short, shortAccount, toYocto, txForRequest, usd6, view, type Balance, type Config, type LogEvent, type Order, type OutlayerRun, type Stats } from './lib';
+import { useBalance, useConfig, useMedia, useMine, useOrders, usePoll, useQuote, useRequests, useStats, useTicker } from './live';
 import { GRANULARITY, useCandles, useStats24h, type Tf } from './market';
 import Chart, { type ChartMark } from './Chart';
 import { Icon, Link, Num, State, Tx, Wordmark, shortHex } from './ui';
@@ -120,30 +120,42 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
   const [size, setSize] = useState('0.5');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const initialTrigger = useRef(false);
+  const pending = useRef(false);
   const cond = kind === 'tp' ? 'gte' : 'lte';
-  useEffect(() => { if (price && !trigger) setTrigger((price * 0.97).toFixed(4)); }, [price, trigger]);
+  useEffect(() => { if (price && !initialTrigger.current) { initialTrigger.current = true; setTrigger((price * 0.97).toFixed(4)); } }, [price]);
   const pick = (k: Kind) => { setKind(k); setErr(''); if (price && (k === 'stop' || k === 'tp')) setTrigger((price * (k === 'stop' ? 0.97 : 1.03)).toFixed(4)); };
   const owner = wallet.account || 'your-account.testnet';
-  const valid = /^\d+(\.\d+)?$/.test(trigger) && /^\d+(\.\d+)?$/.test(size) && Number(trigger) > 0 && Number(size) > 0;
+  const valid = /^\d+(\.\d+)?$/.test(trigger) && /^\d+(\.\d+)?$/.test(size) && Number.isFinite(Number(trigger)) && Number.isFinite(Number(size)) && Number(trigger) > 0 && Number(size) > 0;
   const preview = useMemo(() => {
     if (!config?.tee || !valid || (kind !== 'stop' && kind !== 'tp')) return null;
     try {
-      const pt = orderPlaintext({ cond, triggerUsd: trigger, side: 'sell', amount: toYocto(size) });
+      const amount = toYocto(size);
+      if (BigInt(amount) > (1n << 128n) - 1n) return null;
+      const pt = orderPlaintext({ cond, triggerUsd: trigger, side: 'sell', amount });
       return { pt, ct: sealToEnclave(config.tee.order_pub, owner, pt) as string, commit: commitment(owner, pt) as string };
     } catch { return null; }
   }, [config, cond, trigger, size, owner, valid, kind]);
+  const poolQuote = usePoll<string | null>(() => preview ? view('quote', { side: 'sell', amount: toYocto(size) }) : Promise.resolve(null), 15_000, [size, Boolean(preview), stats?.pool.near, stats?.pool.usd]);
   const dist = price && Number(trigger) > 0 ? (Number(trigger) / price - 1) * 100 : null;
   const wrong = dist !== null && ((cond === 'lte' && dist >= 0) || (cond === 'gte' && dist <= 0));
   const availNear = balance ? Number(BigInt(balance.near) / 10n ** 18n) / 1e6 : null;
   const nudge = (d: number) => { const v = Number(trigger) || price || 0; setTrigger(Math.max(0.0001, v * (1 + d)).toFixed(4)); };
   async function place() {
-    if (!preview || !wallet.account) return;
+    if (!preview || !wallet.account || pending.current) return;
+    if (!balance) { setErr('Wait for your vault balance to load, then try again.'); return; }
+    if (BigInt(toYocto(size)) > BigInt(balance.near)) { setErr('Deposit enough NEAR in your vault before sealing this order.'); return; }
+    pending.current = true;
     setErr(''); setBusy(true);
     try {
       let key = viewKeyFor(wallet.account);
-      if (!key) { key = newViewKey(); try { localStorage.setItem(`mienai:view:${wallet.account}`, key); } catch { /* private window */ } }
+      if (!key) {
+        key = newViewKey();
+        try { localStorage.setItem(`mienai:view:${wallet.account}`, key); }
+        catch { throw new Error('Allow browser storage before sealing, so you can read your own order levels.'); }
+      }
       await wallet.call('place_order', { ct: preview.ct, commit: preview.commit, view_ct: sealView(key, wallet.account, preview.pt) }, toYocto('0.02'), 30);
-    } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+    } catch (e) { setErr((e as Error).message); } finally { pending.current = false; setBusy(false); }
   }
   const sealed = kind === 'stop' || kind === 'tp';
   return <aside className="pnl form" aria-label="Order panel">
@@ -164,7 +176,7 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
         : <>
           <label className="fld">
             <span>Trigger price</span>
-            <div className="fld-in"><button type="button" className="step" onClick={() => nudge(-0.005)} aria-label="Lower the trigger by 0.5%">−</button><input inputMode="decimal" value={trigger} onChange={(e) => setTrigger(e.target.value.trim())} aria-label="Trigger price in USD per NEAR" /><em><WithLogo sym="USD">USD</WithLogo></em><button type="button" className="step" onClick={() => nudge(0.005)} aria-label="Raise the trigger by 0.5%">+</button></div>
+            <div className="fld-in"><button type="button" className="step" onClick={() => nudge(-0.005)} aria-label="Lower the trigger by 0.5%">−</button><input inputMode="decimal" value={trigger} onChange={(e) => { initialTrigger.current = true; setTrigger(e.target.value.trim()); }} aria-label="Trigger price in USD per NEAR" /><em><WithLogo sym="USD">USD</WithLogo></em><button type="button" className="step" onClick={() => nudge(0.005)} aria-label="Raise the trigger by 0.5%">+</button></div>
             <small className={wrong ? 'warn' : ''}>{dist === null ? 'Live price loading' : <>{Math.abs(dist).toFixed(2)}% {dist < 0 ? 'below' : 'above'} last {price!.toFixed(4)}{wrong ? ' · would fire on the next check' : ''}</>}</small>
           </label>
           <label className="fld">
@@ -178,7 +190,7 @@ function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { 
             <div className="cs-you"><span>You see</span><b className="mono">{cond === 'lte' ? '≤' : '≥'} {valid ? Number(trigger).toFixed(4) : '—'} · {valid ? Number(size) : '—'} NEAR</b></div>
           </div>
           <dl className="summ">
-            <div><dt>Est. proceeds at trigger</dt><dd className="mono">{valid ? <WithLogo sym="tUSD">{(Number(size) * Number(trigger)).toFixed(4)} tUSD</WithLogo> : '—'}</dd></div>
+            <div><dt>Current pool quote</dt><dd className="mono">{!preview ? '—' : poolQuote.data ? <WithLogo sym="tUSD">{usd6(poolQuote.data)} tUSD</WithLogo> : poolQuote.error ? 'unavailable' : '…'}</dd></div>
             <div><dt>Pool fee</dt><dd className="mono">{config.fee_bps / 100}%</dd></div>
             <div><dt>Storage deposit</dt><dd className="mono"><WithLogo sym="NEAR">0.02 NEAR</WithLogo></dd></div>
             <div><dt>Max price age</dt><dd className="mono">{config.max_price_age_s} s</dd></div>
