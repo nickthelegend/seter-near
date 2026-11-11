@@ -1,17 +1,14 @@
 packages:
   - packages/*
 
-# NEAR Wallet Selector 10 and Meteor Wallet's SDK are built on @near-js/* 2.x,
-# which peers on @near-js/utils 2. The web app keeps near-api-js 5.0.0 (and its
-# @near-js/utils 1.0.0) for its own reads, so the wallet packages get their own
-# utils 2.5.1 instead of borrowing 1.0.0. Meteor's SDK also peers on
-# near-api-js 6 and calls `utils.serialize`, which near-api-js 7 removed: the
-# Meteor module gets its own 6.2.5.
 packageExtensions:
-  "@near-wallet-selector/core@10.1.4":
+  '@near-wallet-selector/core@10.1.4':
     dependencies:
-      "@near-js/utils": 2.5.1
-  "@near-wallet-selector/meteor-wallet@10.1.4":
+      '@near-js/utils': 2.5.1
+  '@near-wallet-selector/meteor-wallet@10.1.4':
     dependencies:
-      "@near-js/utils": 2.5.1
+      '@near-js/utils': 2.5.1
       near-api-js: 6.2.5
+
+patchedDependencies:
+  '@meteorwallet/sdk@1.0.24': patches/@meteorwallet__sdk@1.0.24.patch

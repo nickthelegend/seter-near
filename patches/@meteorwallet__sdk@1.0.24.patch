@@ -1,0 +1,24 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index bb013b85e78f94ab5e6e590d0e7829f9f956629e..295daf2c6664e3ae10441d13fd9008b6da1e179c 100644
+--- a/dist/index.cjs	
++++ b/dist/index.cjs	
+@@ -767,7 +767,6 @@ var MeteorWallet = class MeteorWallet {
+ 	async requestSignIn(options) {
+ 		const { keyPair,...restOptions } = options;
+ 		const accessKey = keyPair ?? __near_js_crypto.KeyPair.fromRandom("ed25519");
+-		console.log(accessKey);
+ 		const usingPublicKey = accessKey.getPublicKey().toString();
+ 		const response = await getMeteorPostMessenger().connectAndWaitForResponse({
+ 			actionType: EExternalActionType.login,
+diff --git a/dist/index.js b/dist/index.js
+index c2ddb8bea64b5d82becd3b5beec88153a4f45c72..6c309c84589aef506c2dc8bd97513cd0cb2102f3 100644
+--- a/dist/index.js	
++++ b/dist/index.js	
+@@ -744,7 +744,6 @@ var MeteorWallet = class MeteorWallet {
+ 	async requestSignIn(options) {
+ 		const { keyPair,...restOptions } = options;
+ 		const accessKey = keyPair ?? KeyPair.fromRandom("ed25519");
+-		console.log(accessKey);
+ 		const usingPublicKey = accessKey.getPublicKey().toString();
+ 		const response = await getMeteorPostMessenger().connectAndWaitForResponse({
+ 			actionType: EExternalActionType.login,
