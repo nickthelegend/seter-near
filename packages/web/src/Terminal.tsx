@@ -27,7 +27,7 @@ export function AppHeader({ wallet, onVault }: { wallet: Wallet; onVault?: () =>
     <Link to="/" aria-label="Seter home"><Wordmark small /></Link>
     <nav className="ahead-nav" aria-label="App">
       <Link to="/app" aria-current={location.pathname.startsWith('/app') ? 'page' : undefined}>Trade</Link>
-      <Link to="/#how">How it works</Link>
+      <Link to="/#benefits">How it works</Link>
       <Link to="/#proof">Proof</Link>
     </nav>
     <div className="ahead-right">
