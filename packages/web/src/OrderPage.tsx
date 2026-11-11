@@ -69,7 +69,15 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
   const [err, setErr] = useState('');
   const stats = useStats();
   const config = useConfig();
-  useEffect(() => { setO(undefined); view<Order | null>('get_order', { id }).then(setO).catch((e) => setErr(String(e.message || e))); }, [id]);
+  useEffect(() => {
+    let current = true;
+    setO(undefined);
+    setErr('');
+    view<Order | null>('get_order', { id })
+      .then((order) => { if (current) setO(order); })
+      .catch((e) => { if (current) setErr(String(e.message || e)); });
+    return () => { current = false; };
+  }, [id]);
   const body = (() => {
     if (err) return <State kind="error" title="Could not read this order">{err}</State>;
     if (o === undefined) return <State kind="loading" title={`Reading order №${id} from NEAR testnet…`} />;
