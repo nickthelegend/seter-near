@@ -25,7 +25,7 @@ export function usePoll<T>(fn: () => Promise<T>, everyMs: number, deps: unknown[
     run();
     addEventListener(TRANSACTION_EVENT, run);
     const id = everyMs ? setInterval(() => { if (!document.hidden) run(); }, everyMs) : undefined;
-    return () => { active.current = false; ++latest.current; clearInterval(id); removeEventListener(TRANSACTION_EVENT, run); };
+    return () => { active.current = false; ++latest.current; if (id !== undefined) clearInterval(id); removeEventListener(TRANSACTION_EVENT, run); };
   }, [run, everyMs]);
   return { ...state, refresh: run };
 }

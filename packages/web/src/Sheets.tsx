@@ -42,7 +42,7 @@ export function VaultSheet({ wallet, balance, onClose }: { wallet: Wallet; balan
           await wallet.call('storage_deposit', { account_id: wallet.account, registration_only: true }, bounds.min, 30, TOKEN);
         }
         const result = await wallet.call('withdraw_usd', { amount: units }, '0', 60);
-        if (result && 'status' in result && typeof result.status === 'object' && 'SuccessValue' in result.status && atob(result.status.SuccessValue) === 'false') throw new Error('The token transfer failed. Your tUSD was returned to the vault.');
+        if (result && 'status' in result && typeof result.status === 'object' && 'SuccessValue' in result.status && typeof result.status.SuccessValue === 'string' && atob(result.status.SuccessValue) === 'false') throw new Error('The token transfer failed. Your tUSD was returned to the vault.');
       }
       setDone(mode === 'deposit' ? 'Deposit complete' : 'Withdrawal complete');
     } catch (e) { setErr((e as Error).message); }
