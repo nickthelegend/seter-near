@@ -87,6 +87,7 @@ let record = resume ? JSON.parse(readFileSync(output)) : {
 assert.equal(record.account, account);
 assert.notEqual(record.status, 'PASS', 'This completed run must not spend again.');
 if (resume && record.intent && !record.steps.some((s) => s.label === record.intent && s.final)) throw new Error('Previous transaction outcome is uncertain. Inspect the chain before resuming; no writes.');
+if (resume) record.status = 'in_progress';
 const save = () => writeFileSync(output, JSON.stringify(record, null, 2) + '\n');
 save();
 log(`Preflight passed for ${account}; public evidence: ${output}`);
@@ -123,23 +124,42 @@ try {
       const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const page = await context.newPage();
       const pageErrors = [], failures = [];
+      let dropResponse = process.env.QA_DROP_SEND_RESPONSE === '1';
+      if (dropResponse) await page.route('**/*', async (route) => {
+        let data; try { data = route.request().postDataJSON(); } catch {}
+        if (dropResponse && data?.method === 'send_tx') {
+          assert(record.steps.some((s) => s.label === record.intent && s.tx && !s.final), 'Hash must be saved before broadcast.');
+          dropResponse = false;
+          await route.fetch(); // Real broadcast accepted; deliberately discard only its response.
+          record.dropped_send_response = { label: record.intent, expected_failed_request: true }; save();
+          return route.abort('failed');
+        }
+        return route.continue();
+      });
       page.on('pageerror', () => pageErrors.push('Unhandled page exception (message omitted to protect injected credentials).'));
       page.on('requestfailed', (r) => failures.push({ url: r.url().split('?')[0], error: r.failure()?.errorText }));
       // Persist public hashes immediately, including an outcome received before FINAL polling finishes.
       await page.exposeBinding('__qaPublicOutcome', (_source, detail) => {
-        const r = detail.result, tx = r.transaction.hash;
+        const r = detail.result, tx = detail.tx || r.transaction.hash;
         const step = { label: record.steps.find((s) => s.tx === tx)?.label || record.intent, method: detail.method, receiver: detail.receiver, deposit: detail.deposit,
           tx, explorer: `https://testnet.nearblocks.io/txns/${tx}`, at: new Date().toISOString(), final: detail.final,
-          ok: !r.status.Failure, return: r.status.SuccessValue === undefined ? null : Buffer.from(r.status.SuccessValue, 'base64').toString(),
-          failure: r.status.Failure || null, logs: r.receipts_outcome.flatMap((x) => x.outcome.logs) };
+          ok: r ? !r.status.Failure : null, return: r?.status.SuccessValue === undefined ? null : Buffer.from(r.status.SuccessValue, 'base64').toString(),
+          failure: r?.status.Failure || null, rejection: detail.rejection, logs: r?.receipts_outcome.flatMap((x) => x.outcome.logs) || [] };
         const index = record.steps.findIndex((s) => s.tx === tx);
         if (index < 0) record.steps.push(step); else record.steps[index] = step;
         save();
       });
-      await page.addInitScript((input) => {
+      const publicReceipts = record.steps.filter((s) => s.final && s.ok).map((s) => {
+        const r = { tx: s.tx, at: s.at, method: s.method, signer: account, receiver: s.receiver };
+        if (s.method === 'place_order') r.order = JSON.parse(s.return);
+        if (s.method === 'cancel_order' && record.order_ids) r.order = record.order_ids.take_profit;
+        for (const line of s.logs) if (line.startsWith('EVENT_JSON:')) { const e = JSON.parse(line.slice(11)); if (e.event === 'enclave_request') r.request = e.data[0].request; }
+        return r;
+      });
+      await page.addInitScript(({ input, receipts, contract }) => {
         window.__SETER_QA_SIGNER__ = input;
-        addEventListener('seter:qa-outcome', (e) => { window.__qaPublicOutcome(e.detail); });
-      }, { accountId: account, secretKey: credentials.secret_key, rpcUrl, budgetYocto: budget.toString() });
+        localStorage.setItem(`seter:receipts:testnet:${contract}`, JSON.stringify(receipts));
+      }, { input: { accountId: account, secretKey: credentials.secret_key, rpcUrl, budgetYocto: budget.toString() }, receipts: publicReceipts, contract: C });
       async function snap(id, selector) {
         for (const width of [1440, 375]) {
           await page.setViewportSize({ width, height: width === 1440 ? 900 : 812 });
@@ -160,9 +180,12 @@ try {
         assert(previousSpend + BigInt(record.wallet_before) - BigInt(wallet.amount) < repoCap - 30_000_000_000_000_000_000_000n, 'Combined QA cap is nearly exhausted; no writes.');
         record.intent = label; save();
         await action();
-        const deadline = Date.now() + 180_000;
+        const deadline = Date.now() + 330_000;
         let step;
         while (!(step = record.steps.find((s) => s.label === label && s.final))) {
+          const visibleErrors = await page.locator('.sheet-err:visible, [role=alert]:visible').allTextContents();
+          const rejected = visibleErrors.find((text) => /QA transaction (rejected|.*still pending)|QA signer.*budget|QA signer balance/.test(text));
+          if (rejected) throw new Error(`${label}: ${rejected}`);
           if (Date.now() > deadline) throw new Error(`${label}: no FINAL result. Inspect saved hashes before retrying.`);
           await page.waitForTimeout(300);
         }
@@ -191,23 +214,29 @@ try {
       await page.getByRole('link', { name: 'Launch app', exact: true }).first().click();
       await page.locator('.ahead').getByRole('button', { name: 'Connect wallet', exact: true }).click();
       await page.getByRole('button', { name: 'Vault', exact: true }).waitFor(); await snap('connected');
+      const completed = (label) => record.steps.some((s) => s.label === label && s.final && s.ok);
+      if (!completed('deposit-near')) {
       await vault('Deposit', 'NEAR', '0.03');
       await perform('deposit-near', () => page.locator('.sheet .btn-primary').click());
       await page.getByRole('button', { name: 'Deposit complete', exact: true }).waitFor();
       await expectVault({ near: String(BigInt(record.vault_before.near) + 30_000_000_000_000_000_000_000n), usd: record.vault_before.usd });
-      await snap('near-deposited', '.sheet');
+      await snap('near-deposited', '.sheet'); await closeVault();
+      }
       const tokenBalance = BigInt(await view(TOKEN, 'ft_balance_of', { account_id: account }, rpcUrl));
       if (tokenBalance < 100_000n) {
-        await page.getByLabel('Asset', { exact: true }).selectOption('tUSD');
+        await vault('Deposit', 'tUSD', '0.1');
         await perform('faucet', () => page.getByRole('button', { name: 'Take 1,000 from the faucet', exact: true }).click());
-        await snap('faucet', '.sheet');
+        await snap('faucet', '.sheet'); await closeVault();
       } else { record.faucet = 'Existing demo account already funded with tUSD; no new faucet claim needed.'; save(); }
+      if (!completed('deposit-tusd')) {
       await vault('Deposit', 'tUSD', '0.1');
       await perform('deposit-tusd', () => page.locator('.sheet .btn-primary').click());
       await page.getByRole('button', { name: 'Deposit complete', exact: true }).waitFor(); await expectVault({ near: String(BigInt(record.vault_before.near) + 30_000_000_000_000_000_000_000n), usd: String(BigInt(record.vault_before.usd) + 100_000n) }); await snap('tusd-deposited', '.sheet'); await closeVault();
+      }
       const ticker = await (await fetch(PRICE_SOURCE)).json();
       const price = Number(ticker.price); assert(Number.isFinite(price) && price > 0);
       async function place(kind, multiplier, label) {
+        if (completed(label)) return JSON.parse(record.steps.find((s) => s.label === label).return);
         await page.getByRole('tab', { name: kind, exact: true }).click();
         await page.getByRole('textbox', { name: 'Trigger price in USD per NEAR' }).fill((price * multiplier).toFixed(4));
         await page.getByRole('textbox', { name: 'Amount of NEAR to sell' }).fill('0.01');
@@ -220,10 +249,12 @@ try {
       const stop = await place('Sealed stop', 1.15, 'sealed-stop');
       const tp = await place('Sealed take-profit', 2, 'sealed-take-profit');
       record.order_ids = { stop, take_profit: tp }; save();
+      if (!record.screenshots.some((s) => s.id === 'armed-order')) {
       await page.locator('.bottom tbody tr').filter({ hasText: `№${tp}` }).getByRole('link', { name: 'View', exact: true }).click();
       await page.getByRole('heading', { name: `Order №${tp}`, exact: true }).waitFor();
       assert.match(await page.locator('.osum-grid').innerText(), /only you/); await snap('armed-order', '.order-hero');
       await page.getByRole('link', { name: 'Trade', exact: true }).first().click();
+      }
       await perform('enclave-check', () => page.getByRole('button', { name: 'Pay for a check · 0.02 NEAR', exact: true }).click());
       await page.getByRole('tab', { name: /^Order history/ }).click();
       const firedRow = page.locator('.bottom tbody tr').filter({ hasText: `№${stop}` });
@@ -246,13 +277,18 @@ try {
       const current = await view(C, 'balance_of', { account_id: account }, rpcUrl);
       const nearDelta = BigInt(current.near) - BigInt(record.vault_before.near);
       const usdDelta = BigInt(current.usd) - BigInt(record.vault_before.usd);
-      assert(nearDelta > 0n && usdDelta > 0n, 'Expected credited assets for both withdrawal paths.');
+      assert((completed('withdraw-near') || nearDelta > 0n) && (completed('withdraw-tusd') || usdDelta > 0n), 'Expected credited assets for remaining withdrawal paths.');
+      if (!completed('withdraw-near')) {
       await vault('Withdraw', 'NEAR', amountFromUnits(nearDelta, 24));
       await perform('withdraw-near', () => page.locator('.sheet .btn-primary').click());
-      await page.getByRole('button', { name: 'Withdrawal complete', exact: true }).waitFor(); await snap('near-withdrawn', '.sheet');
+      await page.getByRole('button', { name: 'Withdrawal complete', exact: true }).waitFor(); await snap('near-withdrawn', '.sheet'); await closeVault();
+      }
+      if (!completed('withdraw-tusd')) {
       await vault('Withdraw', 'tUSD', amountFromUnits(usdDelta, 6));
       await perform('withdraw-tusd', () => page.locator('.sheet .btn-primary').click());
       await page.getByRole('button', { name: 'Withdrawal complete', exact: true }).waitFor(); await expectVault(record.vault_before); await snap('vault-restored', '.sheet');
+      }
+      if (!await page.getByRole('dialog', { name: 'Vault', exact: true }).count()) await page.getByRole('button', { name: 'Vault', exact: true }).click();
       record.vault_after = await view(C, 'balance_of', { account_id: account }, rpcUrl);
       assert.deepEqual(record.vault_after, record.vault_before, 'Both vault balances must be restored.');
       await page.getByRole('button', { name: /^Sign out / }).click(); await closeVault();
@@ -265,7 +301,7 @@ try {
       record.page_errors = pageErrors; record.failed_requests = failures;
       assert.equal(pageErrors.length, 0, 'Unexpected browser exceptions.');
       record.checks.push('Browser deposits, owner-view decryption, stop execution, cancellation, receipt links, both withdrawals and vault restoration passed at 1440 and 375.');
-      record.status = 'PASS'; save(); await context.close();
+      record.status = 'PASS'; delete record.error; record.checks = [...new Set(record.checks)]; save(); await context.close();
     } finally { await browser.close(); }
   });
 } catch (e) {

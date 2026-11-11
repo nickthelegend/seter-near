@@ -1,12 +1,26 @@
 /** Test-only wallet adapter. Vite removes this module from ordinary production builds. */
-import { connect, keyStores, KeyPair, transactions } from 'near-api-js';
+import { Account, connect, keyStores, KeyPair, transactions, utils } from 'near-api-js';
 import { CONTRACT, TOKEN } from './lib';
 import type { WalletPort } from './wallet';
 
 type SignAndSendTransactionParams = Parameters<WalletPort['signAndSendTransaction']>[0];
 type SignAndSendTransactionsParams = Parameters<WalletPort['signAndSendTransactions']>[0];
 type Injection = { accountId: string; secretKey: string; rpcUrl: string; budgetYocto?: string };
-declare global { interface Window { __SETER_QA_SIGNER__?: Injection } }
+type PublicOutcome = { method: string; receiver: string; deposit: string; tx: string; final: boolean; result?: unknown; rejection?: string };
+declare global { interface Window { __SETER_QA_SIGNER__?: Injection; __qaPublicOutcome?: (detail: PublicOutcome) => Promise<void> } }
+class PreparedAccount extends Account {
+  prepare(receiver: string, actions: transactions.Action[]) { this.accessKeyByPublicKeyCache = {}; return this.signTransaction(receiver, actions); }
+}
+async function jsonRpc(url: string, method: string, params: object) {
+  const res = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(6000), headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'qa-signer', method, params }) });
+  if (!res.ok) throw new Error('QA testnet provider unavailable.');
+  const json = await res.json();
+  if (json.error) {
+    const rejection = ['InvalidNonce', 'Expired', 'InvalidSignature', 'NotEnoughBalance'].find((name) => JSON.stringify(json.error).includes(name));
+    throw Object.assign(new Error(rejection ? `QA transaction rejected: ${rejection}` : 'QA testnet transaction status is not available yet.'), { rejection });
+  }
+  return json.result;
+}
 const MARKER = 'SETER_QA_SIGNER_TESTNET_ONLY';
 const RPCS = new Set(['https://test.rpc.fastnear.com', 'https://rpc.testnet.near.org', 'https://near-testnet.drpc.org']);
 const METHODS: Record<string, Set<string>> = {
@@ -28,8 +42,9 @@ async function create(): Promise<WalletPort> {
   await store.setKey('testnet', input.accountId, KeyPair.fromString(input.secretKey as `ed25519:${string}`));
   input.secretKey = '';
   const accountId = input.accountId;
+  const rpcUrl = input.rpcUrl;
   const near = await connect({ networkId: 'testnet', nodeUrl: input.rpcUrl, keyStore: store });
-  const account = await near.account(accountId);
+  const account = new PreparedAccount(near.connection, accountId);
   let connected = sessionStorage.getItem('seter:qa:connected') === accountId;
   let pending = false, count = 0, attached = 0n;
   const walletStart = BigInt((await account.state()).amount);
@@ -50,13 +65,36 @@ async function create(): Promise<WalletPort> {
       const balance = BigInt((await account.state()).amount);
       if (balance < cap || walletStart - balance + deposit + 10_000_000_000_000_000_000_000n > cap) throw new Error('QA signer balance is low or the 0.3 NEAR budget would be exceeded.');
       ++count; attached += deposit;
-      const submitted = await account.signAndSendTransaction({ receiverId, actions: [transactions.functionCall(f.methodName, f.args, gas, deposit)], returnError: true });
-      // Public outcomes only. The Playwright runner persists each hash before making another call.
-      const publish = (result: typeof submitted, final: boolean) => dispatchEvent(new CustomEvent('seter:qa-outcome', { detail: { method: f.methodName, receiver: receiverId, deposit: deposit.toString(), result, final } }));
-      publish(submitted, false);
-      const result = await near.connection.provider.txStatus(submitted.transaction.hash, accountId, 'FINAL');
-      publish(result, true);
-      return result;
+      if (!window.__qaPublicOutcome) throw new Error('QA public-ledger recorder is required before signing.');
+      const [hash, signed] = await account.prepare(receiverId, [transactions.functionCall(f.methodName, f.args, gas, deposit)]);
+      const tx = utils.serialize.base_encode(hash);
+      const publish = (result?: unknown, final = false) => window.__qaPublicOutcome!({ method: f.methodName, receiver: receiverId, deposit: deposit.toString(), tx, final, result });
+      // Persist the deterministic hash BEFORE the single broadcast. A lost response cannot hide it.
+      await publish();
+      const bytes = transactions.encodeTransaction(signed);
+      const signed_tx_base64 = btoa(Array.from(bytes, (v) => String.fromCharCode(v)).join(''));
+      try { await jsonRpc(rpcUrl, 'send_tx', { signed_tx_base64, wait_until: 'NONE' }); }
+      catch (error) {
+        const rejection = (error as { rejection?: string }).rejection;
+        if (rejection) {
+          await window.__qaPublicOutcome!({ method: f.methodName, receiver: receiverId, deposit: deposit.toString(), tx, final: false, rejection });
+          throw error;
+        }
+        // Acceptance may be uncertain: poll the same hash, never sign or broadcast another transaction.
+      }
+      const deadline = Date.now() + 300_000;
+      while (Date.now() < deadline) {
+        for (const url of RPCS) {
+          try {
+            const result = await jsonRpc(url, 'tx', { tx_hash: tx, sender_account_id: accountId, wait_until: 'FINAL' });
+            if (result?.final_execution_status !== 'FINAL') continue;
+            await publish(result, true);
+            return result;
+          } catch { /* read-only fallback; no second broadcast */ }
+        }
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      throw new Error(`QA transaction ${tx} is still pending. Inspect its saved hash before retrying.`);
     } finally { pending = false; }
   }
   return {
