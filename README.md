@@ -1,24 +1,44 @@
-# Seter (סֵתֶר, Hebrew for "hidden / secret place")
+# Seter — encrypted stop-loss and take-profit orders on NEAR testnet.
 
-Formerly Mienai; on-chain account IDs keep the old prefix.
-The `mienai:` domain-separation strings in the sealing format and the `@mienai/*` package scopes are also unchanged, because the deployed enclave and contract check those strings and the builds reference those scopes.
+Public stop levels can show other traders where forced selling will happen. Traders need to keep those levels private until a price crossing makes the order execute.
 
-**Your stop-loss is invisible until it fires.**
+## Try it
 
-Large traders push prices to where stop-losses and liquidation levels sit, trigger them, and buy the forced selling cheaply: stop hunting. That works because stop levels are visible, on a centralized exchange's books or in a DeFi contract's state.
+Run locally with Node 22+ and pnpm 10. No hosted demo URL is recorded in this repo. The read-only demo needs internet access to NEAR testnet, Coinbase and OutLayer; it needs no wallet or local contracts.
 
-With Seter, a stop-loss or take-profit is encrypted in the browser to a program running in an OutLayer TEE (Intel TDX). The NEAR contract stores only the ciphertext and a commitment hash. On each check the enclave reads NEAR/USD from Coinbase, opens every order, and reports only the ones whose trigger the price crossed. The contract accepts that report only through a verified OutLayer callback carrying the enclave's signature, swaps the order, and then publishes the trigger so anyone can audit that the price really crossed it.
+1. From the repo root, run `pnpm install` - see the workspace dependencies install.
+2. Run `pnpm dev` - see Vite serve the app at `http://127.0.0.1:5201`.
+3. Open `http://127.0.0.1:5201/` - see the product page, live market data and recorded testnet proof.
+4. Open `http://127.0.0.1:5201/app` - see the trading terminal and sealed levels shown as `••••`. Open Order history - see the recorded fired stop.
+5. Open `http://127.0.0.1:5201/order/1` - see the recorded trigger of 3.5967, the enclave price of 3.5886 and its attestation certificate. The certificate shows recorded verification checks and fetches the quote from OutLayer to hash in the browser.
 
-Everything below runs on NEAR testnet and was run for real on 9 Nov 2026.
+To place your own testnet order, follow [Connecting a wallet](#connecting-a-wallet). A full Meteor sign-in and order approval still need a human check; see [TESTING.md](TESTING.md). For this local-only demo, the public X post must include a video ([official rule Q-012](https://nearhackathon.com/HACKATHON.md)).
 
 ## Live on NEAR testnet
 
-| What | Account / value | Explorer |
-| --- | --- | --- |
-| Seter vault contract | `mienai-3013a230.testnet` | [nearblocks](https://testnet.nearblocks.io/address/mienai-3013a230.testnet) |
-| tUSD test NEP-141 (6 decimals, no value) | `mienai-ad65ebef.testnet` | [nearblocks](https://testnet.nearblocks.io/address/mienai-ad65ebef.testnet) |
-| Enclave WASM (FastFS) | sha256 `791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386` | [upload tx](https://testnet.nearblocks.io/txns/98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu) |
-| OutLayer | `outlayer.testnet` | — |
+| Contract | Account |
+| --- | --- |
+| Seter vault | [`mienai-3013a230.testnet`](https://testnet.nearblocks.io/address/mienai-3013a230.testnet) |
+| tUSD test NEP-141 (6 decimals, no value) | [`mienai-ad65ebef.testnet`](https://testnet.nearblocks.io/address/mienai-ad65ebef.testnet) |
+| OutLayer | [`outlayer.testnet`](https://testnet.nearblocks.io/address/outlayer.testnet) |
+
+These transactions are copied from [the recorded run](deployments/real-run-2026-11-09.json), dated 9 Nov 2026.
+
+| Recorded action | Transaction |
+| --- | --- |
+| Seal a stop-loss | [BZbja8Bm…](https://testnet.nearblocks.io/txns/BZbja8BmNU8FqisMXxzDGAAubZFJhEyihorC1YgEYrBb) |
+| Seal a take-profit | [4zE2auAG…](https://testnet.nearblocks.io/txns/4zE2auAGmuREh8YRFnfW7XPqCjrAJuoNJmE9j74AZiPS) |
+| Check at 3.6003; nothing fires | [79pRBKd3…](https://testnet.nearblocks.io/txns/79pRBKd3khVem5AANMeUWmjD7oVKmk7VQk6GAHoaGxm1) |
+| Check at 3.5886; stop at 3.5967 fires on the test pool | [GMMwkN28…](https://testnet.nearblocks.io/txns/GMMwkN289YgzaqZkqmC5n5wHjWnwDe1K2G1MEjEY82iS) |
+| Cancel the take-profit without revealing its level | [HojS7Jjq…](https://testnet.nearblocks.io/txns/HojS7Jjquqdz4nRgpm3uQa2ZPnZfEpyWA8bcpDNzizio) |
+
+## Product and deployment details
+
+Seter (סֵתֶר, Hebrew for "hidden / secret place") was formerly named Mienai. On-chain account IDs keep the old prefix. The `mienai:` domain-separation strings and `@mienai/*` package scopes also stay unchanged because deployed code and builds use them.
+
+The browser encrypts an order to an OutLayer Intel TDX enclave. The NEAR contract stores encrypted order data and commitments, alongside public owner, timestamp and status metadata. The enclave reads Coinbase NEAR/USD and reports crossed orders. The contract verifies the signed report, settles on its own NEAR/tUSD test pool and publishes the trigger for audit.
+
+The recorded enclave WASM hash is `791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386`. Its [FastFS upload transaction](https://testnet.nearblocks.io/txns/98mADfzvnHtLCwnwYzGLfqZKM6LRtnwotpXRMo7UvbMu) is in [the deployment record](deployments/testnet-2026-11-09.json).
 
 ### The recorded run (`deployments/real-run-2026-11-09.json`)
 
@@ -37,9 +57,9 @@ The TDX attestation of check #2 was verified independently (`packages/sdk/src/at
 ## How it works
 
 1. **Seal (browser).** `packages/sdk/src/crypto.mjs` encrypts `{cond, trigger_e6, side, amount, salt}` to the enclave's X25519 key: ephemeral X25519 → HKDF-SHA256 → XChaCha20-Poly1305, with AAD `mienai:order:v1:<owner>` so a ciphertext copied onto another account's order does not open. The commitment is `sha256("mienai:commit:v1:" ‖ owner ‖ 0x00 ‖ plaintext)`. A second copy is sealed to a view key that stays on the user's device, so the owner can read their own levels back.
-2. **Store (contract).** `place_order(ct, commit, view_ct)` keeps only those strings. `get_orders` shows what anyone sees: ciphertexts, commitments, statuses, counts.
+2. **Store (contract).** `place_order(ct, commit, view_ct)` stores encrypted order data and commitments with public owner, timestamp and status metadata. `get_orders` shows what anyone sees: ciphertexts, commitments, statuses, counts.
 3. **Check (OutLayer).** Anyone can call `check()` and pay for a run. The contract builds the input from its own state and calls `outlayer.testnet.request_execution` with a `WasmUrl` pinned by SHA-256. A TDX worker runs `packages/enclave`; it fetches `https://api.exchange.coinbase.com/products/NEAR-USD/ticker` inside the enclave, opens every order, and outputs `{body, sig}` where `body` lists only crossed orders with their plaintext, plus price, trade id, trade time and source.
-4. **Fire (contract).** The result arrives as the promise result of the contract's own request in the `#[private]` callback `on_result`. The contract accepts the report only if: the ed25519 signature verifies against the enclave key (`env::ed25519_verify`); it answers a pending request the contract issued (no replay); the price is from the pinned source and at most 180 s old; every revealed plaintext matches the order's commitment; and the price really crossed the trigger. Then it swaps against the vault's NEAR/tUSD constant-product pool and records the trigger, price, source, block and report hash in `get_fired`.
+4. **Fire (contract).** The result arrives as the promise result of the contract's own request in the `#[private]` callback `on_result`. The callback and the public `fire(body, sig)` relay both verify the report. The relay can deliver a signed report for a pending or failed request within its expiry window. Acceptance requires: the ed25519 signature verifies against the enclave key (`env::ed25519_verify`); it answers an eligible request the contract issued (no replay); the price is from the pinned source and at most 180 s old; every revealed plaintext matches the order's commitment; and the price really crossed the trigger. Then it swaps against the vault's NEAR/tUSD constant-product pool and records the trigger, price, source, block and report hash in `get_fired`.
 
 ### Why only the enclave can read the orders
 
@@ -51,10 +71,10 @@ The TDX attestation of check #2 was verified independently (`packages/sdk/src/at
 ## NEAR features used, and why
 
 - **OutLayer TEE** (`outlayer.testnet`, yield/resume): the only party that can read the orders and the only source of fire reports.
-- **Promise callbacks with `#[private]`** as the origin check for results, plus **`env::ed25519_verify`** as an independent one.
+- **Promise callbacks with `#[private]`** authenticate callback results. **`env::ed25519_verify`** verifies reports on both the callback and the public relay path.
 - **NEP-141**: tUSD, the test quote token, with `ft_transfer_call` deposits into the vault.
 - **FastFS** on testnet to host the WASM that OutLayer fetches by hash.
-- **NEAR Intents** is not used: it has no testnet. Mainnet execution is Setup required (see BLOCKED.md).
+- **NEAR Intents** is not integrated. Mainnet execution code is not built; funding alone does not enable it (see [BLOCKED.md](BLOCKED.md)).
 - Not used: Chain Signatures, sub-accounts, NEP-171/245, meta transactions, Sputnik DAO.
 
 ## Repository
@@ -66,7 +86,7 @@ The TDX attestation of check #2 was verified independently (`packages/sdk/src/at
 | `packages/token` | tUSD test NEP-141 with an hourly faucet. |
 | `packages/sdk` | Sealing, attestation verification, FastFS upload, deploy and run scripts. |
 | `packages/web` | Vite + React app: landing (`/`), trading terminal (`/app`, Lightweight Charts) and order pages (`/order/<id>`). |
-| `deployments/` | Every transaction of the deploy and the real run, and the verified attestation. |
+| `deployments/` | Deployment and run evidence, including transaction hashes and the verified attestation. |
 | `docs/RESEARCH.md` | OutLayer, price-source and execution research with links. |
 
 ## Reproduce
@@ -88,25 +108,50 @@ Do X → see Y:
 - Open `/` → a product page: live tiles (Coinbase NEAR/USD, sealed orders armed, last enclave check), live contract stats, "What a stop hunter sees" (the real ciphertexts next to what only the enclave read at the last check), a live read-only preview of the terminal, the attestation certificate of the recorded fire and the NEAR tech.
 - Open `/app` without a wallet → a standard trading terminal: market bar (Coinbase last price, 24h change/high/low/volume, the price the enclave last read), a Lightweight Charts candle chart of Coinbase NEAR-USD with the enclave's read price as a dashed line and checks/fires as markers, a sealed book whose levels show as `••••`, an order panel (Market | Limit | Sealed stop | Sealed take-profit; Market and Limit explain why they are not offered) with a "Chain sees" ciphertext preview, and bottom tabs: Open orders (trigger hidden, status Armed), Order history (the fired stop with trigger 3.5967 and price 3.5886), Enclave log (built from `get_orders` and `get_request`) and Attestations (every recorded OutLayer run with its TDX quote fetched from OutLayer and hashed in the browser).
 - Open `/order/1` → the fired stop: order summary, trigger 3.5967 against the 3.5886 the TEE read, and the attestation as a certificate (live TDX quote SHA-256, MRTD and RTMR3 compared with the recorded verification).
-- Connect a testnet wallet ([Meteor Wallet](https://wallet.meteorwallet.app), see below), open Vault and deposit NEAR, then pick Sealed stop, set a trigger and amount and press Seal → the transaction stores only the ciphertext shown under "Chain sees"; your Open orders tab decrypts the trigger on your device.
+- Connect a testnet wallet ([Meteor Wallet](https://wallet.meteorwallet.app), see below), open Vault and deposit NEAR, then pick Sealed stop, set a trigger and amount and press Seal → the transaction stores encrypted order data and a commitment; your Open orders tab decrypts the trigger on your device.
 
-**Connecting a wallet.** Seter signs with [Meteor Wallet](https://wallet.meteorwallet.app) on NEAR testnet, through NEAR Wallet Selector 10.1.4. You need a `.testnet` account in Meteor (create or import one there; NEAR's guide is [Create an account](https://docs.near.org/getting-started/create-account), and free testnet NEAR comes from [near-faucet.io](https://near-faucet.io)). **Connect wallet** opens Meteor in a pop-up (or its browser extension) at `wallet.meteorwallet.app/connect/testnet/login`, asking for a function-call key on the Seter contract; the result is posted back to the page, so there is no redirect. Calls with no deposit (cancel, withdraw) are then signed by that key; sealing an order, a deposit or a paid check attaches NEAR and opens Meteor for approval. A blocked pop-up or a closed wallet window shows a plain banner. MyNearWallet was removed on 2026-11-10: its testnet pop-up now answers "MyNearWallet can't connect to apps anymore" and points to Meteor.
-- `node packages/sdk/scripts/verify-attestation.mjs deployments/outlayer-direct-check-*.json 999ec172…` → all six attestation checks pass for the probe run.
-- To redeploy from scratch: `node packages/sdk/scripts/create-account.mjs deployer`, `... token`, `... trader`; `node packages/sdk/scripts/upload-enclave.mjs` (after editing `manifest.json` to your contract id); `node packages/sdk/scripts/deploy-testnet.mjs`; `node packages/sdk/scripts/real-run.mjs`.
+### Connecting a wallet
+
+Seter signs with [Meteor Wallet](https://wallet.meteorwallet.app) on NEAR testnet, through NEAR Wallet Selector 10.1.4. You need a `.testnet` account in Meteor (create or import one there; NEAR's guide is [Create an account](https://docs.near.org/getting-started/create-account), and free testnet NEAR comes from [near-faucet.io](https://near-faucet.io)). **Connect wallet** opens Meteor in a pop-up (or its browser extension) at `wallet.meteorwallet.app/connect/testnet/login`, asking for a function-call key on the Seter contract; the result is posted back to the page, so there is no redirect. Calls with no deposit (cancel, withdraw) are then signed by that key; sealing an order, a deposit or a paid check attaches NEAR and opens Meteor for approval. A blocked pop-up or a closed wallet window shows a plain banner. MyNearWallet was removed on 2026-11-10: its testnet pop-up now answers "MyNearWallet can't connect to apps anymore" and points to Meteor.
+
+### Additional verification and redeployment
+
+- `node packages/sdk/scripts/verify-attestation.mjs deployments/outlayer-direct-check-4RDtRKvrXwjEz7ShLfgdSnWfDCNcWSksDvrtYRpvrWrK.json 999ec172cd7fa60bf66c6803183332deaabef30d0434793c8cf9da85b81080fe` → reruns the six attestation checks for the probe run; requires OutLayer, NEAR RPC and Intel collateral access.
+- Redeployment is separate from the read-only demo. The existing scripts are `packages/sdk/scripts/create-account.mjs`, `upload-enclave.mjs`, `deploy-testnet.mjs` and `real-run.mjs`. They create accounts, spend testnet NEAR and write deployment evidence. A fresh deployment requires changing `packages/enclave/manifest.json` to the new contract account before rebuilding. `real-run.mjs` reads the fixed `deployments/testnet-2026-11-09.json` path, so it must be adapted to a new deployment record before reuse.
 
 ## Limits, stated plainly
 
 - One price source (Coinbase NEAR-USD last trade). A second source and a median would be stronger.
 - A keeper must pay for checks (about 0.001 NEAR of OutLayer compute plus gas per check); nothing runs on a timer by itself.
-- The fill happens on Seter's own test pool, so the execution itself is public once it fires. Private execution would need Confidential Intents on mainnet.
+- The fill happens on Seter's own test pool, so the execution itself is public once it fires. Private execution is not built.
 - The browser keeps the view key in `localStorage`; losing it loses the owner's local copy of the levels, not the order.
 - Up to 16 open orders per contract (one enclave run reads all of them).
 
-## Team and other projects
+## Hackathon disclosures
+
+Built for NEAR HACKATHON 2026 (Nov 1-14). Submission deadline: 2026-11-14 23:59 UTC ([official rules](https://nearhackathon.com/HACKATHON.md)).
+
+### Prior work
+
+For this submission, code before 2026-11-01 is baseline; only the NEAR work built during Nov 1-14 is claimed for judging. The available git history has no project commits before Nov 1. The first commit, `73cbc1d` (9 Nov 2026), contains only `LICENSE` and `.gitignore`. No `NOTICE` file is tracked. The MIT license names Nivesh Gajengi and the year 2026; it gives no earlier development date.
+
+The history records the OutLayer enclave, sealing SDK, NEAR vault, tUSD contract, tests, testnet deployments and web demo on Nov 9-10. Commit `bf32baa` renames Mienai to Seter during that same window. Mienai is this project's former name. No sibling repository is named in the README or identified as reused project code in the available history.
+
+To inspect the implementation added after the license-only scaffold, run `git diff 73cbc1d 271c504 -- packages scripts pnpm-lock.yaml pnpm-workspace.yaml`. These are fixed commits in this repo; the range covers the implementation through the Meteor Wallet update.
+
+Existing third-party libraries and services are dependencies, not new work claimed by the team. They include near-sdk, near-workspaces, NEAR Wallet Selector, OutLayer, the Noble crypto libraries, dcap-qvl, React, Vite, Lightweight Charts and web3icons. Versions are recorded in the package manifests and lockfiles; logo attribution is in [Credits](#credits).
+
+### AI-assisted code
+
+Built with AI coding agents (Claude Code, Codex) under human direction; all code reviewed and tested by the team.
+
+### Other projects by the same team in this hackathon
 
 Lead: <TBD by Nick>
 
-Other project by this lead: <TBD by Nick>. NEAR HACKATHON Q-015 permits at most two projects per person, and each must disclose the other.
+### License
+
+MIT. See [LICENSE](LICENSE).
 
 ## License
 

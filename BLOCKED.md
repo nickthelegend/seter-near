@@ -1,10 +1,10 @@
-# Blocked and Setup required
+# Remaining setup and limitations
 
-Nothing on testnet is blocked. The testnet accounts came from the official account helper; OutLayer testnet needs no sign-up.
+The recorded testnet deployment and sealed-stop execution are complete; see `deployments/testnet-2026-11-09.json` and `deployments/real-run-2026-11-09.json`. Browser wallet approval and publication still need Nick.
 
 | Item | Status | Exact input needed |
 | --- | --- | --- |
-| Mainnet execution through NEAR Intents (1Click) | **Setup required** | A funded mainnet account in a gitignored `.env`: `NEAR_MAINNET_ACCOUNT` and its key. `ONECLICK_JWT` is optional (without it 1Click charges 0.2%). NEAR Intents has no testnet, so the testnet build settles on its own tUSD pool. Not built: a mainnet vault would also need an `intents.near` public key controlled by the enclave's signing key. |
-| Confidential (private) execution | Not built | Confidential Intents is mainnet only (1Click "Confidential Swaps"). |
-| Placing orders from the web app with a real wallet | Built, not exercised by the agent | The app signs through MyNearWallet (wallet-selector 9). The agent cannot sign in to a wallet; every contract method the app calls was exercised by the SDK scripts on testnet with the same arguments. Nick should place one order from the browser before recording the demo. |
+| Mainnet execution through NEAR Intents (1Click) | Not built | The current contract settles on its own testnet tUSD pool. Mainnet needs an execution integration, an enclave-controlled Intents identity and a funded mainnet account. Funding alone does not enable it. |
+| Confidential (private) execution | Not built | The current test-pool execution becomes public when an order fires. |
+| Placing orders from the web app with a real wallet | Built; full approval not verified | The app uses Meteor Wallet through NEAR Wallet Selector 10.1.4. Pop-up opening and error handling were checked; a full Meteor sign-in and approval were not. Nick should place one order from the browser before recording the demo. See `TESTING.md`. |
 | Public repository, demo video, X post, submission | Nick | See `HACKATHON_SUBMISSION_FORM.md`. |

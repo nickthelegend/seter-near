@@ -1,6 +1,6 @@
 # Testing
 
-All counts below are from runs on 2026-11-09. No test mocks an external API: prices are real Coinbase responses pinned in `packages/enclave/fixtures/`, chain tests run on a real local nearcore (near-workspaces sandbox), and the end-to-end evidence is real testnet transactions.
+The suite results below were recorded on 2026-11-09; web QA was updated on 2026-11-10. Prices use real Coinbase responses pinned in `packages/enclave/fixtures/`, chain tests run on a real local nearcore (near-workspaces sandbox), and the end-to-end evidence is recorded testnet transactions. These historical results were not rerun for the submission-docs update.
 
 | Suite | Command | Tests | Result |
 | --- | --- | --- | --- |
@@ -48,7 +48,7 @@ Headless Chrome (playwright-core, channel chrome) against `vite preview --port 5
 | `/order/3` (armed) | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow | rendered, 0 page errors, no overflow |
 | `/app` bottom tabs (Order history, Enclave log, Attestations) and the Limit tab | 0 page errors, no overflow | 0 page errors, no overflow | — |
 
-Live sources in the browser: NEAR testnet RPC (FastNEAR, then dRPC, then `rpc.testnet.near.org` when one answers HTTP 429 without CORS headers, which shows as a console fetch error before the fallback succeeds), Coinbase Exchange `NEAR-USD` ticker, stats and candles (CORS open), and `testnet-api.outlayer.ai` attestations (CORS open; the TDX quote is hashed with WebCrypto). The wallet flow (MyNearWallet) was not clicked through by the agent; see BLOCKED.md.
+Live sources in the browser: NEAR testnet RPC (FastNEAR, then dRPC, then `rpc.testnet.near.org` when one answers HTTP 429 without CORS headers, which shows as a console fetch error before the fallback succeeds), Coinbase Exchange `NEAR-USD` ticker, stats and candles (CORS open), and `testnet-api.outlayer.ai` attestations (CORS open; the TDX quote is hashed with WebCrypto). Meteor Wallet replaced MyNearWallet after this render pass; its separate pop-up checks and remaining approval gap are described below.
 
 Token logos (10 Nov 2026): NEAR (`@web3icons/core` 4.0.58, branded), a dollar disc for USD, and the dollar disc with a "test" tag for tUSD, on the market bar pair, the landing terminal preview and proof numbers, the order panel (side chip, field units, available, est. proceeds, storage deposit), the vault box and vault sheet, open orders and history tables, and the order page (market, side, size, fill). Rebuilt with `tsc -b && vite build`, served by `vite preview --port 5341`, and shot with headless Chrome at 1440x900 and 375x812 on `/`, `/app` and `/order/1`: 0 page errors and no horizontal overflow on all six. The vault sheet's balance rows appear only with a connected wallet and were not rendered by the agent.
 
