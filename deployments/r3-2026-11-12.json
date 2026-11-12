@@ -1,0 +1,49 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "at": "2026-11-12T11:17:37.444Z",
+  "spend_cap_near": "0.3",
+  "actual_spend_yocto": "3280520782997900000000",
+  "actual_spend_near": 0.0032805207829979003,
+  "steps": [
+    {
+      "step": "keeper check",
+      "tx": "C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh",
+      "explorer": "https://testnet.nearblocks.io/txns/C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh",
+      "journal": "deployments/keeper/2026-11-12-1794482019123-0d68ccda.json",
+      "transaction_ok": true,
+      "check_ok": false,
+      "return": "\"failed\"",
+      "request": null,
+      "wallet_debit_yocto": "769172472342200000000"
+    },
+    {
+      "step": "keeper check",
+      "tx": "gP1o99iyC2rTJcrMXv55N1KwoDuG8r8yr9JCsj5eTaG",
+      "explorer": "https://testnet.nearblocks.io/txns/gP1o99iyC2rTJcrMXv55N1KwoDuG8r8yr9JCsj5eTaG",
+      "journal": "deployments/keeper/2026-11-12-1794482173128-706b232b.json",
+      "transaction_ok": true,
+      "check_ok": true,
+      "return": "\"fired 0\"",
+      "request": {
+        "id": 10,
+        "kind": "Check",
+        "caller": "mienai-3013a230.testnet",
+        "created_ns": "1794482174389306819",
+        "order_ids": [
+          3,
+          4,
+          5
+        ],
+        "status": "Done",
+        "note": "callback: fired 0"
+      },
+      "wallet_debit_yocto": "2511348310655700000000"
+    }
+  ],
+  "diagnosis": {
+    "failed_check": "C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh",
+    "reason": "OutLayer required 7002000000000000000000 yoctoNEAR for compute; the contract minimum of 5000000000000000000000 was insufficient. Attachment raised to 0.01 NEAR. The first sealed journal reports transaction success, but its failed callback is disclosed here.",
+    "required_payment_yocto": "7002000000000000000000"
+  }
+}

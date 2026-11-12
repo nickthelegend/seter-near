@@ -11,7 +11,8 @@
     "test": "pnpm build:enclave && pnpm test:enclave && pnpm build:contract && pnpm test:contract && pnpm test:sdk",
     "build": "pnpm --filter @mienai/web build",
     "dev": "pnpm --filter @mienai/web dev",
-    "test:e2e": "node scripts/qa-browser.mjs"
+    "test:e2e": "node scripts/qa-browser.mjs",
+    "keeper": "node packages/sdk/scripts/keeper.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0"

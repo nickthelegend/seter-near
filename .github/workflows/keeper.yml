@@ -1,0 +1,64 @@
+name: Capped Seter testnet keeper
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: seter-testnet-keeper
+  cancel-in-progress: false
+jobs:
+  configured:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.secret.outputs.enabled }}
+    steps:
+      - id: secret
+        name: Check whether the keeper is configured
+        env:
+          SETER_KEEPER_KEY: ${{ secrets.SETER_KEEPER_KEY }}
+        shell: bash
+        run: |
+          if [[ -n "$SETER_KEEPER_KEY" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Keeper disabled: SETER_KEEPER_KEY is absent."
+          fi
+  keeper:
+    needs: configured
+    if: needs.configured.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: restore
+        name: Restore the prior active run's daily budget journal
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/keeper-ci-state.mjs
+      - name: Pay for at most one testnet check
+        env:
+          SETER_KEEPER_KEY: ${{ secrets.SETER_KEEPER_KEY }}
+          KEEPER_ACCOUNT_ID: ${{ vars.KEEPER_ACCOUNT_ID || 'mienai-3013a230.testnet' }}
+          KEEPER_DAILY_CAP_NEAR: ${{ vars.KEEPER_DAILY_CAP_NEAR || '0.05' }}
+          KEEPER_RESERVE_NEAR: ${{ vars.KEEPER_RESERVE_NEAR || '1' }}
+        run: pnpm keeper
+      - name: Persist the full public journal even on transaction failure
+        if: always() && steps.restore.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: seter-keeper-journal-${{ github.run_id }}-${{ github.run_attempt }}
+          path: deployments/keeper/*.json
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "account": "mienai-3013a230.testnet",
+  "day": "2026-11-12",
+  "at": "2026-11-12T11:13:39.123Z",
+  "status": "final",
+  "balance_before": "11246156818113463999999997",
+  "reserve_yocto": "1000000000000000000000000",
+  "daily_cap_yocto": "50000000000000000000000",
+  "run_cap_yocto": "45000000000000000000000",
+  "prior_day_charge_yocto": "0",
+  "reserved_yocto": "42500000000000000000000",
+  "deposit_yocto": "5000000000000000000000",
+  "tx": "C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh",
+  "explorer": "https://testnet.nearblocks.io/txns/C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh",
+  "finalized_at": "2026-11-12T11:13:43.835Z",
+  "ok": true,
+  "return": "\"failed\"",
+  "failure": null,
+  "logs": [
+    "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":9,\"operation\":\"check\",\"orders\":3}]}",
+    "request 9 failed: OutLayer execution failed or returned no report"
+  ],
+  "gas_burn_yocto": "769172472342200000000",
+  "charged_yocto": "5769172472342200000000",
+  "overrun": false,
+  "balance_after": "11245387645641121799999997",
+  "wallet_debit_yocto": "769172472342200000000",
+  "last_check": {
+    "request": 8,
+    "path": "callback",
+    "price_e6": 3787200,
+    "price_ts_ms": 1794417378544,
+    "trade_id": 36467570,
+    "checked": 5,
+    "unreadable": 0,
+    "fired": [
+      11
+    ],
+    "block_height": "277244832",
+    "block_ts": "1794417382090842369",
+    "outlayer_request": "24005"
+  }
+}
