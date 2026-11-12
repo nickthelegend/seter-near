@@ -148,7 +148,7 @@ img.obj { display: block; flex: none; object-fit: contain; }
 .term { flex: 1; display: grid; gap: 10px; padding: 10px; grid-template-columns: minmax(0, 1fr) 380px; grid-template-areas: 'mbar form' 'center form' 'bottom form'; align-items: start; }
 .term-wide { grid-template-columns: minmax(0, 1fr) 248px 380px; grid-template-rows: auto 540px auto; grid-template-areas: 'mbar mbar form' 'chart book form' 'bottom bottom form'; }
 .pnl { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; min-width: 0; box-shadow: var(--shadow); }
-.mbar { grid-area: mbar; display: flex; align-items: center; gap: 26px; padding: 14px 20px; min-height: 76px; border-radius: 18px; min-width: 0; overflow-x: auto; scrollbar-width: none; background: radial-gradient(120% 160% at 100% 0%, rgba(120, 100, 255, .28), transparent 55%), var(--night); border: 0; }
+.mbar { grid-area: mbar; display: flex; flex-wrap: wrap; align-items: center; gap: 26px; padding: 14px 20px; min-height: 76px; border-radius: 18px; min-width: 0; overflow-x: auto; scrollbar-width: none; background: radial-gradient(120% 160% at 100% 0%, rgba(120, 100, 255, .28), transparent 55%), var(--night); border: 0; }
 .mbar::-webkit-scrollbar { display: none; }
 .mb-pair { display: flex; align-items: center; gap: 10px; flex: none; }
 .mb-pair b { display: block; font-size: 17px; font-weight: 800; letter-spacing: -.02em; }
@@ -156,7 +156,7 @@ img.obj { display: block; flex: none; object-fit: contain; }
 .mb-last { display: grid; flex: none; font-size: 26px; font-weight: 700; line-height: 1.05; }
 .mb-last small { font-size: 10px; color: var(--muted); font-family: var(--mono); font-weight: 400; }
 .mb-last.up .num { color: var(--up); } .mb-last.down .num { color: var(--down); }
-.mb-cells { display: flex; gap: 24px; flex: none; }
+.mb-cells { display: flex; flex-wrap: wrap; gap: 8px 24px; flex: 1 1 400px; min-width: 0; }
 .mb-cell { display: grid; gap: 2px; flex: none; }
 .mb-cell > span { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .mb-cell b { font-family: var(--mono); font-size: 12.5px; font-weight: 400; white-space: nowrap; }

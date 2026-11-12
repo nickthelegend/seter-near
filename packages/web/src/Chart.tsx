@@ -38,9 +38,47 @@ export default function Chart({ data, enclavePrice, marks, compact = false }: { 
     vol.current.setData(data.map((d) => ({ time: d.time as UTCTimestamp, value: d.volume, color: d.close >= d.open ? 'rgba(22,135,90,0.18)' : 'rgba(194,59,59,0.18)' })));
     const first = data[0]?.time ?? 0, last = data[data.length - 1]?.time ?? 0;
     const step = data.length > 1 ? data[1].time - data[0].time : 900;
-    markers.current?.setMarkers(marks.filter((m) => m.time >= first && m.time <= last + step).map((m): SeriesMarker<Time> => ({
-      time: (m.time - ((m.time - first) % step)) as UTCTimestamp, position: m.tone === 'fire' ? 'aboveBar' as const : 'belowBar' as const, color: m.tone === 'fire' ? '#9a6f1f' : '#5a46d4', shape: m.tone === 'fire' ? 'arrowDown' as const : 'circle' as const, text: m.label,
-    })).sort((a, b) => (a.time as number) - (b.time as number)));
+    const c = chart.current;
+    if (!c) return;
+    const canvas = document.createElement('canvas').getContext('2d');
+    if (canvas) canvas.font = '11px Space Mono, ui-monospace, monospace';
+    let frame = 0;
+    const apply = () => {
+      type Group = { time: number; tone: ChartMark['tone']; labels: string[]; x: number };
+      const text = (g: Group) => g.labels.length === 1 ? g.labels[0] : `${g.labels.length} ${g.tone === 'fire' ? 'fires' : 'checks'}`;
+      const width = (g: Group) => (canvas?.measureText(text(g)).width ?? text(g).length * 7) + 12;
+      const result: Group[] = [];
+      for (const tone of ['fire', 'check'] as const) {
+        const stack: Group[] = [];
+        for (const m of marks.filter((m) => m.tone === tone && m.time >= first && m.time <= last + step).sort((a, b) => a.time - b.time)) {
+          const time = m.time - ((m.time - first) % step);
+          const x = c.timeScale().timeToCoordinate(time as UTCTimestamp);
+          if (x === null) continue;
+          let g: Group = { time, tone, labels: [m.label], x };
+          // Merge labels whose measured horizontal spans collide, keeping the latest candle as anchor.
+          while (stack.length && stack[stack.length - 1].x + width(stack[stack.length - 1]) / 2 + 8 >= g.x - width(g) / 2) {
+            const previous = stack.pop()!;
+            g = { ...g, labels: [...previous.labels, ...g.labels] };
+          }
+          stack.push(g);
+        }
+        result.push(...stack);
+      }
+      const ordered = result.sort((a, b) => a.time - b.time);
+      markers.current?.setMarkers(ordered.map((g): SeriesMarker<Time> => ({ time: g.time as UTCTimestamp, position: g.tone === 'fire' ? 'aboveBar' : 'belowBar', color: g.tone === 'fire' ? '#9a6f1f' : '#5a46d4', shape: g.tone === 'fire' ? 'arrowDown' : 'circle', text: text(g) })));
+      if (box.current) {
+        box.current.title = marks.map((m) => m.label).join(' · ');
+        box.current.setAttribute('aria-label', `NEAR/USD chart. ${box.current.title}`);
+        box.current.dataset.markerLayout = JSON.stringify(ordered.map((g) => ({ x: g.x, width: width(g), tone: g.tone, text: text(g), events: g.labels.length })));
+      }
+    };
+    const schedule = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(apply); };
+    c.timeScale().subscribeVisibleLogicalRangeChange(schedule);
+    const resize = new ResizeObserver(schedule);
+    if (box.current) resize.observe(box.current);
+    document.fonts.addEventListener('loadingdone', schedule);
+    apply();
+    return () => { cancelAnimationFrame(frame); resize.disconnect(); c.timeScale().unsubscribeVisibleLogicalRangeChange(schedule); document.fonts.removeEventListener('loadingdone', schedule); };
   }, [data, marks]);
 
   useEffect(() => {
