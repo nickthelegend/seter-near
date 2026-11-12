@@ -104,3 +104,19 @@ Screenshots were captured locally during QA and are not committed.
 - No push, force operation, `.loom/` edit or signing-key print/copy was performed. All Chrome/preview processes started for this QA are closed.
 
 See [TESTING.md](TESTING.md#real-browser-transactions-with-the-qa-signer-11-nov-2026) for the reproducible command, flags, budget checks and guarded resume behavior.
+
+## Judging R3 — 12 Nov 2026
+
+| Item | Result | What ran / evidence |
+| --- | --- | --- |
+| 1. Local evidence links | PASS | Replaced all local absolute links/paths in tracked Markdown except the submission form with plain filenames; all historical result rows and PASS/FAIL/BLOCKED words were preserved. The required `git grep` prints nothing. |
+| 2. Privacy limits | PASS | README Limits now states the empty-check probing leak and the band-report distribution leak; submission Scope mentions both. The existing 16-order cap is unchanged. |
+| 3. Terminal bugs | FIXED | Reproduced at 1440 and captured at both widths. Existing market fields now wrap completely into view; colliding chart labels merge into counts while individual event labels remain in the chart tooltip. Before/after screenshots: `before-1440.png`, `before-375.png`, `after-1440.png`, `after-375.png`; chart crops: `before-chart-1440.png`, `after-chart-1440.png`. Both widths pass containment, no overlap, no document overflow and no page exceptions. |
+| 4. Capped keeper | PASS | Added one-check command, spendable reserve, per-run/UTC-day caps, saved hash before broadcast, immutable finalized journals, and a secret-gated 15-minute workflow with persistent cap state. Local request 10 completed with `fired 0`; workflow YAML/actionlint pass. CI was not run or enabled. |
+| 5. Judge paid check | PASS | Try it names Connect wallet, Pay for a check · 0.02 NEAR, Last check, Runs / rejected, Enclave log and the `fired 0` result exactly as the app shows them. |
+
+Two real keeper attempts were made. `C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh` finalized but its enclave request failed: OutLayer required 0.007002 NEAR rather than the contract's 0.005 minimum. Its original sealed journal reports outer transaction success and retains the failed callback. After correcting the attachment and completion check, `gP1o99iyC2rTJcrMXv55N1KwoDuG8r8yr9JCsj5eTaG` completed request 10, checked the three armed orders, fired none and updated Last check. Total real R3 debit: **0.0032805207829979 NEAR**. Full hashes, request result, balances and cumulative spend are in `deployments/r3-2026-11-12.json` and its two keeper journals.
+
+Executed checks: `QA_BASE_URL=http://127.0.0.1:5391 pnpm test:e2e --read-only` 36/36 PASS at 1440/375 without writes; production build PASS; SDK/policy tests 13/13 PASS; CLI refusal checks 4/4 PASS; YAML parser and actionlint PASS. Read-only browser regression result is recorded in `web-results.json`; the paid Nov 11 browser flow was not repeated. Screenshots were captured locally during QA and are not committed.
+
+Remaining manual work: Nick adds `SETER_KEEPER_KEY` to turn on the prepared workflow, publishes the repository and X video, and performs a human Meteor approval. None was attempted here.

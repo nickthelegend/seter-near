@@ -85,3 +85,21 @@ The browser connects through the same wallet interface, deposits NEAR and tUSD, 
 Public evidence defaults to `deployments/qa-browser-<UTC-date>.json`; screenshots and build logs go under the external `flow-qa/mienai/qa-signer/` directory named in [FLOW-QA.md](FLOW-QA.md). A completed ledger cannot be overwritten or replayed. `QA_DROP_SEND_RESPONSE=1` deliberately discards the first real broadcast response after the provider accepts it; the signer must recover by polling the saved hash, with no second broadcast. `pnpm test:e2e --resume` can continue a recorded interrupted run only when the last intended transaction has a known final outcome; it never repeats a recorded successful action. An uncertain outcome requires chain inspection first. `QA_EVIDENCE` and `QA_SCREENSHOTS` can select other public artifact paths; prior ledger spending still counts. `QA_TESTNET_RPC` accepts only the three explicit testnet endpoints. `CHROME_LOCK_PATH` can relocate the same shared lock helper.
 
 This signer tests actual browser encryption, wallet calls, chain results and refreshed positions. Human Meteor sign-in and approval remain a separate manual compatibility check. The first complete run passed; the balance-verification run exposed a delayed RPC outcome and resumed from its publicly recovered FINAL check without sending that check again. See the ledgers and recovery note in `FLOW-QA.md`.
+
+## R3 fixes and capped keeper — 12 Nov 2026
+
+- `pnpm build`: PASS after the terminal fixes (TypeScript and Vite).
+- `QA_BASE_URL=http://127.0.0.1:5391 pnpm test:e2e --read-only`: 36/36 PASS at 1440/375, reusing the one production preview. No transactions were sent.
+- `pnpm test:sdk`: 13/13 PASS: five existing crypto tests and eight keeper budget-policy tests.
+- Four CLI refusal checks passed without any transaction: insufficient reserve, insufficient UTC-day cap, missing CI secret, and malformed signing-key input (masked rather than logged).
+- `actionlint` 1.7.7 and a YAML parser accepted `.github/workflows/keeper.yml`. GitHub execution is intentionally untested/off until Nick publishes and adds `SETER_KEEPER_KEY`.
+- Two local `pnpm keeper` invocations each sent one real testnet transaction: the first finalized but its OutLayer receipt rejected the 0.005 attachment (required 0.007002); the second attached 0.01, completed request 10 and returned `fired 0`. Both sealed journals are retained. The keeper now treats a failed enclave callback as a failure even when the outer transaction succeeded.
+- Failed probe: `C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zxh`; successful check: `gP1o99iyC2rTJcrMXv55N1KwoDuG8r8yr9JCsj5eTaG`. Cumulative real debit: **0.0032805207829979 testnet NEAR**, below 0.02 and the 0.3 R3 cap. See `deployments/r3-2026-11-12.json`.
+
+`pnpm test:e2e --read-only` (also `pnpm test:web`) builds/serves the normal production app, runs real read-only Chrome checks at 1440 and 375 under the shared lock, and rejects any transaction broadcast. It covers every route, all timeframes and terminal tabs, market-field containment, collision-free marker spans, raw errors, page errors and document overflow. It takes screenshots named `test-<step>-<width>.png` and writes `web-results.json`. Use this command for UI regression without repeating paid wallet flows. `QA_BASE_URL` can reuse an existing local preview; otherwise the test owns and closes its preview. The Nov 11 paid browser-flow ledger remains historical; it was not replayed for R3.
+
+Both terminal bugs reproduced before the fix. Before/after captures: `before-1440.png`, `before-375.png`, `after-1440.png`, `after-375.png`, plus chart crops. Source/Coinbase is fully in frame, measured marker spans are separated, and both viewport widths have no document overflow or page exceptions. Existing fonts, colours and the terminal grid are retained; only the bar's permitted wrapping and colliding marker text changed.
+
+Screenshots were captured locally during QA and are not committed.
+
+The paid browser harness now also uses the durable orchestration Chrome lock and screenshot directory, checks system memory free >=30% and disk free >=5 GB before builds, and checks memory again inside the browser lock. Its original paid flow was not re-executed for this brief.

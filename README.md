@@ -123,10 +123,22 @@ Seter signs with [Meteor Wallet](https://wallet.meteorwallet.app) on NEAR testne
 - `node packages/sdk/scripts/verify-attestation.mjs deployments/outlayer-direct-check-4RDtRKvrXwjEz7ShLfgdSnWfDCNcWSksDvrtYRpvrWrK.json 999ec172cd7fa60bf66c6803183332deaabef30d0434793c8cf9da85b81080fe` → reruns the six attestation checks for the probe run; requires OutLayer, NEAR RPC and Intel collateral access.
 - Redeployment is separate from the read-only demo. The existing scripts are `packages/sdk/scripts/create-account.mjs`, `upload-enclave.mjs`, `deploy-testnet.mjs` and `real-run.mjs`. They create accounts, spend testnet NEAR and write deployment evidence. A fresh deployment requires changing `packages/enclave/manifest.json` to the new contract account before rebuilding. `real-run.mjs` reads the fixed `deployments/testnet-2026-11-09.json` path, so it must be adapted to a new deployment record before reuse.
 
+## Capped keeper (prepared, switched off)
+
+Run `pnpm keeper` from the repo root to pay for one `check()` using the existing local keeper/deployer account, `mienai-3013a230.testnet`. This is the account that signed the recorded keeper checks; its key is loaded by file path and never printed. The command sends at most one transaction and saves its hash before broadcast under `deployments/keeper/`.
+
+The default spendable reserve is 1 NEAR (`KEEPER_RESERVE_NEAR`), the per-run cap is 0.045 NEAR (`KEEPER_RUN_CAP_NEAR`), and the per-UTC-day cap is 0.05 NEAR (`KEEPER_DAILY_CAP_NEAR`). The script attaches 0.01 NEAR and reserves the full 240 Tgas at 125% of the current gas price before signing. Final daily charges conservatively include the full attachment plus all burned gas, even if funds were refunded. A low balance, insufficient cap room, unfinished journal or reservation overrun refuses another paid run. Keep the journal: deleting it defeats the cap.
+
+OutLayer compute costs about 0.001 NEAR plus gas per check, but it needs a larger upfront reservation: on 12 Nov it required 0.007002 NEAR, so the contract's 0.005 NEAR minimum was insufficient. The successful 0.01-attached check debited 0.00251135 NEAR after refunds and returned `fired 0`; the failed probe and successful retry together spent 0.00328052 NEAR. Both hashes and the failure reason are in [the R3 record](deployments/r3-2026-11-12.json).
+
+`.github/workflows/keeper.yml` attempts one run every 15 minutes. It does no paid work unless the GitHub Actions secret **`SETER_KEEPER_KEY`** exists. Nick must add that testnet signing-key secret and fund its account; `KEEPER_ACCOUNT_ID` can select a dedicated testnet keeper instead of the historical account. The reserve and daily cap can be set as repository variables. Conservative reservations mean some ticks will refuse; the cron is not a guarantee of 96 checks a day.
+
+The workflow serializes runs and restores the previous active run's public journal artifact before spending. A missing artifact fails closed. It preserves journals even when a check fails and refuses workflow reruns. No workflow was enabled or executed in this task. For an uncertain local outcome, `pnpm keeper --reconcile <journal-filename.json>` only polls the saved hash; it never sends another check. Human Meteor approval remains a separate manual compatibility check.
+
 ## Limits, stated plainly
 
 - One price source (Coinbase NEAR-USD last trade). A second source and a median would be stronger.
-- A keeper must pay for checks (about 0.001 NEAR of OutLayer compute plus gas per check); nothing runs on a timer by itself.
+- A keeper must pay for checks (about 0.001 NEAR of OutLayer compute plus gas per check); the prepared schedule stays off until Nick adds its secret.
 - The fill happens on Seter's own test pool, so the execution itself is public once it fires. Private execution is not built.
 - The browser keeps the view key in `localStorage`; losing it loses the owner's local copy of the levels, not the order.
 - Every public check that fires nothing reveals that no armed trigger was crossed at price P, and repeated checks at different prices narrow where levels can be.
