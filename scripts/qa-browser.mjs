@@ -13,11 +13,11 @@ if (process.argv.includes('--read-only')) { await import('./test-web.mjs'); proc
 
 const root = resolve(import.meta.dirname, '..');
 const date = new Date().toISOString().slice(0, 10);
-const scratch = '/private/tmp/claude-501/-Volumes-Extreme-SSD-Projects-grokbot/0f121b7c-0081-4ec0-81a9-0ccb4f7f8b48/scratchpad';
-const dir = resolve(process.env.QA_SCREENSHOTS || join(scratch, 'flow-qa/mienai/qa-signer'));
+const orchestration = resolve(root, '../../orchestration');
+const dir = resolve(process.env.QA_SCREENSHOTS || join(orchestration, 'shots/mienai/r3/qa-signer'));
 const output = resolve(process.env.QA_EVIDENCE || join(root, `deployments/qa-browser-${date}.json`));
 const resume = process.argv.includes('--resume');
-const { withChromeLock } = await import(process.env.CHROME_LOCK_PATH || join(scratch, 'chrome-lock.mjs'));
+const { withChromeLock } = await import(process.env.CHROME_LOCK_PATH || join(orchestration, 'chrome-lock.mjs'));
 const dep = JSON.parse(readFileSync(join(root, 'deployments/testnet-2026-11-09.json')));
 const C = dep.contract_id, TOKEN = dep.token_id;
 const rpcUrl = process.env.QA_TESTNET_RPC || 'https://test.rpc.fastnear.com';
@@ -30,12 +30,14 @@ const buildDir = join(dir, 'build');
 const log = (s) => console.log(s); // Only public progress, never browser console arguments or injected values.
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 async function memoryCheck() {
-  const readFree = () => Number(execFileSync('sysctl', ['vm.swapusage'], { encoding: 'utf8' }).match(/free = ([\d.]+)M/)?.[1] || 0);
-  let free = readFree(); log(`Swap free: ${free} MB`);
-  if (free >= 500) return;
-  for (let i = 0; i < 4; i++) await pause(30_000);
-  free = readFree(); log(`Swap free after two minutes: ${free} MB`);
-  assert(free >= 500, 'Swap remains below 500 MB; no build started.');
+  let free;
+  do {
+    free = Number(execFileSync('memory_pressure', { encoding: 'utf8' }).match(/free percentage: (\d+)%/)?.[1] || 0);
+    log(`System memory free: ${free}%`);
+    if (free < 30) await pause(30_000);
+  } while (free < 30);
+  const data = execFileSync('df', ['-k', '/System/Volumes/Data'], { encoding: 'utf8' }).trim().split('\n').at(-1).split(/\s+/);
+  assert(Number(data[3]) >= 5 * 1024 * 1024, 'Less than 5 GB free; stop before building or launching Chrome.');
 }
 function command(args, name, env = {}) {
   const result = spawnSync('pnpm', args, { cwd: root, env: { ...process.env, ...env }, encoding: 'utf8' });
@@ -111,6 +113,7 @@ try {
   const url = `http://127.0.0.1:${port}`;
   for (let i = 0; ; i++) { try { if ((await fetch(url)).ok) break; } catch {} if (i > 100) throw new Error('QA preview failed to start.'); await pause(100); }
   await withChromeLock(async () => {
+    await memoryCheck();
     const browser = await chromium.launch({ channel: 'chrome' });
     try {
       // Refusal cases exercise the actual adapter, with no usable signing key and no transaction.

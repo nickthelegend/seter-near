@@ -75,7 +75,10 @@ try {
       credentials = await loadCredentials('deployer'); // this account signed the recorded keeper checks
     }
     if (!/^[a-z0-9._-]+\.testnet$/.test(credentials.account_id)) throw new Error('Keeper accepts testnet accounts only.');
-    const signer = accountFrom(credentials); credentials.secret_key = '';
+    let signer;
+    try { signer = accountFrom(credentials); }
+    catch { throw new Error('Keeper signing key could not be loaded; check its named secret or credential file.'); }
+    finally { credentials.secret_key = ''; }
     const day = new Date().toISOString().slice(0, 10);
     const records = await Promise.all((await readdir(dir)).filter((f) => f.endsWith('.json')).map(async (f) => JSON.parse(await readFile(resolve(dir, f), 'utf8'))));
     if (records.some((r) => r.network !== 'testnet' || r.contract !== C || !r.day || !r.account || r.reserved_yocto === undefined)) throw new Error('Invalid keeper journal; restore the complete journal before spending.');
