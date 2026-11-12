@@ -9,6 +9,8 @@ import { chromium } from 'playwright';
 import { loadCredentials } from '../packages/sdk/scripts/signer.mjs';
 import { view, viewAccount, rpc, PRICE_SOURCE } from '../packages/sdk/src/index.mjs';
 
+if (process.argv.includes('--fire-only')) { await import('./qa-fire.mjs'); process.exit(0); }
+
 if (process.argv.includes('--read-only')) { await import('./test-web.mjs'); process.exit(0); }
 
 const root = resolve(import.meta.dirname, '..');

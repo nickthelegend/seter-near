@@ -1,0 +1,182 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "at": "2026-11-12T13:37:12.286Z",
+  "status": "PASS",
+  "spend_cap_near": "0.03",
+  "trader": "mienai-4e6b1225.testnet",
+  "keeper": "mienai-3013a230.testnet",
+  "vault_before": {
+    "near": "600000000000000000000000",
+    "usd": "1272503"
+  },
+  "initial_wallet_balances": {
+    "trader": "8701902740908285299999997",
+    "keeper": "11242876297330466099999997"
+  },
+  "sell_yocto": "100000000000000000000",
+  "trigger_multiplier": 1.01,
+  "production_excludes_qa_signer": true,
+  "steps": [
+    {
+      "label": "seal-stop",
+      "account": "mienai-4e6b1225.testnet",
+      "tx": "79frNkPN8C4tZPPoJJHSYMTb9zxtRRdDXbWwx6SxQu8i",
+      "explorer": "https://testnet.nearblocks.io/txns/79frNkPN8C4tZPPoJJHSYMTb9zxtRRdDXbWwx6SxQu8i",
+      "method": "place_order",
+      "deposit": "20000000000000000000000",
+      "balance_before": "8701902740908285299999997",
+      "at": "2026-11-12T13:37:17.691Z",
+      "final": true,
+      "ok": true,
+      "return": "13",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":13,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ],
+      "balance_after": "8681627079397685499999997",
+      "wallet_debit_yocto": "20275661510599800000000"
+    },
+    {
+      "label": "check",
+      "account": "mienai-3013a230.testnet",
+      "tx": "93MYASBvJJvru635brwsrV9zRuAGDeav99KYQcqxvFcz",
+      "explorer": "https://testnet.nearblocks.io/txns/93MYASBvJJvru635brwsrV9zRuAGDeav99KYQcqxvFcz",
+      "method": "check",
+      "deposit": "20000000000000000000000",
+      "balance_before": "11262876297330466099999997",
+      "at": "2026-11-12T13:37:25.978Z",
+      "final": true,
+      "ok": true,
+      "return": "\"fired 1\"",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":11,\"operation\":\"check\",\"orders\":4}]}",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":31506,\\\"sender_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"predecessor_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\\\",\\\"hash\\\":\\\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":20000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"operation\\\\\\\":\\\\\\\"check\\\\\\\",\\\\\\\"contract\\\\\\\":\\\\\\\"mienai-3013a230.testnet\\\\\\\",\\\\\\\"request\\\\\\\":11,\\\\\\\"orders\\\\\\\":[{\\\\\\\"id\\\\\\\":3,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ATg7nsfayyBeeX2H/pIUvsO40HwPTzoU7T6in6fsNqdyjcLxQhMDTHnKYeHKqNkOSihyHhAz6FJ3EeX9ZiT1pNXt455bVq734+qrLU8u24tbWvTv1m1mzfig/pdVLWdgAQBuhotNQ8GU07lQSCPKo2DT2ISwSh7nSswttcaE8B1oZ8bdUXYfVK1EFoH2265f1nix0PBquTTtYLww59Cn6lLK65nxl0Tq9zzcjEsJBXx+w51hHb7v33pa8d0ApwfCHubhZQAi4EG5EQ6UdvM=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"22e2f6c6e412688e22c176e2d2e06d8b96a7aca1a66117c7a70a4f287733bea4\\\\\\\"},{\\\\\\\"id\\\\\\\":4,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AT7W/BO5TaJg+meXBPyJCw05bTE2W5MLTn01wLp8IR1aEDSnKiLSf6ShbzP4f6+NI7eXVbCmUJVvx6NDjFi7QZZsqWYFWsIT7MPjY5eUsih8Gc31XEL/LXu/C/vLLEmd1442prP0nQ9ADXt1d4xxI1d6aqcV4AD2H8VKSRamiPsF5pgsc6fqgptw82MZv40KxgNcalJ7mBzc8ueRCYifhMzOCrusuNbumrMa9xHcPKOwv8fdKEskqHt2uMVH/hWEPhPznMZFMruI4O74ZlY=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"0e81d20c079a1926830812fb6dd1e0cec6d6363dc6018712b646b450b3629a5d\\\\\\\"},{\\\\\\\"id\\\\\\\":5,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"Ab4aqTD+MxuJU4wKZUttGFq8cRQkoWwZwQJE9W4pcsNq4ghx6m+jVSeqQiJ9Dqb6PAO2s9hi0C/H7XcXNk58nVUWb+KbHrgBLB0V7oCzGhMQ7EaB148L7LTz0TnorzYr8cRXOfigk5CuecCeBtCMY5glgoFn8RRLjz4Zy6mu3Yz8+gy32E657Fo2vvW4tKCksybjUGoO/XpZ9B9ItWBECBZuPkFFry26YVr8fQk66R3XNeSqpOSuNdFrX76DeLMU4BfPm5Zi2D6E7OgUkA4=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"7f0cba6552dff0563e9a02742e6180aa75eda5c946c13173e1151e00b2c55900\\\\\\\"},{\\\\\\\"id\\\\\\\":13,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AelPgUtA6Qv6oHXyGbJvd5uRTZCKn2Ki28iAGTibjf1EXE4xsTPSQYPlXRW1qZl56eomfkYg3E8CuAcf6YP0m1vXGFoLTMnEGAMjwZVApBd8UR5Eg0BRkIS+ZLhga7lrTAfqRhCQjXLM0KGlmkC7RIKFN5JgsGUWvEJDlmjA2jimjPezX30wPQVJHeV6AzlU6JHnctGHsjsrfIfBMcOX5ehJt9KRjVHHGZnN/G1C/QfWY7V6gWgRcYmc046NgEeCWDaGnrVXQkTrzL0=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"11b4c079fe0999dce750b83f1cf587de8f42147e7054eca286d010f416db96f1\\\\\\\"}]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":null,\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"20000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794490646793616483,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":null,\\\"project_id\\\":null}\",\"data_id\":[95,181,247,193,166,255,148,13,135,183,29,100,119,188,28,227,89,92,211,133,188,201,156,63,202,219,237,125,48,94,204,153],\"timestamp\":1794490646793616483}]}",
+        "[[yNEAR charged: \"1134701400000000000000\"]]",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-3013a230.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\",\"hash\":\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":14493691,\"time_ms\":1347,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1134701400000000000000\",\"payment_refunded\":\"18865298600000000000000\",\"compilation_note\":\"Cached WASM from 2026-11-09T17:16:17.890705+00:00\",\"timestamp\":1794490652904062202}]}",
+        "Execution completed successfully. Output: Json(703 bytes), Resources: { instructions: 14493691, time_ms: 1347 }, Cost: 1134701400000000000000 yoctoNEAR, Refund: 18865298600000000000000 yoctoNEAR, Cached WASM from 2026-11-09T17:16:17.890705+00:00",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"check\",\"data\":[{\"request\":11,\"path\":\"callback\",\"price_e6\":3389200,\"fired\":[13]}]}"
+      ],
+      "balance_after": "11260191203333763699999997",
+      "wallet_debit_yocto": "2685093996702400000000"
+    }
+  ],
+  "screenshots": [
+    {
+      "id": "configured",
+      "width": 1440,
+      "file": "configured-1440.png"
+    },
+    {
+      "id": "configured",
+      "width": 375,
+      "file": "configured-375.png"
+    },
+    {
+      "id": "armed",
+      "width": 1440,
+      "file": "armed-1440.png"
+    },
+    {
+      "id": "armed",
+      "width": 375,
+      "file": "armed-375.png"
+    },
+    {
+      "id": "keeper-ready",
+      "width": 1440,
+      "file": "keeper-ready-1440.png"
+    },
+    {
+      "id": "keeper-ready",
+      "width": 375,
+      "file": "keeper-ready-375.png"
+    },
+    {
+      "id": "fired",
+      "width": 1440,
+      "file": "fired-1440.png"
+    },
+    {
+      "id": "fired",
+      "width": 375,
+      "file": "fired-375.png"
+    },
+    {
+      "id": "receipts",
+      "width": 1440,
+      "file": "receipts-1440.png"
+    },
+    {
+      "id": "receipts",
+      "width": 375,
+      "file": "receipts-375.png"
+    },
+    {
+      "id": "fired-refreshed",
+      "width": 1440,
+      "file": "fired-refreshed-1440.png"
+    },
+    {
+      "id": "fired-refreshed",
+      "width": 375,
+      "file": "fired-refreshed-375.png"
+    }
+  ],
+  "placement_quote": {
+    "price": "3.3881",
+    "time": "2026-11-12T13:37:11.680887924Z",
+    "trade_id": 36506052
+  },
+  "trigger_usd": "3.4220",
+  "order_id": 13,
+  "request": {
+    "id": 11,
+    "kind": "Check",
+    "caller": "mienai-3013a230.testnet",
+    "created_ns": "1794490646212352314",
+    "order_ids": [
+      3,
+      4,
+      5,
+      13
+    ],
+    "status": "Done",
+    "note": "callback: fired 1"
+  },
+  "order_after": {
+    "id": 13,
+    "owner": "mienai-4e6b1225.testnet",
+    "ct": "AelPgUtA6Qv6oHXyGbJvd5uRTZCKn2Ki28iAGTibjf1EXE4xsTPSQYPlXRW1qZl56eomfkYg3E8CuAcf6YP0m1vXGFoLTMnEGAMjwZVApBd8UR5Eg0BRkIS+ZLhga7lrTAfqRhCQjXLM0KGlmkC7RIKFN5JgsGUWvEJDlmjA2jimjPezX30wPQVJHeV6AzlU6JHnctGHsjsrfIfBMcOX5ehJt9KRjVHHGZnN/G1C/QfWY7V6gWgRcYmc046NgEeCWDaGnrVXQkTrzL0=",
+    "commit": "11b4c079fe0999dce750b83f1cf587de8f42147e7054eca286d010f416db96f1",
+    "view_ct": "7nk2TzsfLVJ+oaVCgxKgmJyQqiDCRcIsYxkkKHGlbe/lAKMhe6h9kgXQW7eBtGopWp4PLD6Qw1smGSg/Ube/TDx5FkivMOUuLXLIYrup5EuilamLF5MxJ/yvYYCG2p4oFS+zyODq+U0uXwKD+zr8BUFn32LY5ymmuOrUHPWd8zDga1Ddy8hjTb0JSm4l2TEhCzdFIVC7W43/WIRoKBwgvPcNYP82Qk7WQuM=",
+    "created_ns": "1794490638982977933",
+    "status": "Fired",
+    "fire": {
+      "request": 11,
+      "path": "callback",
+      "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":3422000,\"side\":\"sell\",\"amount\":\"100000000000000000000\",\"salt\":\"0e7a0996982f6e5c4fd22271a93e0928\"}",
+      "cond": "lte",
+      "trigger_e6": 3422000,
+      "side": "sell",
+      "amount": "100000000000000000000",
+      "price_e6": 3389200,
+      "price_ts_ms": 1794490648206,
+      "trade_id": 36506060,
+      "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+      "block_height": "277369983",
+      "block_ts": "1794490653427719078",
+      "filled_in": "100000000000000000000",
+      "filled_out": "275",
+      "note": "sold NEAR for tUSD on the test pool",
+      "report_sha256": "b8ed1d2fc2f2df871121f42c858fad823283c617f64cf6783158d244eaf064b6",
+      "outlayer_request": "31506"
+    }
+  },
+  "vault_after": {
+    "near": "599900000000000000000000",
+    "usd": "1272778"
+  },
+  "wallet_debit_yocto": "22960755507302200000000",
+  "conservative_spend_yocto": "23060755507302200000000",
+  "page_errors": []
+}

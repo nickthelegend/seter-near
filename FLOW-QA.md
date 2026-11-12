@@ -120,3 +120,25 @@ Two real keeper attempts were made. `C9ZYpNSzkkenzxLGAtS3j5goezATZH7hueckQ6xH2Zx
 Executed checks: `QA_BASE_URL=http://127.0.0.1:5391 pnpm test:e2e --read-only` 36/36 PASS at 1440/375 without writes; production build PASS; SDK/policy tests 13/13 PASS; CLI refusal checks 4/4 PASS; YAML parser and actionlint PASS. Read-only browser regression result is recorded in `web-results.json`; the paid Nov 11 browser flow was not repeated. Screenshots were captured locally during QA and are not committed.
 
 Remaining manual work: Nick adds `SETER_KEEPER_KEY` to turn on the prepared workflow, publishes the repository and X video, and performs a human Meteor approval. None was attempted here.
+
+## Judging R4 — 12 Nov 2026
+
+| Item | Result | Evidence |
+| --- | --- | --- |
+| Host-ready static app | PASS | Added `vercel.json` with filesystem-first SPA fallback and output `packages/web/dist`, `.vercelignore` secret/local-state exclusions, a build guard, and README Hosting instructions. Production built successfully with `VITE_QA_SIGNER=1`; the guard found no QA signer module/markers or private files among 36 public build files. Nine representative private upload paths are excluded. The normal production preview also passed 36 read-only route/tab/timeframe checks at both widths, including direct page loads and order-detail navigation. No deployment was performed. |
+| One fresh in-app seal and fire | PASS | `pnpm test:e2e --fire-only` used the existing QA wallet interface, real trader encryption and real testnet transactions. Exactly one fresh order, **№13**, was placed; one paid check from the existing keeper completed request **11** and fired it. No deposit, faucet, cancellation, second order or extra check was made. |
+
+The trigger was deliberately set about 1% above the live Coinbase quote (3.3881) so the next check could cross it. The armed page decrypted the owner's local view copy. Its trigger **3.4220** was revealed only in the on-chain fire report, whose enclave price was **3.3892**. The contract filled **0.0001 NEAR** for **0.000275 tUSD** on its test pool, via the private callback. This was a deliberately crossed demo stop, not a claim that the market fell through a previously lower trigger.
+
+| Browser action | Transaction | Payer wallet debit |
+| --- | --- | --- |
+| Seal stop | [`79frNkPN8C4tZPPoJJHSYMTb9zxtRRdDXbWwx6SxQu8i`](https://testnet.nearblocks.io/txns/79frNkPN8C4tZPPoJJHSYMTb9zxtRRdDXbWwx6SxQu8i) | 0.0202756615105998 NEAR |
+| Pay for a check | [`93MYASBvJJvru635brwsrV9zRuAGDeav99KYQcqxvFcz`](https://testnet.nearblocks.io/txns/93MYASBvJJvru635brwsrV9zRuAGDeav99KYQcqxvFcz) | 0.0026850939967024 NEAR |
+
+Combined wallet debit was **0.0229607555073022 NEAR**. Counting the sold 0.0001 NEAR too, the conservative total was **0.0230607555073022 NEAR**, below the 0.03 cap. The trader used its existing funded vault; no new funds or secrets were created. The payer budgets were checked before both writes, every hash was saved before broadcast, and both transactions reached FINAL. The completed proof refuses replay. Full evidence: [r4-fire-2026-11-12.json](deployments/r4-fire-2026-11-12.json).
+
+Twelve screenshots cover configuration, armed state, keeper readiness, fired state, real receipt links and a hard refresh of the fired detail at **1440x900 and 375x812**. Examples: `armed-1440.png`, `armed-375.png`, `fired-1440.png`, `fired-375.png`, `receipts-1440.png`, `receipts-375.png`, `fired-refreshed-1440.png`, `fired-refreshed-375.png`. No page exceptions or document overflow were found. The order summary shows the exact 0.0001 NEAR; the existing two-decimal fill caption rounds that tiny quantity to 0.00. No product UI code was changed. A fresh independent TDX attestation verification was not run or claimed; the app truthfully shows that no recorded attestation has been bundled for this fire.
+
+Screenshots were captured locally during QA and are not committed.
+
+A low-disk preflight briefly paused builds/browsers. Only this repo's regenerable Rust build caches were removed; work resumed after the internal volume recovered above 5 GB. No films, deployment, push, new secret or keeper activation occurred. Hosting, human Meteor approval and adding the keeper secret remain Nick's steps.

@@ -103,3 +103,13 @@ Both terminal bugs reproduced before the fix. Before/after captures: `before-144
 Screenshots were captured locally during QA and are not committed.
 
 The paid browser harness now also uses the durable orchestration Chrome lock and screenshot directory, checks system memory free >=30% and disk free >=5 GB before builds, and checks memory again inside the browser lock. Its original paid flow was not re-executed for this brief.
+
+## R4 hosting and fresh in-app fire — 12 Nov 2026
+
+`vercel.json` runs `pnpm build && node scripts/verify-host-build.mjs`. The read-only guard checks the filesystem-first SPA route configuration, public output, private filenames and all QA signer markers. A normal production build with `VITE_QA_SIGNER=1` passed this guard; `qa` mode is also required to include the test signer. Upload exclusions were checked against nine representative nested credential/environment/key/local-state paths. No Vercel deployment was made.
+
+`pnpm test:e2e --fire-only` adds a narrow path through the existing QA signer. It uses only this repo's funded trader and historical keeper, the existing vault, one small sealed stop and one in-app **Pay for a check · 0.02 NEAR** call. The trigger is 1% above the sampled price; the 0.0001-NEAR size keeps native outlay, including the sold quantity, below 0.03 NEAR. The runner checks funds and remaining budget, persists hashes before broadcast, waits for FINAL, rejects duplicate placements/checks, records the actual fill and receipt links, and captures both widths. Completed evidence cannot be replayed. An interrupted attempt requires `--resume`, which reconciles saved hashes and never resends a known attempt. Credentials are loaded only in Node and injected into ephemeral browser memory.
+
+Executed: `pnpm test:e2e --fire-only` PASS; order 13 Fired via request 11. Two real transactions, 12 screenshots, no page errors or document overflow. Combined wallet debit 0.0229607555073022 NEAR; including the sold asset, 0.0230607555073022 NEAR. The exact hashes, source price, fill, public callback record and balances are in `deployments/r4-fire-2026-11-12.json` and FLOW-QA. No new attestation verification or film was claimed. The default full deposit/take-profit/withdrawal suite was not repeated.
+
+R4 production regression: `pnpm test:e2e --read-only` PASS, 36/36 checks at 1440/375 with zero page exceptions, failed network requests or document overflow. The normal build/preview was owned and closed by the runner. `node scripts/verify-host-build.mjs` passed after this rebuild. A second invocation of the completed `--fire-only` proof was correctly refused before any credential read or transaction.
