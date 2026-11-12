@@ -16,6 +16,10 @@ Run locally with Node 22+ and pnpm 10. No hosted demo URL is recorded in this re
 
 To place your own testnet order, follow [Connecting a wallet](#connecting-a-wallet). The real browser flow passes with the test-only QA signer (`pnpm test:e2e`); production uses Meteor. Human Meteor sign-in and approval remain a manual compatibility check. See [FLOW-QA.md](FLOW-QA.md) for results and receipts. For this local-only demo, the public X post must include a video ([official rule Q-012](https://nearhackathon.com/HACKATHON.md)).
 
+## Hosting
+
+Hosting is prepared, not deployed: from the repository root, `pnpm install --frozen-lockfile && pnpm build` produces `packages/web/dist`. The static app uses public NEAR testnet defaults and needs no private key or server secret. `vercel.json` serves existing assets first and falls back to `index.html` for `/app` and `/order/<id>`; `.vercelignore` excludes credentials, environment files, signing-key files and local state from upload. Production removes the QA signer even when `VITE_QA_SIGNER=1` is set; QA also requires the separate `qa` build mode. Nick can use this configuration when he is ready to host. No deployment was made. See [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json).
+
 ## Live on NEAR testnet
 
 | Contract | Account |
