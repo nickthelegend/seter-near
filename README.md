@@ -12,6 +12,8 @@ Run locally with Node 22+ and pnpm 10. No hosted demo URL is recorded in this re
 4. Open `http://127.0.0.1:5201/app` - see the trading terminal and sealed levels shown as `••••`. Open Order history - see the recorded fired stop.
 5. Open `http://127.0.0.1:5201/order/1` - see the recorded trigger of 3.5967, the enclave price of 3.5886 and its attestation certificate. The certificate shows recorded verification checks and fetches the quote from OutLayer to hash in the browser.
 
+6. In `/app`, click **Connect wallet** and sign in with a funded Meteor testnet account, then click **Pay for a check · 0.02 NEAR** and approve it - see **Last check** and **Runs / rejected** update in **Enclave · Intel TDX**; open **Enclave log** to see the new check and `fired 0` if no armed trigger crossed, while the orders stay **Armed**.
+
 To place your own testnet order, follow [Connecting a wallet](#connecting-a-wallet). The real browser flow passes with the test-only QA signer (`pnpm test:e2e`); production uses Meteor. Human Meteor sign-in and approval remain a manual compatibility check. See [FLOW-QA.md](FLOW-QA.md) for results and receipts. For this local-only demo, the public X post must include a video ([official rule Q-012](https://nearhackathon.com/HACKATHON.md)).
 
 ## Live on NEAR testnet
@@ -127,6 +129,8 @@ Seter signs with [Meteor Wallet](https://wallet.meteorwallet.app) on NEAR testne
 - A keeper must pay for checks (about 0.001 NEAR of OutLayer compute plus gas per check); nothing runs on a timer by itself.
 - The fill happens on Seter's own test pool, so the execution itself is public once it fires. Private execution is not built.
 - The browser keeps the view key in `localStorage`; losing it loses the owner's local copy of the levels, not the order.
+- Every public check that fires nothing reveals that no armed trigger was crossed at price P, and repeated checks at different prices narrow where levels can be.
+- The k-anonymous band report leaks how levels are distributed.
 - Up to 16 open orders per contract (one enclave run reads all of them).
 
 ## Hackathon disclosures

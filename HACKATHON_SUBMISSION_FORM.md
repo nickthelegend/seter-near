@@ -17,6 +17,8 @@ Draft for Nick to complete in the [official form](https://nearhackathon.com/#app
 
 Idea character count: **671** (the exact plain text in the `idea` row, including spaces and punctuation).
 
+Scope: This is a testnet prototype; empty public checks have a probing leak that narrows where armed triggers can be, and k-anonymous band reports reveal their distribution.
+
 Contact notice: "I agree that the organizers may use these details to review our submission and contact us about this hackathon."
 
 These are the eleven user-facing form fields. If Nick later chooses the API, it also requires a `requestId`, generated once and reused on retries. No submission payload is prepared here. The form's hidden `website` spam-trap field must stay empty.
