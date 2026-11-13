@@ -4,7 +4,7 @@ import { resolve, basename } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { baseEncode, actions } from 'near-api-js';
 import { root, loadCredentials, accountFrom } from './signer.mjs';
-import { CHECK_DEPOSIT, CHECK_GAS, amount, plan } from './keeper-policy.mjs';
+import { CHECK_DEPOSIT, CHECK_COST, CHECK_GAS, amount, plan } from './keeper-policy.mjs';
 
 const C = 'mienai-3013a230.testnet';
 const RPCS = ['https://test.rpc.fastnear.com', 'https://near-testnet.drpc.org', 'https://rpc.testnet.near.org'];
@@ -32,7 +32,7 @@ let record, path, broadcastAttempted = false;
 const reconciling = process.argv[2] === '--reconcile';
 async function finalize(result) {
   const burn = [result.transaction_outcome, ...result.receipts_outcome].reduce((n, r) => n + BigInt(r.outcome.tokens_burnt || '0'), 0n);
-  const gross = CHECK_DEPOSIT + burn;
+  const gross = CHECK_COST + burn;
   const after = await balance(record.account);
   const logs = result.receipts_outcome.flatMap((r) => r.outcome.logs);
   const event = logs.filter((s) => s.startsWith('EVENT_JSON:')).map((s) => JSON.parse(s.slice(11))).find((e) => e.event === 'enclave_request');
@@ -64,15 +64,15 @@ try {
     if (record.network !== 'testnet' || record.contract !== C || !record.account.endsWith('.testnet') || !['pending', 'reserved'].includes(record.status) || !record.tx) throw new Error('Only an unresolved testnet journal can be reconciled.');
     await poll();
   } else {
-    const cap = amount(process.env.KEEPER_DAILY_CAP_NEAR ?? '0.05');
-    const reserve = amount(process.env.KEEPER_RESERVE_NEAR ?? '1');
-    const runCap = amount(process.env.KEEPER_RUN_CAP_NEAR ?? '0.045');
-    if (cap <= 0n || cap > amount('0.3') || runCap <= 0n || runCap > amount('0.05')) throw new Error('Daily cap must be >0 and <=0.3; per-run cap must be >0 and <=0.05 NEAR.');
+    const cap = amount(process.env.KEEPER_DAILY_CAP_NEAR ?? '0.25');
+    const reserve = amount(process.env.KEEPER_RESERVE_NEAR ?? '0');
+    const runCap = amount(process.env.KEEPER_RUN_CAP_NEAR ?? '0.06');
+    if (cap <= 0n || cap > amount('0.5') || runCap <= 0n || runCap > amount('0.08')) throw new Error('Daily cap must be >0 and <=0.5; per-run cap must be >0 and <=0.08 NEAR.');
     let credentials;
     if (process.env.SETER_KEEPER_KEY) credentials = { account_id: process.env.KEEPER_ACCOUNT_ID || C, secret_key: process.env.SETER_KEEPER_KEY };
     else {
       if (process.env.GITHUB_ACTIONS === 'true') throw new Error('SETER_KEEPER_KEY is absent; scheduled keeper stays disabled.');
-      credentials = await loadCredentials('deployer'); // this account signed the recorded keeper checks
+      credentials = await loadCredentials('keeper-fc'); // function-call key on the vault, limited to check
     }
     if (!/^[a-z0-9._-]+\.testnet$/.test(credentials.account_id)) throw new Error('Keeper accepts testnet accounts only.');
     let signer;
@@ -86,8 +86,10 @@ try {
     if (!stats.open) throw new Error('No armed orders; no paid check needed.');
     const before = await balance(signer.accountId);
     const gas = BigInt((await rpc('gas_price', [null])).gas_price);
-    const budget = plan({ records, account: signer.accountId, day, spendable: BigInt(before.amount) - BigInt(before.storage_usage) * 10n ** 19n, gasPrice: gas, reserve, dailyCap: cap, runCap });
-    record = { schema: 1, network: 'testnet', contract: C, account: signer.accountId, day, at: new Date().toISOString(), status: 'reserved', balance_before: before.amount, reserve_yocto: String(reserve), daily_cap_yocto: String(cap), run_cap_yocto: String(runCap), prior_day_charge_yocto: String(budget.spent), reserved_yocto: String(budget.worst), deposit_yocto: String(CHECK_DEPOSIT) };
+    // The run draws on the vault's keeper budget (fund_keeper), not on user balances.
+    const keeperBudget = BigInt((await view('get_second_source')).keeper_budget);
+    const budget = plan({ records, account: signer.accountId, day, spendable: keeperBudget, gasPrice: gas, reserve, dailyCap: cap, runCap });
+    record = { schema: 2, key: 'function-call (check only)', keeper_budget_before: String(keeperBudget), network: 'testnet', contract: C, account: signer.accountId, day, at: new Date().toISOString(), status: 'reserved', balance_before: before.amount, reserve_yocto: String(reserve), daily_cap_yocto: String(cap), run_cap_yocto: String(runCap), prior_day_charge_yocto: String(budget.spent), reserved_yocto: String(budget.worst), deposit_yocto: String(CHECK_DEPOSIT), budget_cost_yocto: String(CHECK_COST) };
     path = resolve(dir, `${day}-${Date.now()}-${randomUUID().slice(0, 8)}.json`);
     await writeFile(path, JSON.stringify(record, null, 2) + '\n', { flag: 'wx' });
     const signed = await signer.createSignedTransaction({ receiverId: C, actions: [actions.functionCall('check', {}, CHECK_GAS, CHECK_DEPOSIT)] });
@@ -96,7 +98,8 @@ try {
     await save(path, record); // durable hash before the single broadcast
     // Re-check the account immediately before the write, preserving its reserve even if a concurrent operator spent funds.
     const fresh = await balance(signer.accountId);
-    if (new Date().toISOString().slice(0, 10) !== day || BigInt(fresh.amount) - BigInt(fresh.storage_usage) * 10n ** 19n < reserve + budget.worst) {
+    const freshBudget = BigInt((await view('get_second_source')).keeper_budget);
+    if (new Date().toISOString().slice(0, 10) !== day || freshBudget < reserve + budget.worst || BigInt(fresh.amount) - BigInt(fresh.storage_usage) * 10n ** 19n < budget.worst) {
       record.status = 'not_broadcast'; record.charged_yocto = '0'; await save(path, record); throw new Error('Reserve or UTC day changed before broadcast; no transaction sent.');
     }
     record.status = 'pending'; await save(path, record);
@@ -109,7 +112,7 @@ try {
     }
     await poll();
   }
-  console.log(`PASS ${record.explorer} | charged ${(Number(record.charged_yocto) / 1e24).toFixed(8)} NEAR (deposit + all burned gas)`);
+  console.log(`PASS ${record.explorer} | charged ${(Number(record.charged_yocto) / 1e24).toFixed(8)} NEAR (budgeted check cost + all burned gas)`);
 } catch (error) {
   if (record && path && !reconciling && !broadcastAttempted && record.status === 'reserved') { record.status = 'not_broadcast'; record.charged_yocto = '0'; await save(path, record); }
   throw error;
