@@ -169,14 +169,18 @@ export async function sha256Hex(data: ArrayBuffer | Uint8Array | string): Promis
 }
 
 /** The TDX quote of an OutLayer run, fetched live from OutLayer's public API and hashed in the browser. */
-export type LiveQuote = { quoteSha256: string; quoteBytes: number; mrtd: string; rtmr0: string; rtmr1: string; rtmr2: string; rtmr3: string; reportData: string; wasm: string; requestId: number };
-export async function fetchQuote(tx: string): Promise<LiveQuote> {
-  const a = await publicJson(`${OUTLAYER_API}/attestations/by-tx/${tx}`, 'OutLayer quote') as { tdx_quote: string; executed_wasm_sha256?: string; wasm_hash?: string; request_id: string | number };
+export type LiveQuote = { quoteSha256: string; quoteBytes: number; mrtd: string; rtmr0: string; rtmr1: string; rtmr2: string; rtmr3: string; reportData: string; wasm: string; requestId: number; tx: string };
+/** By OutLayer request id when known: since 14 Nov a fire transaction holds two OutLayer runs (the vault's enclave and
+ * the price oracle's refresh), and a lookup by transaction alone can return the oracle's run. */
+export async function fetchQuote(tx: string | undefined, outlayerRequest?: string | number): Promise<LiveQuote> {
+  const url = outlayerRequest !== undefined ? `${OUTLAYER_API}/attestations/by-request/${outlayerRequest}` : `${OUTLAYER_API}/attestations/by-tx/${tx}`;
+  const a = await publicJson(url, 'OutLayer quote') as { tdx_quote: string; executed_wasm_sha256?: string; wasm_hash?: string; request_id: string | number; transaction_hash?: string };
+  if (tx && a.transaction_hash && a.transaction_hash !== tx) throw new Error('OutLayer returned a run from another transaction. Try reloading the page.');
   let quote: Uint8Array;
   try { quote = Uint8Array.from(atob(a.tdx_quote), (c) => c.charCodeAt(0)); } catch { throw new Error('OutLayer returned an invalid quote. Try reloading the page.'); }
   if (quote.length < 632) throw new Error('OutLayer returned an incomplete quote. Try reloading the page.');
   const hex = (o: number, n = 48) => Array.from(quote.subarray(o, o + n), (b) => b.toString(16).padStart(2, '0')).join('');
-  return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr0: hex(48 + 328), rtmr1: hex(48 + 376), rtmr2: hex(48 + 424), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id) };
+  return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr0: hex(48 + 328), rtmr1: hex(48 + 376), rtmr2: hex(48 + 424), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id), tx: String(a.transaction_hash ?? tx ?? '') };
 }
 
 /** Every recorded OutLayer TEE run (keys, checks, band report) with its transaction. */

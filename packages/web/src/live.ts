@@ -47,7 +47,7 @@ export const useRequests = (total: number | undefined) => usePoll<Request[] | nu
 /** The oracle price that agreed with the enclave when an order fired (fires after the 14 Nov upgrade). */
 export type SecondAgreement = { oracle: string; asset: string; oracle_price_e6: number; enclave_price_e6: number; diff_bps: number; tolerance_bps: number; request: number; block_height: string };
 export const useFireSecond = (id: number | undefined, fired: boolean) => usePoll<SecondAgreement | null>(() => (id !== undefined && fired ? view('get_fire_second_source', { id }) : Promise.resolve(null)), 0, [id, fired]);
-export const useQuote = (tx: string | undefined) => usePoll<LiveQuote | null>(() => (tx ? fetchQuote(tx) : Promise.resolve(null)), 0, [tx]);
+export const useQuote = (tx: string | undefined, outlayerRequest?: string) => usePoll<LiveQuote | null>(() => (tx || outlayerRequest ? fetchQuote(tx, outlayerRequest) : Promise.resolve(null)), 0, [tx, outlayerRequest]);
 
 export function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());

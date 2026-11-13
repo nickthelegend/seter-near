@@ -67,8 +67,8 @@ export function Certificate({ att, pinned, subject }: { att: Attestation; pinned
 
 /** A fire with no recorded CLI verification: fetch its TDX quote from OutLayer now and compare the enclave
  * measurements with the run that was fully verified (Intel signature chain included) on 9 Nov. */
-function LiveAttestation({ tx }: { tx: string }) {
-  const q = useQuote(tx);
+function LiveAttestation({ tx, request }: { tx?: string; request?: string }) {
+  const q = useQuote(tx, request);
   const config = useConfig();
   const approved = usePoll<boolean | null>(() => (q.data ? view<boolean>('is_measurements_approved', { measurements: { mrtd: q.data.mrtd, rtmr0: q.data.rtmr0, rtmr1: q.data.rtmr1, rtmr2: q.data.rtmr2, rtmr3: q.data.rtmr3 } }, 'worker.outlayer.testnet') : Promise.resolve(null)), 0, [q.data?.quoteSha256]);
   if (q.error) return <State kind="error" art="warning" title="Could not fetch this run’s TDX quote">{q.error} Verify it with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State>;
@@ -117,6 +117,8 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
   const stats = useStats();
   const config = useConfig();
   const second = useFireSecond(o?.id, Boolean(o?.fire));
+  // A keeper's fire is not in this device's receipts: OutLayer's record of the enclave run names its transaction.
+  const fireRun = useQuote(undefined, o?.fire && !txForRequest(o.fire.request) ? o.fire.outlayer_request : undefined);
   const body = (() => {
     if (err) return <State kind="error" art="warning" title="Could not read this order">{err}</State>;
     if (order.loading) return <State kind="loading" title={`Reading order №${id} from NEAR testnet…`} />;
@@ -124,7 +126,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
     const f = o.fire;
     const att = f ? attestationFor(f.request) : null;
     const placeTx = txForOrder(o.id);
-    const fireTx = f ? txForRequest(f.request) : undefined;
+    const fireTx = f ? txForRequest(f.request) ?? (fireRun.data?.tx || undefined) : undefined;
     const c = stats.data?.last_check;
     const p = decrypt(o, wallet.account);
     return <>
@@ -167,7 +169,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
       <TwoViews order={o} account={wallet.account} />
 
       {f && (att ? <section className="order-sec"><h2>The attestation</h2><Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The program pinned by SHA-256 ran inside an Intel TDX enclave, read NEAR/USD at ${e6(f.price_e6)} from Coinbase and reported the crossing for order №${o.id}, whose trigger was ${e6(f.trigger_e6)}.`} /></section>
-        : fireTx ? <section className="order-sec"><h2>The attestation</h2><LiveAttestation tx={fireTx} /></section>
+        : fireTx || f.outlayer_request ? <section className="order-sec"><h2>The attestation</h2><LiveAttestation tx={fireTx} request={f.outlayer_request} /></section>
         : <section className="order-sec"><h2>The attestation</h2><State kind="setup" art="certificate" title="No recorded attestation for this fire">The contract accepted the report with a valid enclave signature through its private callback or signed relay. Verify the TDX quote with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State></section>)}
 
       {f && <section className="order-sec">
@@ -179,7 +181,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
           <div><dt>Delivered</dt><dd>{f.path === 'callback' ? 'private callback' : 'signed relay'} · request {f.request}</dd></div>
           <div><dt>OutLayer run</dt><dd className="mono">#{f.outlayer_request}</dd></div>
           <div><dt>Report SHA-256</dt><dd className="mono">{short(f.report_sha256, 10)}</dd></div>
-          <div><dt>Transaction</dt><dd>{fireTx ? <Tx hash={fireTx} /> : 'not recorded here'}</dd></div>
+          <div><dt>Transaction</dt><dd>{fireTx ? <Tx hash={fireTx} /> : fireRun.loading ? 'reading…' : 'not recorded here'}</dd></div>
         </dl>
       </section>}
 
