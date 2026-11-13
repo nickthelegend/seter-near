@@ -47,12 +47,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/keeper-ci-state.mjs
+      # SETER_KEEPER_KEY should be the function-call key limited to check (see README, Keeper).
       - name: Pay for at most one testnet check
         env:
           SETER_KEEPER_KEY: ${{ secrets.SETER_KEEPER_KEY }}
           KEEPER_ACCOUNT_ID: ${{ vars.KEEPER_ACCOUNT_ID || 'mienai-3013a230.testnet' }}
-          KEEPER_DAILY_CAP_NEAR: ${{ vars.KEEPER_DAILY_CAP_NEAR || '0.05' }}
-          KEEPER_RESERVE_NEAR: ${{ vars.KEEPER_RESERVE_NEAR || '1' }}
+          KEEPER_DAILY_CAP_NEAR: ${{ vars.KEEPER_DAILY_CAP_NEAR || '0.25' }}
+          KEEPER_RESERVE_NEAR: ${{ vars.KEEPER_RESERVE_NEAR || '0' }}
         run: pnpm keeper
       - name: Persist the full public journal even on transaction failure
         if: always() && steps.restore.outcome == 'success'
