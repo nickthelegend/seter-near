@@ -1,4 +1,4 @@
-import { firedStep, accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
+import { accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
 import { useConfig, usePoll, useQuote, useStats } from './live';
 import { Copy, Icon, Link, Num, Obj, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
@@ -70,20 +70,20 @@ export function Certificate({ att, pinned, subject }: { att: Attestation; pinned
 function LiveAttestation({ tx }: { tx: string }) {
   const q = useQuote(tx);
   const config = useConfig();
-  const ref = firedStep?.attestation;
+  const approved = usePoll<boolean | null>(() => (q.data ? view<boolean>('is_measurements_approved', { measurements: { mrtd: q.data.mrtd, rtmr0: q.data.rtmr0, rtmr1: q.data.rtmr1, rtmr2: q.data.rtmr2, rtmr3: q.data.rtmr3 } }, 'worker.outlayer.testnet') : Promise.resolve(null)), 0, [q.data?.quoteSha256]);
   if (q.error) return <State kind="error" art="warning" title="Could not fetch this run’s TDX quote">{q.error} Verify it with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State>;
   if (!q.data) return <State kind="loading" title="Fetching this run’s TDX quote from OutLayer…" />;
-  const mrtd = ref ? q.data.mrtd === ref.measurements.mrtd : null, rtmr3 = ref ? q.data.rtmr3 === ref.measurements.rtmr3 : null;
+  const pinned = q.data.wasm === (config.data?.enclave_hash ?? enclaveUpload.sha256);
+  const ok = pinned && approved.data === true;
   return <article className="cert"><div className="cert-inner">
     <header className="cert-head">
       <img className="cert-seal" src={art('seal').src} alt="" aria-hidden="true" />
       <div><p className="label">Intel TDX quote · fetched live</p><h3>OutLayer run #{q.data.requestId}</h3><p className="cert-stmt">A protected computer ran the pinned Seter program for this check. Its quote was fetched from OutLayer just now and hashed in this browser.</p></div>
-      <span className={`cert-verdict ${mrtd && rtmr3 ? 'ok' : 'bad'}`}>{mrtd && rtmr3 ? 'Same enclave' : 'Measurements differ'}</span>
+      <span className={`cert-verdict ${ok ? 'ok' : approved.data === null ? '' : 'bad'}`}>{ok ? 'Checks pass' : approved.data === null ? 'Checking…' : 'Check failed'}</span>
     </header>
     <ul className="cert-checks">
-      <li className={mrtd ? 'ok' : 'bad'}><Icon name={mrtd ? 'check' : 'x'} size={15} />MRTD equals the fully verified run #{ref?.request_id}</li>
-      <li className={rtmr3 ? 'ok' : 'bad'}><Icon name={rtmr3 ? 'check' : 'x'} size={15} />RTMR3 (app image) equals the verified run</li>
-      <li className={q.data.wasm === (config.data?.enclave_hash ?? enclaveUpload.sha256) ? 'ok' : 'bad'}><Icon name={q.data.wasm === (config.data?.enclave_hash ?? enclaveUpload.sha256) ? 'check' : 'x'} size={15} />Executed WASM equals the hash pinned on the contract</li>
+      <li className={pinned ? 'ok' : 'bad'}><Icon name={pinned ? 'check' : 'x'} size={15} />Executed WASM equals the hash pinned on the contract</li>
+      <li className={approved.data ? 'ok' : 'bad'}><Icon name={approved.data ? 'check' : 'x'} size={15} />Enclave measurements approved on worker.outlayer.testnet{approved.data === null ? ' (checking…)' : ''}</li>
       <li className="ok"><Icon name="check" size={15} />Contract accepted the report signed by the enclave key</li>
     </ul>
     <dl className="cert-fields">

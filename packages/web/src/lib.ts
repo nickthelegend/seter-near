@@ -3,6 +3,7 @@ import run from '../../../deployments/real-run-2026-11-09.json';
 import enclaveUpload from '../../../deployments/enclave-fastfs.json';
 import book from '../../../deployments/book-2026-11-09.json';
 import qa from '../../../deployments/flow-qa-2026-11-11.json';
+import film from '../../../deployments/film-2026-11-13.json';
 import { readReceipts } from './receipts';
 
 export const CONTRACT: string = import.meta.env.VITE_MIENAI_CONTRACT || deployment.contract_id;
@@ -131,7 +132,7 @@ export type Request = { id: number; kind: 'Keys' | 'Check' | 'Bands'; caller: st
 export const OUTLAYER_API = 'https://testnet-api.outlayer.ai';
 /** Recorded transaction for a step, found in the run or book records. */
 type RecStep = { step: string; tx?: string; at?: string; method?: string; return?: string | null; args?: unknown; last_check?: CheckSummary; attestation?: Attestation };
-const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((qa as unknown as { steps: RecStep[] }).steps ?? [])];
+const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((qa as unknown as { steps: RecStep[] }).steps ?? []), ...((film as unknown as { steps: RecStep[] }).steps ?? [])];
 export const txForOrder = (id: number) => readReceipts(CONTRACT).find((r) => r.method === 'place_order' && r.order === id)?.tx ?? allSteps.find((s) => s.method === 'place_order' && s.return === String(id))?.tx;
 export const txForRequest = (request: number) => readReceipts(CONTRACT).find((r) => r.method === 'check' && r.request === request)?.tx ?? allSteps.find((s) => s.last_check?.request === request)?.tx;
 export const attestationFor = (request: number) => allSteps.find((s) => s.last_check?.request === request)?.attestation ?? null;
@@ -168,14 +169,14 @@ export async function sha256Hex(data: ArrayBuffer | Uint8Array | string): Promis
 }
 
 /** The TDX quote of an OutLayer run, fetched live from OutLayer's public API and hashed in the browser. */
-export type LiveQuote = { quoteSha256: string; quoteBytes: number; mrtd: string; rtmr3: string; reportData: string; wasm: string; requestId: number };
+export type LiveQuote = { quoteSha256: string; quoteBytes: number; mrtd: string; rtmr0: string; rtmr1: string; rtmr2: string; rtmr3: string; reportData: string; wasm: string; requestId: number };
 export async function fetchQuote(tx: string): Promise<LiveQuote> {
   const a = await publicJson(`${OUTLAYER_API}/attestations/by-tx/${tx}`, 'OutLayer quote') as { tdx_quote: string; executed_wasm_sha256?: string; wasm_hash?: string; request_id: string | number };
   let quote: Uint8Array;
   try { quote = Uint8Array.from(atob(a.tdx_quote), (c) => c.charCodeAt(0)); } catch { throw new Error('OutLayer returned an invalid quote. Try reloading the page.'); }
   if (quote.length < 632) throw new Error('OutLayer returned an incomplete quote. Try reloading the page.');
   const hex = (o: number, n = 48) => Array.from(quote.subarray(o, o + n), (b) => b.toString(16).padStart(2, '0')).join('');
-  return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id) };
+  return { quoteSha256: await sha256Hex(quote), quoteBytes: quote.length, mrtd: hex(48 + 136), rtmr0: hex(48 + 328), rtmr1: hex(48 + 376), rtmr2: hex(48 + 424), rtmr3: hex(48 + 472), reportData: hex(48 + 520, 64), wasm: String(a.executed_wasm_sha256 ?? a.wasm_hash ?? ''), requestId: Number(a.request_id) };
 }
 
 /** Every recorded OutLayer TEE run (keys, checks, band report) with its transaction. */
