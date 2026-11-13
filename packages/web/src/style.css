@@ -379,6 +379,15 @@ img.cert-seal { width: 72px; height: 72px; object-fit: contain; border-radius: 1
 .receipt dt { font-size: 14px; color: var(--muted); }
 .receipt dt small { display: block; font-size: 11px; color: var(--dim); }
 .receipt dd { margin: 0; font-size: 20px; }
+/* Test-wallet approval sheet (QA builds only) */
+.ap-head { display: flex; align-items: center; gap: 14px; }
+.ap-icon { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); }
+.ap-action { margin-top: 4px; font-size: 15px; font-weight: 700; color: var(--muted); }
+.ap-receipt div { padding: 11px 16px; }
+.ap-receipt dd { font-size: 15px; font-weight: 700; text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.ap-mono { font-family: var(--mono); font-size: 13px !important; font-weight: 400 !important; }
+.ap-cipher { max-height: 64px; font-size: 11px; }
+.ap-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 4px; }
 .viewkey { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 10px; }
 .viewkey summary { cursor: pointer; font-weight: 700; min-height: 32px; }
 

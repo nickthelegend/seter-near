@@ -62,6 +62,10 @@ async function create(): Promise<WalletPort> {
     if (deposit < 0n || gas <= 0n || gas > 300_000_000_000_000n || count >= 12 || attached + deposit > 120_000_000_000_000_000_000_000n) throw new Error('QA signer transaction budget exceeded.');
     pending = true;
     try {
+      // Visible approval before anything is signed: the test wallet's equivalent of a wallet pop-up.
+      let args: Record<string, unknown> = {};
+      try { args = JSON.parse(new TextDecoder().decode(f.args as Uint8Array)); } catch { /* non-JSON args are shown by method only */ }
+      await (await import('./QaApprove')).approve({ signer: accountId, receiver: receiverId, method: f.methodName, args, deposit, gas });
       const balance = BigInt((await account.state()).amount);
       if (balance < cap || walletStart - balance + deposit + 10_000_000_000_000_000_000_000n > cap) throw new Error('QA signer balance is low or the 0.3 NEAR budget would be exceeded.');
       ++count; attached += deposit;
