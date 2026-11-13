@@ -43,6 +43,16 @@ These transactions are copied from [the recorded run](deployments/real-run-2026-
 | Check at 3.5886; stop at 3.5967 fires on the test pool | [GMMwkN28…](https://testnet.nearblocks.io/txns/GMMwkN289YgzaqZkqmC5n5wHjWnwDe1K2G1MEjEY82iS) |
 | Cancel the take-profit without revealing its level | [HojS7Jjq…](https://testnet.nearblocks.io/txns/HojS7Jjquqdz4nRgpm3uQa2ZPnZfEpyWA8bcpDNzizio) |
 
+### Filmed in the app on 13 Nov 2026 (`deployments/film-2026-11-13.json`)
+
+| In-app action | Transaction |
+| --- | --- |
+| Seal stop №16 (sell 0.2 NEAR, trigger 3.5305 while NEAR traded at 3.4886); trigger hidden on chain | [3AsXyWwy…](https://testnet.nearblocks.io/txns/3AsXyWwyrW7EDRfRZbcWUVHvBTCv1qa6jEQGzJSKawtH) |
+| Paid check: the enclave reads 3.4854 (Coinbase trade 36575004), fires №16, sells 0.2 NEAR for 0.682980 tUSD; TDX attestation 6/6 checks | [9Jff4h8J…](https://testnet.nearblocks.io/txns/9Jff4h8JPCZbase4gMgcgK2DoLTYY5uZrv6V2V6Qphbx) |
+| Cancel order №5; its trigger was never revealed | [GbBRFrWs…](https://testnet.nearblocks.io/txns/GbBRFrWsi47ND6PcvHToxdH2gGmpZ4nt78PQpYryZabB) |
+
+Before filming, `rebalance-pool.mjs` deepened the test pool (+5 NEAR, +20.13 tUSD) and returned its price to Coinbase 3.5061 (`deployments/pool-rebalance-2026-11-13.json`).
+
 ## Product and deployment details
 
 Seter (סֵתֶר, Hebrew for "hidden / secret place") was formerly named Mienai. On-chain account IDs keep the old prefix. The `mienai:` domain-separation strings and `@mienai/*` package scopes also stay unchanged because deployed code and builds use them.
