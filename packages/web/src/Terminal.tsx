@@ -227,8 +227,9 @@ function EnclaveBox({ config, stats, wallet }: { config: Config | null; stats: S
     <div className="vb-head"><span className="vb-title"><img src={art('enclave').src} alt="" aria-hidden="true" />Enclave · Intel TDX</span>{pinned ? (pinned === enclaveUpload.sha256 ? <span className="ok-chip"><Icon name="check" size={12} />hash = build</span> : <span className="bad-chip">hash ≠ build</span>) : null}</div>
     <div className="frow"><span>Last check</span><b className="mono">{stats?.last_check ? `${e6(stats.last_check.price_e6)} · ${ago(nsToMs(stats.last_check.block_ts))}` : stats ? 'none yet' : '…'}</b></div>
     <div className="frow"><span>Runs / rejected</span><b className="mono">{stats ? `${stats.requests_total} / ${stats.rejected_reports}` : '…'}</b></div>
-    <div className="frow keeper-row"><span>Keeper key</span><b className="mono">{keeper.data ? <>calls <span className="keeper-only">{keeper.data.methods.join(', ')}</span> only · {near(keeper.data.budget, 2)} NEAR budget</> : keeper.loading ? '…' : 'none'}</b></div>
-    <div className="frow"><span>Second price source</span><b className="mono">{config?.second_source?.enabled ? `${shortAccount(config.second_source.oracle)} · within ${config.second_source.tolerance_bps / 100}%` : config ? 'off' : '…'}</b></div>
+    <div className="frow keeper-row"><span>Keeper key</span><b className="mono">{keeper.data ? <><span className="keeper-only">{keeper.data.methods.join(', ')}</span> only</> : keeper.loading ? '…' : 'none'}</b></div>
+    <div className="frow"><span>Keeper budget</span><b className="mono">{keeper.data ? `${near(keeper.data.budget, 2)} NEAR` : keeper.loading ? '…' : '—'}</b></div>
+    <div className="frow second-row"><span>Second check</span><b className="mono">{config?.second_source?.enabled ? `price oracle ±${config.second_source.tolerance_bps / 100}%` : config ? 'off' : '…'}</b></div>
     <div className="frow"><span>Pinned WASM</span><b className="mono">{pinned ? short(pinned, 6) : '…'}</b></div>
     {wallet.account && <button className="btn btn-ghost btn-sm btn-block" disabled={busy} onClick={check}><Icon name="eye" size={15} />{busy ? 'Opening wallet…' : 'Pay for a check · 0.02 NEAR'}</button>}
     {err && <p className="sheet-err" role="alert">{err}</p>}
