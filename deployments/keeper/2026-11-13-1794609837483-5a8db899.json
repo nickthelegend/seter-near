@@ -1,0 +1,73 @@
+{
+  "schema": 2,
+  "key": "function-call (check only)",
+  "keeper_budget_before": "170000000000000000000000",
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "account": "mienai-3013a230.testnet",
+  "day": "2026-11-13",
+  "at": "2026-11-13T22:43:57.483Z",
+  "status": "final",
+  "balance_before": "11669524903112459099999997",
+  "reserve_yocto": "0",
+  "daily_cap_yocto": "250000000000000000000000",
+  "run_cap_yocto": "60000000000000000000000",
+  "prior_day_charge_yocto": "21374334032408000000000",
+  "reserved_yocto": "57500000000000000000000",
+  "deposit_yocto": "0",
+  "budget_cost_yocto": "20000000000000000000000",
+  "tx": "5T6o5jEbzPW1mQpwTjMNhDGxdD1tAURHUQCfvgGaNiws",
+  "explorer": "https://testnet.nearblocks.io/txns/5T6o5jEbzPW1mQpwTjMNhDGxdD1tAURHUQCfvgGaNiws",
+  "finalized_at": "2026-11-13T22:46:49.518Z",
+  "transaction_ok": true,
+  "ok": true,
+  "request": {
+    "id": 17,
+    "kind": "Check",
+    "caller": "mienai-3013a230.testnet",
+    "created_ns": "1794609838516961432",
+    "order_ids": [
+      3,
+      19
+    ],
+    "status": "Done",
+    "note": "callback: fired 1"
+  },
+  "return": "\"fired 1\"",
+  "failure": null,
+  "logs": [
+    "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"keeper_check\",\"data\":[{\"paid_from_budget\":\"20000000000000000000000\",\"budget_left\":\"150000000000000000000000\"}]}",
+    "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":17,\"operation\":\"check\",\"orders\":2}]}",
+    "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":41241,\\\"sender_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"predecessor_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\\\",\\\"hash\\\":\\\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":20000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"operation\\\\\\\":\\\\\\\"check\\\\\\\",\\\\\\\"contract\\\\\\\":\\\\\\\"mienai-3013a230.testnet\\\\\\\",\\\\\\\"request\\\\\\\":17,\\\\\\\"orders\\\\\\\":[{\\\\\\\"id\\\\\\\":3,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ATg7nsfayyBeeX2H/pIUvsO40HwPTzoU7T6in6fsNqdyjcLxQhMDTHnKYeHKqNkOSihyHhAz6FJ3EeX9ZiT1pNXt455bVq734+qrLU8u24tbWvTv1m1mzfig/pdVLWdgAQBuhotNQ8GU07lQSCPKo2DT2ISwSh7nSswttcaE8B1oZ8bdUXYfVK1EFoH2265f1nix0PBquTTtYLww59Cn6lLK65nxl0Tq9zzcjEsJBXx+w51hHb7v33pa8d0ApwfCHubhZQAi4EG5EQ6UdvM=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"22e2f6c6e412688e22c176e2d2e06d8b96a7aca1a66117c7a70a4f287733bea4\\\\\\\"},{\\\\\\\"id\\\\\\\":19,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ATb4gY1iMpukKK1Deq2rflftJ6j99PajXNvAbu47wBwRmbPWJifENbsZ5U6EuxtIOZVQlqa/jz/vVIuPUsblzV2QB++QsBq/n6Cba7ina/efdQAJSMkUEoX3PMrycrVKt0L0XX4mWvgkc5heyIuKYyMAIY7av7lpcLEoyJY1eqNzmsuqj8KZ4+qqPIGeBldMNsquSoXBJ0YTBguOpCYxiG+B9pUtATOZAi9GIvVLmagOx/fC+VCi4wbh5hvxZVRwlO5YL+yyXrbIKyRnq+4=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"acdff509bc8c47d242028c36cc6f37df2acc03a075998250aa3dcb6840a721f4\\\\\\\"}]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":null,\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"10000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794609839120704610,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":null,\\\"project_id\\\":null}\",\"data_id\":[2,192,213,192,209,49,250,212,151,245,200,159,26,204,178,0,122,206,134,96,177,244,90,32,2,123,68,113,227,173,247,140],\"timestamp\":1794609839120704610}]}",
+    "[[yNEAR charged: \"1093300700000000000000\"]]",
+    "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-3013a230.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\",\"hash\":\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":7402958,\"time_ms\":933,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1093300700000000000000\",\"payment_refunded\":\"8906699300000000000000\",\"compilation_note\":\"Cached WASM from 2026-11-09T17:16:17.890705+00:00\",\"timestamp\":1794609924043620761}]}",
+    "Execution completed successfully. Output: Json(706 bytes), Resources: { instructions: 7402958, time_ms: 933 }, Cost: 1093300700000000000000 yoctoNEAR, Refund: 8906699300000000000000 yoctoNEAR, Cached WASM from 2026-11-09T17:16:17.890705+00:00",
+    "Resolved project: zavodil2.testnet/price-oracle, version: \"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\", source: WasmUrl { url: \"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\", hash: \"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\", build_target: Some(\"wasm32-wasip2\") }, uuid: p0000000000000007",
+    "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":41247,\\\"sender_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"predecessor_id\\\":\\\"price-oracle.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\\\",\\\"hash\\\":\\\"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":10000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"command\\\\\\\":\\\\\\\"get_prices\\\\\\\",\\\\\\\"max_age_secs\\\\\\\":300,\\\\\\\"tokens\\\\\\\":[\\\\\\\"wrap.near\\\\\\\"]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":{\\\"profile\\\":\\\"default\\\",\\\"account_id\\\":\\\"zavodil2.testnet\\\"},\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"10000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794609925888731310,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":\\\"p0000000000000007\\\",\\\"project_id\\\":\\\"zavodil2.testnet/price-oracle\\\"}\",\"data_id\":[234,253,172,176,13,110,204,227,189,99,97,142,192,215,233,198,2,80,54,156,207,217,213,218,147,80,171,24,136,0,84,143],\"timestamp\":1794609925888731310}]}",
+    "[[yNEAR charged: \"1363000100000000000000\"]]",
+    "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-3013a230.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\",\"hash\":\"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":1015517,\"time_ms\":3630,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1363000100000000000000\",\"payment_refunded\":\"8636999900000000000000\",\"compilation_note\":\"Cached WASM from 2026-10-02T18:51:55.432626+00:00\",\"timestamp\":1794610003066215614}]}",
+    "Execution completed successfully. Output: Json(179 bytes), Resources: { instructions: 1015517, time_ms: 3630 }, Cost: 1363000100000000000000 yoctoNEAR, Refund: 8636999900000000000000 yoctoNEAR, Cached WASM from 2026-10-02T18:51:55.432626+00:00",
+    "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"check\",\"data\":[{\"request\":17,\"path\":\"callback\",\"price_e6\":3427600,\"fired\":[19],\"second_source\":{\"oracle\":\"price-oracle.testnet\",\"asset\":\"wrap.near\",\"oracle_price_e6\":3431333,\"oracle_ts_ns\":\"1794610003685482689\",\"enclave_price_e6\":3427600,\"diff_bps\":11,\"tolerance_bps\":100,\"request\":17,\"block_height\":\"277573360\"}}]}"
+  ],
+  "receipt_failures": [],
+  "gas_burn_yocto": "3117158692380300000000",
+  "charged_yocto": "23117158692380300000000",
+  "overrun": false,
+  "balance_after": "11663951443620078799999997",
+  "wallet_debit_yocto": "5573459492380300000000",
+  "last_check": {
+    "request": 17,
+    "path": "callback",
+    "price_e6": 3427600,
+    "price_ts_ms": 1794609917076,
+    "trade_id": 36584368,
+    "checked": 2,
+    "unreadable": 0,
+    "fired": [
+      19
+    ],
+    "block_height": "277573360",
+    "block_ts": "1794610004430195338",
+    "outlayer_request": "41241"
+  }
+}
