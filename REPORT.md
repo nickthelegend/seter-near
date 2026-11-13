@@ -16,7 +16,7 @@
 See [TESTING.md](TESTING.md) for the recorded enclave, contract, SDK, build and browser checks. Its later browser QA includes the trading terminal and Meteor Wallet pop-up checks. A full browser wallet sign-in and approval remain unverified.
 
 ## Weak spots (honest)
-- There is one price source (Coinbase, inside the enclave).
+- Two price sources (since 14 Nov): Coinbase inside the enclave, plus `price-oracle.testnet`, which must agree within 1% before a fire. The oracle's median includes Coinbase, and an oracle outage blocks fires.
 - Each check costs about 0.001 NEAR plus gas, so there is no self-running timer.
 - Testnet fills land on a tUSD test pool. Mainnet NEAR Intents execution is not built; funding alone does not enable it.
 - The bands report only shows a band once 5 or more orders sit in it.

@@ -37,7 +37,7 @@ The per-execution TDX quote is verified off chain (`packages/sdk/scripts/verify-
 
 **Pyth on NEAR is gone**: Pyth Core ended NEAR support and `pyth-oracle.testnet` returns null (shared fact from earlier builds, docs.pyth.network pull-integration/near). Seter does not use Pyth or Hermes.
 
-Inside the TEE the enclave fetches `https://api.exchange.coinbase.com/products/NEAR-USD/ticker` (public, no key; returns `price`, `trade_id`, `time`). The source URL, trade id and trade time go into the signed report. The contract refuses a report whose price is older than 180 s at the block, or older than its own request. Real responses are pinned in `packages/enclave/fixtures/` for tests. A single source is a stated limitation (see README).
+Inside the TEE the enclave fetches `https://api.exchange.coinbase.com/products/NEAR-USD/ticker` (public, no key; returns `price`, `trade_id`, `time`). The source URL, trade id and trade time go into the signed report. The contract refuses a report whose price is older than 180 s at the block, or older than its own request. Real responses are pinned in `packages/enclave/fixtures/` for tests. Since 14 Nov a crossed order also needs `price-oracle.testnet` (OutLayer's TEE price oracle, a multi-exchange median) to agree within 1% before it fires (see README, "Two price sources and a scoped keeper key").
 
 ## 3. Execution
 

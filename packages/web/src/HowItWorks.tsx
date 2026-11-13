@@ -88,7 +88,7 @@ export default function HowItWorks({ wallet }: { wallet: Wallet }) {
         <div className="ledger">
           <div><h3>Anyone can read</h3><ul><li>Owner account, time placed, status</li><li>Ciphertext and commitment</li><li>When checks run and the price each one read</li><li>Fills, and the level, after an order fires</li></ul></div>
           <div><h3>Sealed until it fires</h3><ul><li>Trigger price <Hidden label="" /></li><li>Stop or take-profit <Hidden label="" /></li><li>Size <Hidden label="" /></li><li>Cancelled orders stay sealed forever</li></ul></div>
-          <div><h3>Known limits</h3><ul><li>A check that fires nothing tells watchers no level was crossed</li><li>Band reports group levels only when 5 or more share a band</li><li>One price source: Coinbase NEAR-USD</li><li>Fills settle on a test pool; mainnet is not built</li></ul></div>
+          <div><h3>Known limits</h3><ul><li>A check that fires nothing tells watchers no level was crossed</li><li>Band reports group levels only when 5 or more share a band</li><li>Two price sources must agree within 1%: Coinbase NEAR-USD in the enclave and OutLayer’s price oracle (a multi-exchange median that includes Coinbase)</li><li>Fills settle on a test pool; mainnet is not built</li></ul></div>
         </div>
       </section>
     </main>
