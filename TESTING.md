@@ -1,5 +1,39 @@
 # Testing
 
+## 14 Nov 2026: two price sources and the scoped keeper key (rerun)
+
+| Suite | Command | Tests | Result |
+| --- | --- | --- | --- |
+| Contract unit | `cargo test --lib` in `packages/contract` | 7 (was 3; adds oracle `PriceData` parsing from the live probe's exact return, and bps agreement) | 7 pass |
+| Contract sandbox (real local nearcore, real `price-oracle` contract v0.7.0 from its public source) | `cargo test --test sandbox` | 4 (was 2) | 4 pass |
+| SDK | `pnpm test:sdk` | 13 (keeper caps updated for the 0.02 NEAR budgeted check and 300 Tgas) | 13 pass |
+| Web typecheck + build | `pnpm build` | 1 | passes |
+| Order page `/order/18` with the new **Second source** row, headless Chrome 1440x900 and 390x844 | `docs/qa-2026-11-14/` | 2 | 0 page errors, no horizontal overflow |
+
+The enclave suite and the enclave build weren't rerun: the enclave is unchanged and its pinned hash `791b4f6c…` is the same on chain.
+
+New sandbox cases (all signed transactions on a local chain):
+- The oracle reads 3.40 while the enclave says 3.49, so the fire is refused with `ERR_SOURCES_DISAGREE` and the order stays armed. A relayer without the 0.01 NEAR fee gets `ERR_ORACLE_FEE`.
+- At the tolerance edge, 101 bps is refused and 98 bps fires. Both prices are stored with the fire.
+- An oracle asset with no fresh price makes the oracle try its own OutLayer refresh. That fails in the sandbox, and the fire is refused with `ERR_SECOND_SOURCE_UNAVAILABLE` (fail closed).
+- `set_second_source` is owner-only, and the tolerance is bounded to 10–500 bps.
+- The old 0.01 NEAR check is refused; a check now needs 0.02 NEAR.
+- The keeper key:
+  - a zero-deposit check from another account is refused (`ERR_OUTLAYER_FEE`);
+  - the vault's own zero-deposit check is refused until `fund_keeper` adds budget (`ERR_KEEPER_BUDGET`);
+  - a budgeted check takes 0.02 and returns the unused 0.01 reserve (0.05 → 0.04 NEAR);
+  - user balances are unchanged.
+- A function-call key limited to `check` is refused by the protocol for another method (`MethodNameMismatch`), for an attached deposit (`DepositWithFunctionCall`) and for another receiver (`ReceiverMismatch`).
+
+The callback path (enclave run, then oracle, then fire) needs OutLayer, so it was verified live on testnet: tx [8MehJtyr…](https://testnet.nearblocks.io/txns/8MehJtyrBSeCv9cjeVfoiZ7TanZecUZhdPPeicHAaL6r). Enclave 3.5058 vs oracle 3.5110 (15 bps), order №18 fired, TDX attestation 6/6. Records:
+- `deployments/second-source/two-source-fire-2026-11-13.json`
+- `deployments/second-source/upgrade-2026-11-14.json`
+- `deployments/keeper/2026-11-13-1794605614733-88db220a.json`
+
+A transaction can now contain two OutLayer runs (the enclave's and the oracle's). `verifyExecution` takes the run's request id, and `outlayerIo` picks the vault's own run, so an attestation is never checked against the oracle's run. The first automatic check of 8MehJtyr fetched the oracle's run by transaction hash and failed; the record keeps that note.
+
+## Earlier results
+
 Latest: [11 Nov full-flow QA](FLOW-QA.md), including live script transactions, production Chrome at 1440/375, connected-state fixtures and the remaining human Meteor approval boundary. The results below remain historical.
 
 The suite results below were recorded on 2026-11-09; web QA was updated on 2026-11-10. Prices use real Coinbase responses pinned in `packages/enclave/fixtures/`, chain tests run on a real local nearcore (near-workspaces sandbox), and the end-to-end evidence is recorded testnet transactions. These historical results were not rerun for the submission-docs update.

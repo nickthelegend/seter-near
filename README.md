@@ -32,6 +32,30 @@ Hosting is prepared, not deployed: from the repository root, `pnpm install --fro
 | Seter vault | [`mienai-3013a230.testnet`](https://testnet.nearblocks.io/address/mienai-3013a230.testnet) |
 | tUSD test NEP-141 (6 decimals, no value) | [`mienai-ad65ebef.testnet`](https://testnet.nearblocks.io/address/mienai-ad65ebef.testnet) |
 | OutLayer | [`outlayer.testnet`](https://testnet.nearblocks.io/address/outlayer.testnet) |
+| Second price source: OutLayer price oracle (not ours) | [`price-oracle.testnet`](https://testnet.nearblocks.io/address/price-oracle.testnet) |
+| Scoped keeper key on the vault (function call, `check` only, 2 NEAR gas allowance) | `ed25519:EEgpZvdE…` (full key in [the upgrade record](deployments/second-source/upgrade-2026-11-14.json)) |
+
+### Two price sources and a scoped keeper key (upgrade of 13–14 Nov, testnet)
+
+Since this upgrade, a fire needs two TEE price sources to agree, and the keeper signs with a key that can only call `check`. The vault was upgraded in place: same account, same state and the same enclave hash, so every order and record above is unchanged. The films were recorded before this upgrade.
+
+| Step | Transaction |
+| --- | --- |
+| Probe: one paid refresh of `price-oracle.testnet` from the trader (NEAR 3.5114 vs Coinbase 3.5072) | [53Lsy4AP…](https://testnet.nearblocks.io/txns/53Lsy4APti6hkneCNJBfLm9WMm7gn1zJsqCgRDFkJtne) |
+| Upgrade the vault in place to the two-source build (wasm `ab042db7…`); state preserved | [5tDHzuba…](https://testnet.nearblocks.io/txns/5tDHzubaHDz6ZwBsCeodqgMNi6thNEZ11vrXtSm27Tty) |
+| Fund the keeper budget with 0.2 NEAR (`fund_keeper`) | [GdYa764C…](https://testnet.nearblocks.io/txns/GdYa764C5qV3iVDsLfu7P9XpcvWQcYCrunWnJg4Z8HsK) |
+| Add a function-call key limited to `check` (first try: 0.25 NEAR allowance) | [GNP7twTv…](https://testnet.nearblocks.io/txns/GNP7twTv2mpSXBsdEmhrF1eJGnBNDs4z72uoM4L54NqP) |
+| Swap that key for one allowed 2 NEAR. NEAR reserves about 0.30 NEAR of allowance up front for a 300 Tgas call and refunds the unused gas afterwards. | [55xBKAGR…](https://testnet.nearblocks.io/txns/55xBKAGRduhJDyeUQZtbCNzFqLbhzUG84HR4j1S8x8tf) |
+| Trader seals stop №18 (sell 0.05 NEAR, set 2% above Coinbase 3.5038 so the next check crosses it); trigger hidden on chain | [T8tXKcVj…](https://testnet.nearblocks.io/txns/T8tXKcVjZ21HXRgN2SeigabVz4FFCh5xYQUfBXLHb41) |
+| **Keeper check signed by the scoped key, no deposit: the enclave reads Coinbase 3.5058 and reports №18; the vault asks `price-oracle.testnet`, which reads 3.5110 (15 bps apart, limit 100); only then does №18 fire. TDX attestation of the enclave run passes 6/6 (TCB UpToDate).** | [8MehJtyr…](https://testnet.nearblocks.io/txns/8MehJtyrBSeCv9cjeVfoiZ7TanZecUZhdPPeicHAaL6r) |
+| `pnpm keeper` with the scoped key: nothing crossed (`fired 0`), so the oracle is never asked and its 0.01 NEAR reserve goes back to the budget (0.18 → 0.17 NEAR) | [AXwyjgTB…](https://testnet.nearblocks.io/txns/AXwyjgTBmFNr8pXXdCk5nBqviBjninsKVPmC3zV4Zm4p) |
+
+The protocol refused the same keeper key three times before anything ran, so these transactions have no explorer page. The rejected transactions are listed in [the run record](deployments/second-source/two-source-fire-2026-11-13.json) with the hashes they would have had:
+- `withdraw_near` was refused with "Access key does not allow method withdraw_near".
+- `check` with 0.02 NEAR attached was refused with "Deposit is not allowed with function call".
+- A call to the tUSD contract was refused with "Access key receiver … does not match".
+
+The vault's original full-access key is still on the account. Removing it is Nick's decision.
 
 These transactions are copied from [the recorded run](deployments/real-run-2026-11-09.json), dated 9 Nov 2026.
 
@@ -84,7 +108,8 @@ The [11 Nov full-flow check](FLOW-QA.md) adds live deposits, encrypted stop/take
 1. **Seal (browser).** `packages/sdk/src/crypto.mjs` encrypts `{cond, trigger_e6, side, amount, salt}` to the enclave's X25519 key: ephemeral X25519 → HKDF-SHA256 → XChaCha20-Poly1305, with AAD `mienai:order:v1:<owner>` so a ciphertext copied onto another account's order does not open. The commitment is `sha256("mienai:commit:v1:" ‖ owner ‖ 0x00 ‖ plaintext)`. A second copy is sealed to a view key that stays on the user's device, so the owner can read their own levels back.
 2. **Store (contract).** `place_order(ct, commit, view_ct)` stores encrypted order data and commitments with public owner, timestamp and status metadata. `get_orders` shows what anyone sees: ciphertexts, commitments, statuses, counts.
 3. **Check (OutLayer).** Anyone can call `check()` and pay for a run. The contract builds the input from its own state and calls `outlayer.testnet.request_execution` with a `WasmUrl` pinned by SHA-256. A TDX worker runs `packages/enclave`; it fetches `https://api.exchange.coinbase.com/products/NEAR-USD/ticker` inside the enclave, opens every order, and outputs `{body, sig}` where `body` lists only crossed orders with their plaintext, plus price, trade id, trade time and source.
-4. **Fire (contract).** The result arrives as the promise result of the contract's own request in the `#[private]` callback `on_result`. The callback and the public `fire(body, sig)` relay both verify the report. The relay can deliver a signed report for a pending or failed request within its expiry window. Acceptance requires: the ed25519 signature verifies against the enclave key (`env::ed25519_verify`); it answers an eligible request the contract issued (no replay); the price is from the pinned source and at most 180 s old; every revealed plaintext matches the order's commitment; and the price really crossed the trigger. Then it swaps against the vault's NEAR/tUSD constant-product pool and records the trigger, price, source, block and report hash in `get_fired`.
+4. **Second source (contract, since 14 Nov).** A report that crosses an order doesn't execute straight away. The vault calls OutLayer's price oracle `price-oracle.testnet` (`request_price_data(["wrap.near"])`). The oracle is a separate TEE program run by another operator. It takes the median price across many exchanges and refreshes it on demand, paid from a 0.01 NEAR reserve held back from the check. In `on_second_source`, the contract re-validates the whole report. It refuses the report unless the oracle's price is within `tolerance_bps` (100 bps = 1%) of the enclave's Coinbase price (`ERR_SOURCES_DISAGREE`). It also refuses when the oracle has no fresh price (`ERR_SECOND_SOURCE_UNAVAILABLE`). Both prices are stored with the fire (`get_fire_second_source`). If no order crossed, the oracle isn't asked and the reserve goes back to whoever paid.
+5. **Fire (contract).** The result arrives as the promise result of the contract's own request in the `#[private]` callback `on_result`. The callback and the public `fire(body, sig)` relay both verify the report. The relay can deliver a signed report for a pending or failed request within its expiry window. Acceptance requires: the ed25519 signature verifies against the enclave key (`env::ed25519_verify`); it answers an eligible request the contract issued (no replay); the price is from the pinned source and at most 180 s old; every revealed plaintext matches the order's commitment; the price really crossed the trigger; and the second source agrees (step 4; a relayer attaches the 0.01 NEAR oracle fee). Then it swaps against the vault's NEAR/tUSD constant-product pool and records the trigger, price, source, block and report hash in `get_fired`.
 
 ### Why only the enclave can read the orders
 
@@ -96,11 +121,13 @@ The [11 Nov full-flow check](FLOW-QA.md) adds live deposits, encrypted stop/take
 ## NEAR features used, and why
 
 - **OutLayer TEE** (`outlayer.testnet`, yield/resume): the only party that can read the orders and the only source of fire reports.
+- **OutLayer price oracle** (`price-oracle.testnet`): the second, independent TEE price source, called cross-contract (`request_price_data`) between the enclave report and the fire.
+- **Function-call access key**: the keeper key on the vault account can only call `check`. It can't attach NEAR, so `check` with no deposit from the vault account is paid from an on-chain keeper budget (`fund_keeper`), never from user balances.
 - **Promise callbacks with `#[private]`** authenticate callback results. **`env::ed25519_verify`** verifies reports on both the callback and the public relay path.
 - **NEP-141**: tUSD, the test quote token, with `ft_transfer_call` deposits into the vault.
 - **FastFS** on testnet to host the WASM that OutLayer fetches by hash.
 - **NEAR Intents** is not integrated. Mainnet execution code is not built; funding alone does not enable it (see [BLOCKED.md](BLOCKED.md)).
-- Not used: Chain Signatures, sub-accounts, NEP-171/245, meta transactions, Sputnik DAO.
+- Not used: Chain Signatures, sub-accounts, NEP-171/245, meta transactions, Sputnik DAO, gas keys (the keeper needs one nonce; a plain function-call key is enough).
 
 ## Repository
 
@@ -123,8 +150,9 @@ pnpm install
 pnpm build:enclave        # prints 791b4f6c… (the hash pinned on the contract)
 pnpm test:enclave         # 9 tests: sealing, real Coinbase fixtures, crossing, k-anonymous bands
 pnpm build:contract
-pnpm test:contract        # 3 unit + 2 sandbox tests on a local nearcore (attacks rejected on chain)
-pnpm test:sdk             # 5 tests, including a real report signed inside OutLayer TDX
+pnpm test:contract        # 7 unit + 4 sandbox tests on a local nearcore (attacks rejected on chain), with the
+                          # real OutLayer price-oracle contract deployed beside the vault (tests/fixtures)
+pnpm test:sdk             # 13 tests, including a real report signed inside OutLayer TDX and the keeper caps
 pnpm build && pnpm --filter @mienai/web preview   # http://127.0.0.1:5201
 ```
 
@@ -144,22 +172,28 @@ Seter signs with [Meteor Wallet](https://wallet.meteorwallet.app) on NEAR testne
 - `node packages/sdk/scripts/verify-attestation.mjs deployments/outlayer-direct-check-4RDtRKvrXwjEz7ShLfgdSnWfDCNcWSksDvrtYRpvrWrK.json 999ec172cd7fa60bf66c6803183332deaabef30d0434793c8cf9da85b81080fe` → reruns the six attestation checks for the probe run; requires OutLayer, NEAR RPC and Intel collateral access.
 - Redeployment is separate from the read-only demo. The existing scripts are `packages/sdk/scripts/create-account.mjs`, `upload-enclave.mjs`, `deploy-testnet.mjs` and `real-run.mjs`. They create accounts, spend testnet NEAR and write deployment evidence. A fresh deployment requires changing `packages/enclave/manifest.json` to the new contract account before rebuilding. `real-run.mjs` reads the fixed `deployments/testnet-2026-11-09.json` path, so it must be adapted to a new deployment record before reuse.
 
-## Capped keeper (prepared, switched off)
+## Keeper: a scoped key and an on-chain budget
 
-Run `pnpm keeper` from the repo root to pay for one `check()` using the existing local keeper/deployer account, `mienai-3013a230.testnet`. This is the account that signed the recorded keeper checks; its key is loaded by file path and never printed. The command sends at most one transaction and saves its hash before broadcast under `deployments/keeper/`.
+`pnpm keeper` pays for one `check()` with the **function-call key** on the vault account. The key is limited to `check` on `mienai-3013a230.testnet` and has a 2 NEAR gas allowance. It is loaded from `.near-credentials/keeper-fc.json` (gitignored) and never printed. NEAR refuses any transaction from this key that calls another method or contract, or that attaches NEAR. That means the key can't withdraw, cancel, seed or upgrade anything. A copy of it in CI can only buy checks.
 
-The default spendable reserve is 1 NEAR (`KEEPER_RESERVE_NEAR`), the per-run cap is 0.045 NEAR (`KEEPER_RUN_CAP_NEAR`), and the per-UTC-day cap is 0.05 NEAR (`KEEPER_DAILY_CAP_NEAR`). The script attaches 0.01 NEAR and reserves the full 240 Tgas at 125% of the current gas price before signing. Final daily charges conservatively include the full attachment plus all burned gas, even if funds were refunded. A low balance, insufficient cap room, unfinished journal or reservation overrun refuses another paid run. Keep the journal: deleting it defeats the cap.
+Because the key can't attach a deposit, `check()` called by the vault account with no deposit takes 0.02 NEAR (0.01 for the enclave run plus the 0.01 oracle reserve) from the **keeper budget**. Anyone can top up that budget with `fund_keeper`, and `get_second_source` shows it. User balances are never touched. An unused oracle reserve goes back into the budget. OutLayer's refund of unused compute, about 0.009 NEAR per run, lands on the vault account but isn't credited to the budget.
 
-OutLayer compute costs about 0.001 NEAR plus gas per check, but it needs a larger upfront reservation: on 12 Nov it required 0.007002 NEAR, so the contract's 0.005 NEAR minimum was insufficient. The successful 0.01-attached check debited 0.00251135 NEAR after refunds and returned `fired 0`; the failed probe and successful retry together spent 0.00328052 NEAR. Both hashes and the failure reason are in [the R3 record](deployments/r3-2026-11-12.json).
+The script sends at most one transaction and saves its hash before broadcast under `deployments/keeper/`. It refuses a run that its caps don't cover:
+- **Per run** (`KEEPER_RUN_CAP_NEAR`, default 0.06 NEAR): the 0.02 NEAR check cost plus 300 Tgas at 125% of the current gas price.
+- **Per UTC day** (`KEEPER_DAILY_CAP_NEAR`, default 0.25 NEAR).
+- **Budget reserve** (`KEEPER_RESERVE_NEAR`, default 0): the keeper budget must stay above it.
 
-`.github/workflows/keeper.yml` attempts one run every 15 minutes. It does no paid work unless the GitHub Actions secret **`SETER_KEEPER_KEY`** exists. Nick must add that testnet signing-key secret and fund its account; `KEEPER_ACCOUNT_ID` can select a dedicated testnet keeper instead of the historical account. The reserve and daily cap can be set as repository variables. Conservative reservations mean some ticks will refuse; the cron is not a guarantee of 96 checks a day.
+It also refuses after a reservation overrun or while an earlier journal is unfinished. Keep the journal, because deleting it defeats the cap. `pnpm keeper --reconcile <journal-filename.json>` only polls a saved hash; it never sends another check.
 
-The workflow serializes runs and restores the previous active run's public journal artifact before spending. A missing artifact fails closed. It preserves journals even when a check fails and refuses workflow reruns. No workflow was enabled or executed in this task. For an uncertain local outcome, `pnpm keeper --reconcile <journal-filename.json>` only polls the saved hash; it never sends another check. Human Meteor approval remains a separate manual compatibility check.
+`.github/workflows/keeper.yml` tries one run every 15 minutes. It does no paid work unless the GitHub Actions secret **`SETER_KEEPER_KEY`** exists, and that secret should now be the function-call key. No workflow was enabled or executed. Conservative reservations mean some ticks will refuse, so the cron isn't a guarantee of 96 checks a day.
 
 ## Limits, stated plainly
 
-- One price source (Coinbase NEAR-USD last trade). A second source and a median would be stronger.
-- A keeper must pay for checks (about 0.001 NEAR of OutLayer compute plus gas per check); the prepared schedule stays off until Nick adds its secret.
+- Two price sources, not two independent markets. The enclave reads the Coinbase NEAR-USD last trade; `price-oracle.testnet` takes the median of about 14 venues, Coinbase among them. A fire needs the two within 1%, and both run in TEEs. The oracle is OutLayer's contract and is refreshed on demand. If it can't produce a fresh price, fires are refused until it can, so an oracle outage blocks fires rather than weakening them.
+- The vault owner can switch the second source off or change the tolerance (10–500 bps) with `set_second_source`. Every change is logged as an event. With it off, fires fall back to the original single-source rule.
+- A fire costs up to 0.01 NEAR more (the oracle's OutLayer run). The oracle's refunds return to the vault account, not to the payer.
+- The vault account still has its original full-access key next to the scoped keeper key. Deleting it would also remove the ability to upgrade, so it is left to Nick.
+- Someone must pay for checks: about 0.001 NEAR of OutLayer compute plus gas per check, drawn from the keeper budget or paid by a user. The prepared schedule stays off until Nick adds the scoped key as its secret.
 - The fill happens on Seter's own test pool, so the execution itself is public once it fires. Private execution is not built.
 - The browser keeps the view key in `localStorage`; losing it loses the owner's local copy of the levels, not the order.
 - Every public check that fires nothing reveals that no armed trigger was crossed at price P, and repeated checks at different prices narrow where levels can be.
