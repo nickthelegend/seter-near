@@ -1,5 +1,11 @@
 import { CONTRACT, TOKEN, accountUrl, ago, deployment, e6, enclaveUpload, firedStep, nsToMs, runSteps, short } from './lib';
-import { useConfig, useOrders, useQuote, useStats, useTicker } from './live';
+import { useConfig, useOrders, useQuote, useRequests, useStats, useTicker } from './live';
+import { useMemo } from 'react';
+import { buildLog, nsToMs as toMs } from './lib';
+import { CountUp, EnclavePulse, LiveTick, StreamDot } from './motion';
+import { useLivePrice } from './price';
+import { StopHunt } from './HowItWorks';
+import { FireCard } from './Activity';
 import { useCandles, useStats24h } from './market';
 import Chart from './Chart';
 import { Icon, Link, Num, Obj, State, Tx, Wordmark, shortHex, type ObjName } from './ui';
@@ -74,6 +80,83 @@ function TrustStrip() {
   </section>;
 }
 
+/** The problem, made visible: a public stop next to the record Seter actually puts on chain. */
+function Problem() {
+  const orders = useOrders();
+  const o = orders.data ? [...orders.data].sort((a, b) => b.id - a.id).find((x) => x.status === 'Open') ?? orders.data[orders.data.length - 1] : undefined;
+  return <section className="l-sec l-problem" id="problem">
+    <header className="l-head"><p className="kicker">Why sealed</p><h2>Your stop-loss is public. Seter seals it.</h2></header>
+    <div className="pr-grid">
+      <article className="pr-card">
+        <header><span className="view-tag pr-tag-bad">On a public order book</span></header>
+        <StopHunt />
+        <pre className="view-json pr-json"><span className="k">type</span>    <span>stop_loss</span>{'\n'}<span className="k">trigger</span> <span className="bad">3.30</span>{'\n'}<span className="k">size</span>    <span className="bad">4,200 NEAR</span></pre>
+        <p className="pr-note">Anyone can read the level, push the price to it and take the stops. Illustration.</p>
+      </article>
+      <article className="pr-card pr-seter dark">
+        <header><span className="view-tag">On Seter</span><span className="dim small">live from NEAR testnet</span></header>
+        {o ? <>
+          <pre className="view-json"><span className="k">order</span>   <span>№{o.id}</span>{'\n'}<span className="k">owner</span>   <span>{o.owner}</span>{'\n'}<span className="k">placed</span>  <span>{new Date(toMs(o.created_ns)).toISOString().slice(0, 16).replace('T', ' ')} UTC</span>{'\n'}<span className="k">ct</span>      <span className="c">"{o.ct.slice(0, 44)}…"</span>{'\n'}<span className="k">trigger</span> <span className="absent">not in the record</span>{'\n'}<span className="k">size</span>    <span className="absent">not in the record</span></pre>
+          <p className="pr-note">The level stays sealed inside an Intel TDX enclave until the price crosses it.</p>
+          <ProblemStats />
+          <Link to={`/order/${o.id}`} className="btn btn-primary btn-sm">Open order №{o.id} <Icon name="arrow" size={14} /></Link>
+        </> : <State kind={orders.error ? 'error' : 'loading'} title={orders.error ? 'Could not read the contract' : 'Reading the latest order…'}>{orders.error}</State>}
+      </article>
+    </div>
+  </section>;
+}
+
+function ProblemStats() {
+  const stats = useStats();
+  const s = stats.data;
+  return <dl className="pr-stats">
+    <div><dt>Armed now</dt><dd>{s ? <CountUp value={s.open} /> : '…'}</dd></div>
+    <div><dt>Levels anyone can read</dt><dd className="gold">{s ? 0 : '…'}</dd></div>
+    <div><dt>Enclave</dt><dd className="pr-pulse"><EnclavePulse stats={s} compact /></dd></div>
+  </dl>;
+}
+
+/** What is happening on the contract right now: counts, the enclave heartbeat, recent events and fires. */
+function LiveNow() {
+  const stats = useStats();
+  const orders = useOrders();
+  const requests = useRequests(stats.data?.requests_total);
+  const live = useLivePrice();
+  const log = useMemo(() => (orders.data && requests.data ? buildLog(orders.data, requests.data).slice(0, 6) : null), [orders.data, requests.data]);
+  const fires = (orders.data ?? []).filter((o) => o.fire).sort((a, b) => b.id - a.id).slice(0, 3);
+  return <section className="l-sec" id="live">
+    <header className="l-head l-head-row"><div><p className="kicker">Live on chain</p><h2>Happening on the contract now.</h2></div><div className="page-head-r"><EnclavePulse stats={stats.data} /><StreamDot /></div></header>
+    <div className="live-grid">
+      <div className="pnl live-feed">
+        <header className="pnl-tabs"><span className="pnl-tab on">Latest events</span><Link to="/activity" className="pnl-note">All activity →</Link></header>
+        {log ? <ol className="feed">{log.map((e) => <li key={e.key} className={`feed-row feed-${e.kind}`}><span className="feed-ic"><Icon name={({ sealed: 'lock', checked: 'eye', fired: 'bolt', attested: 'seal', cancelled: 'ban' } as const)[e.kind]} size={16} /></span><div className="feed-main"><p>{e.title}</p><small>{e.detail}</small></div><div className="feed-r"><span className="mono dim">{ago(e.at)}</span>{e.tx && <Tx hash={e.tx} />}</div></li>)}</ol>
+          : <div className="tbl-wrap"><State kind={stats.error || orders.error ? 'error' : 'loading'} title={stats.error || orders.error ? 'Could not read the contract' : 'Reading the contract…'}>{stats.error || orders.error}</State></div>}
+      </div>
+      <div className="pnl live-fires">
+        <header className="pnl-tabs"><span className="pnl-tab on">Recent fires</span><span className="pnl-note">in money terms</span></header>
+        <div className="fire-list">{fires.length ? fires.map((o) => <FireCard key={o.id} o={o} now={live.price} />) : <State kind={orders.data ? 'empty' : 'loading'} title={orders.data ? 'No fires yet' : 'Reading fires…'} />}</div>
+      </div>
+    </div>
+  </section>;
+}
+
+const FAQ: [string, string][] = [
+  ['What is a sealed stop?', 'A stop-loss or take-profit whose trigger price is encrypted in your browser. The chain stores only ciphertext, so nobody can see where you will sell until the order fires.'],
+  ['Who can open my order?', 'Only a program running inside an Intel TDX enclave on OutLayer, pinned by its SHA-256 hash on the contract, plus your own device through a separate view key.'],
+  ['How does it fire?', 'Each check runs that program. It reads NEAR-USD from Coinbase, opens the armed orders, and signs a report naming only the ones the price crossed. The contract verifies the signature and the crossing, sells on the pool and publishes the level.'],
+  ['Can I prove the enclave did the check?', 'Yes. Every run has an Intel-signed TDX quote. The certificate page fetches it live from OutLayer and hashes it in your browser.'],
+  ['What stays public?', 'Owner, time placed, status, when checks run and every fill. A check that fires nothing tells watchers that no level was crossed at that price.'],
+  ['Is this live on mainnet?', 'No. It runs on NEAR testnet, fills settle on a NEAR / tUSD test pool, and tUSD has no value. Mainnet settlement through NEAR Intents is not built.'],
+];
+function Faq() {
+  return <section className="dark faq" id="faq">
+    <div className="faq-in">
+      <header><p className="kicker">FAQ</p><h2>Questions a careful trader asks.</h2></header>
+      <div className="faq-list">{FAQ.map(([q, a], i) => <details key={q} open={i === 0}><summary>{q}<Icon name="plus" size={18} /></summary><p>{a}</p></details>)}</div>
+    </div>
+  </section>;
+}
+
 export default function Landing() {
   const t = useTicker();
   const stats = useStats();
@@ -90,12 +173,12 @@ export default function Landing() {
     <div className="dark hero-wrap">
       <header className="l-nav">
         <Link to="/" aria-label="Seter home"><Wordmark /></Link>
-        <nav aria-label="Primary" className="l-links"><a href="#benefits">Product</a><a href="#proof">Proof</a><a href="#tech">NEAR tech</a></nav>
+        <nav aria-label="Primary" className="l-links"><a href="#problem">Why sealed</a><Link to="/how-it-works">How it works</Link><Link to="/activity">Activity</Link><a href="#proof">Proof</a><a href="#faq">FAQ</a></nav>
         <Link to="/app" className="btn btn-primary btn-sm">Launch app</Link>
       </header>
       <section className="hero">
         <div className="hero-copy">
-          <p className="pill-live"><i className="live" />Live on NEAR testnet</p>
+          <p className="pill-live"><i className="live" />Live on NEAR testnet<span className="pill-sep" />NEAR <LiveTick dimmed={false} /></p>
           <h1>Your stop-loss, <em>invisible</em> until it fires.</h1>
           <p className="hero-lede">Sealed to an Intel TDX enclave. Your trigger stays encrypted until the order fires.</p>
           <div className="hero-cta"><Link to="/app" className="btn btn-primary btn-lg">Start trading <Icon name="arrow" size={17} /></Link><a href="#proof" className="btn btn-ghost btn-lg">See a real fire</a></div>
@@ -109,12 +192,14 @@ export default function Landing() {
       <TrustStrip />
 
       <dl className="numbers" aria-label="Live proof numbers">
-        <div><dt><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR / USD · Coinbase</span></dt><dd className="mono">{price ? <Num value={price.toFixed(4)} /> : '…'}</dd></div>
-        <div><dt>Orders sealed</dt><dd>{v(s?.orders_total)}</dd></div>
+        <div><dt><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR / USD · Coinbase</span></dt><dd className="mono"><LiveTick /></dd></div>
+        <div><dt>Orders sealed</dt><dd>{s ? <CountUp value={s.orders_total} /> : v(undefined)}</dd></div>
         <div><dt>Open levels visible on chain</dt><dd className="gold">{s ? 0 : v(undefined)}</dd></div>
-        <div><dt>Fired and audited</dt><dd>{v(s?.fired)}</dd></div>
+        <div><dt>Fired and audited</dt><dd>{s ? <CountUp value={s.fired} /> : v(undefined)}</dd></div>
         <div><dt>Enclave runs</dt><dd>{v(s?.requests_total)}<small>{s ? ` · ${s.rejected_reports} rejected` : ''}</small></dd></div>
       </dl>
+
+      <Problem />
 
       <section className="benefits" id="benefits">
         <article className="ben">
@@ -161,11 +246,15 @@ export default function Landing() {
         </div>
       </section>
 
+      <LiveNow />
+
       <section className="l-sec" id="tech">
         <header className="l-head"><p className="kicker">The NEAR tech</p><h2>Signed enclave reports, checked on chain.</h2></header>
         <div className="tech">{TECH.map((x) => <article key={x.code}><Obj name={x.obj} size={72} className="tech-obj" /><h3>{x.title}</h3><p>{x.body}</p><code>{x.code}</code></article>)}</div>
       </section>
     </main>
+
+    <Faq />
 
     <section className="dark cta">
       <Art subject="tripwire" className="cta-art" />
@@ -175,7 +264,7 @@ export default function Landing() {
     <footer className="l-foot">
       <div className="l-foot-in">
         <div className="l-foot-brand"><Wordmark small /><p>Sealed stop and take-profit orders on NEAR testnet, fired by an attested OutLayer enclave.</p></div>
-        <div><h4>Product</h4><Link to="/app">Trade NEAR/USD</Link><a href="#benefits">How it works</a><a href="#proof">Proof</a></div>
+        <div><h4>Product</h4><Link to="/app">Trade NEAR/USD</Link><Link to="/book">Sealed book</Link><Link to="/portfolio">Portfolio</Link><Link to="/activity">Activity</Link><Link to="/how-it-works">How it works</Link></div>
         <div><h4>Contracts</h4><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">Vault {short(CONTRACT, 8)}</a><a href={accountUrl(TOKEN)} target="_blank" rel="noreferrer"><TokenLogo sym="tUSD" />tUSD {short(TOKEN, 8)}</a><span className="mono">WASM {(config.data?.enclave_hash ?? deployment.enclave.sha256).slice(0, 12)}…</span></div>
         <div><h4>Status</h4><span>Mainnet via NEAR Intents: <b>Not built</b></span><a href="https://outlayer.ai" target="_blank" rel="noreferrer">OutLayer <Icon name="external" size={11} /></a></div>
       </div>
