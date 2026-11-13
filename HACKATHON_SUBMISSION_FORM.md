@@ -35,4 +35,4 @@ Post character count: **228** (limit: 280). The human publishes it.
 
 attach: seter-near-film-share.mp4
 
-The 2:58.6 demo film is available locally in 1080p and a 1280-wide share copy. Nick still needs to post it on X and fill `demoUrl`.
+The 2:26 demo film (v3, 13 Nov 2026) is available locally in 1080p (`seter-near-film.mp4`) and a 720p share copy (`seter-near-film-share.mp4`, 4.4 MB). It opens on the landing page, shows the trading screen within 15 seconds, puts the owner's view next to the real on-chain record of a new order, fires that stop live on testnet with a 6/6 verified TDX attestation, and cancels another without revealing it. Nick still needs to post it on X and fill `demoUrl`.
