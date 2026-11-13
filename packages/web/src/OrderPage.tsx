@@ -1,5 +1,5 @@
 import { accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
-import { useConfig, usePoll, useQuote, useStats } from './live';
+import { useConfig, useFireSecond, usePoll, useQuote, useStats } from './live';
 import { Copy, Icon, Link, Num, Obj, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
 import type { Wallet } from './wallet';
@@ -116,6 +116,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
   const err = order.error;
   const stats = useStats();
   const config = useConfig();
+  const second = useFireSecond(o?.id, Boolean(o?.fire));
   const body = (() => {
     if (err) return <State kind="error" art="warning" title="Could not read this order">{err}</State>;
     if (order.loading) return <State kind="loading" title={`Reading order №${id} from NEAR testnet…`} />;
@@ -174,6 +175,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
         <dl className="facts">
           <div><dt>Price time</dt><dd className="mono">{new Date(f.price_ts_ms).toISOString().replace('T', ' ').slice(0, 19)} UTC</dd></div>
           <div><dt>Source</dt><dd><a href={f.source} target="_blank" rel="noreferrer">Coinbase NEAR-USD <Icon name="external" size={12} /></a></dd></div>
+          <div><dt>Second source</dt><dd>{second.data ? <><a href={accountUrl(second.data.oracle)} target="_blank" rel="noreferrer" className="mono">{second.data.oracle}</a> read <b className="mono">{e6(second.data.oracle_price_e6)}</b> · {second.data.diff_bps} bps apart (limit {second.data.tolerance_bps})</> : second.loading ? 'reading…' : <span className="dim">not required (fired before the 14 Nov two-source upgrade)</span>}</dd></div>
           <div><dt>Delivered</dt><dd>{f.path === 'callback' ? 'private callback' : 'signed relay'} · request {f.request}</dd></div>
           <div><dt>OutLayer run</dt><dd className="mono">#{f.outlayer_request}</dd></div>
           <div><dt>Report SHA-256</dt><dd className="mono">{short(f.report_sha256, 10)}</dd></div>
