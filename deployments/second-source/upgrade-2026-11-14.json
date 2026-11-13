@@ -1,0 +1,196 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "steps": [
+    {
+      "step": "upgrade the vault in place to the two-source build",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "DeployContract",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "5tDHzubaHDz6ZwBsCeodqgMNi6thNEZ11vrXtSm27Tty",
+      "explorer": "https://testnet.nearblocks.io/txns/5tDHzubaHDz6ZwBsCeodqgMNi6thNEZ11vrXtSm27Tty",
+      "at": "2026-11-13T21:27:28.636Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [],
+      "wasm_sha256": "ab042db7e1892d02eb447f3c9ea9af384cb308b220de757f0daa20c8ae8c5608",
+      "code_hash_before": "HvSj3MyQ7sUsMydy6echWYVr9Dj6LCP4RVhRbRgR9cyw",
+      "code_hash_after": "CWaQtZsoHWwL9iaFxUDwe3N9pr8ShJZpSbRniXydjcZD",
+      "state_preserved": true,
+      "stats_after": {
+        "orders_total": 17,
+        "open": 1,
+        "fired": 8,
+        "unfilled": 0,
+        "cancelled": 8,
+        "checks": 10,
+        "rejected_reports": 0,
+        "requests_total": 14,
+        "last_check": {
+          "request": 14,
+          "path": "callback",
+          "price_e6": 3502400,
+          "price_ts_ms": 1794595450098,
+          "trade_id": 36575801,
+          "checked": 3,
+          "unreadable": 0,
+          "fired": [
+            17
+          ],
+          "block_height": "277548482",
+          "block_ts": "1794595461471261153",
+          "outlayer_request": "40144"
+        },
+        "pool": {
+          "near": "8840100000000000000000000",
+          "usd": "28256733"
+        },
+        "bands": {
+          "request": 5,
+          "price_e6": 3579600,
+          "price_ts_ms": 1794245869769,
+          "k": 5,
+          "width_e6": 50000,
+          "bands": "[]",
+          "suppressed": 3,
+          "total": 3,
+          "block_height": "276951815",
+          "outlayer_request": "14964"
+        }
+      },
+      "second_source": {
+        "config": {
+          "oracle": "price-oracle.testnet",
+          "asset": "wrap.near",
+          "enabled": true,
+          "tolerance_bps": 100
+        },
+        "last_agreement": null,
+        "keeper_budget": "0",
+        "keeper_check_cost": "20000000000000000000000",
+        "check_min_deposit": "20000000000000000000000"
+      }
+    },
+    {
+      "step": "fund the keeper budget with 0.2 NEAR",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "fund_keeper",
+      "args": {},
+      "deposit": "200000000000000000000000",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "GdYa764C5qV3iVDsLfu7P9XpcvWQcYCrunWnJg4Z8HsK",
+      "explorer": "https://testnet.nearblocks.io/txns/GdYa764C5qV3iVDsLfu7P9XpcvWQcYCrunWnJg4Z8HsK",
+      "at": "2026-11-13T21:27:37.841Z",
+      "ok": true,
+      "return": "\"200000000000000000000000\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"keeper_funded\",\"data\":[{\"by\":\"mienai-3013a230.testnet\",\"amount\":\"200000000000000000000000\",\"budget\":\"200000000000000000000000\"}]}"
+      ],
+      "second_source": {
+        "config": {
+          "oracle": "price-oracle.testnet",
+          "asset": "wrap.near",
+          "enabled": true,
+          "tolerance_bps": 100
+        },
+        "last_agreement": null,
+        "keeper_budget": "200000000000000000000000",
+        "keeper_check_cost": "20000000000000000000000",
+        "check_min_deposit": "20000000000000000000000"
+      }
+    },
+    {
+      "step": "add a function-call key limited to check (0.25 NEAR gas allowance)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "AddKey",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "GNP7twTv2mpSXBsdEmhrF1eJGnBNDs4z72uoM4L54NqP",
+      "explorer": "https://testnet.nearblocks.io/txns/GNP7twTv2mpSXBsdEmhrF1eJGnBNDs4z72uoM4L54NqP",
+      "at": "2026-11-13T21:27:42.107Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [],
+      "keeper_public_key": "ed25519:7pLoQegJNpr2gacDT3eAKFsm5fabPUELuMqjMxwGhJ4z",
+      "keys_before": [
+        {
+          "public_key": "ed25519:62n4qTNRZ1wn9nEbBjRSui6VXz6LZgrFkKLchqouUvgQ",
+          "permission": "FullAccess"
+        }
+      ],
+      "keys_after": [
+        {
+          "public_key": "ed25519:62n4qTNRZ1wn9nEbBjRSui6VXz6LZgrFkKLchqouUvgQ",
+          "permission": "FullAccess"
+        },
+        {
+          "public_key": "ed25519:7pLoQegJNpr2gacDT3eAKFsm5fabPUELuMqjMxwGhJ4z",
+          "permission": {
+            "FunctionCall": {
+              "allowance": "250000000000000000000000",
+              "method_names": [
+                "check"
+              ],
+              "receiver_id": "mienai-3013a230.testnet"
+            }
+          }
+        }
+      ],
+      "note": "The full-access key was kept (deleting it is Nick's call)."
+    },
+    {
+      "step": "replace the 0.25 NEAR keeper key with a check-only key allowed 2 NEAR of gas",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "DeleteKey+AddKey",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "55xBKAGRduhJDyeUQZtbCNzFqLbhzUG84HR4j1S8x8tf",
+      "explorer": "https://testnet.nearblocks.io/txns/55xBKAGRduhJDyeUQZtbCNzFqLbhzUG84HR4j1S8x8tf",
+      "at": "2026-11-13T21:28:53.750Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [],
+      "removed_key": "ed25519:7pLoQegJNpr2gacDT3eAKFsm5fabPUELuMqjMxwGhJ4z",
+      "keeper_public_key": "ed25519:EEgpZvdEP21Uwxrp2sLkhosQimy8BXrtbhnVCQ6BSiUx",
+      "keys_before": [
+        {
+          "public_key": "ed25519:62n4qTNRZ1wn9nEbBjRSui6VXz6LZgrFkKLchqouUvgQ",
+          "permission": "FullAccess"
+        },
+        {
+          "public_key": "ed25519:7pLoQegJNpr2gacDT3eAKFsm5fabPUELuMqjMxwGhJ4z",
+          "permission": {
+            "FunctionCall": {
+              "allowance": "250000000000000000000000",
+              "method_names": [
+                "check"
+              ],
+              "receiver_id": "mienai-3013a230.testnet"
+            }
+          }
+        }
+      ],
+      "keys_after": [
+        {
+          "public_key": "ed25519:62n4qTNRZ1wn9nEbBjRSui6VXz6LZgrFkKLchqouUvgQ",
+          "permission": "FullAccess"
+        },
+        {
+          "public_key": "ed25519:EEgpZvdEP21Uwxrp2sLkhosQimy8BXrtbhnVCQ6BSiUx",
+          "permission": {
+            "FunctionCall": {
+              "allowance": "2000000000000000000000000",
+              "method_names": [
+                "check"
+              ],
+              "receiver_id": "mienai-3013a230.testnet"
+            }
+          }
+        }
+      ],
+      "note": "Only the keeper key added by this script was removed; the full-access key was kept."
+    }
+  ]
+}
