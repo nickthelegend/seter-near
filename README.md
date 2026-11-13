@@ -12,13 +12,18 @@ Run locally with Node 22+ and pnpm 10. No hosted demo URL is recorded in this re
 4. Open `http://127.0.0.1:5201/app` - see the trading terminal and sealed levels shown as `••••`. Open Order history - see the recorded fired stop.
 5. Open `http://127.0.0.1:5201/order/1` - see the recorded trigger of 3.5967, the enclave price of 3.5886 and its attestation certificate. The certificate shows recorded verification checks and fetches the quote from OutLayer to hash in the browser.
 
-6. In `/app`, click **Connect wallet** and sign in with a funded Meteor testnet account, then click **Pay for a check · 0.02 NEAR** and approve it - see **Last check** and **Runs / rejected** update in **Enclave · Intel TDX**; open **Enclave log** to see the new check and `fired 0` if no armed trigger crossed, while the orders stay **Armed**.
+6. Open `/order/16` (or any order) and scroll to **Two views** - see the owner's view next to **What everyone else sees**: the order's real `place_order` transaction arguments, read back from NEAR testnet, with no trigger, size or side in them.
+7. Open `/book` - see every order as anyone can read it: owner, time, ciphertext, and `sealed` where an armed trigger would be.
+8. Open `/activity` - see the event feed (sealed, checked, fired, cancelled), the enclave heartbeat (time since the last TDX check), recent fires in money terms and Coinbase NEAR-USD trades streamed over WebSocket.
+9. Open `/portfolio?account=mienai-4e6b1225.testnet` - see one account's vault valued at the live price, its armed orders (levels hidden), fills and cancelled orders.
+10. Open `/how-it-works` - see a labelled stop-hunting illustration, the four steps with live data and what is public versus sealed.
+11. In `/app`, click **Connect wallet** and sign in with a funded Meteor testnet account, then click **Pay for a check · 0.02 NEAR** and approve it - see **Last check** and **Runs / rejected** update in **Enclave · Intel TDX**; open **Enclave log** to see the new check and `fired 0` if no armed trigger crossed, while the orders stay **Armed**.
 
 To place your own testnet order, follow [Connecting a wallet](#connecting-a-wallet). The real browser flow passes with the test-only QA signer (`pnpm test:e2e`); production uses Meteor. Human Meteor sign-in and approval remain a manual compatibility check. See [FLOW-QA.md](FLOW-QA.md) for results and receipts. For this local-only demo, the public X post must include a video ([official rule Q-012](https://nearhackathon.com/HACKATHON.md)).
 
 ## Hosting
 
-Hosting is prepared, not deployed: from the repository root, `pnpm install --frozen-lockfile && pnpm build` produces `packages/web/dist`. The static app uses public NEAR testnet defaults and needs no private key or server secret. `vercel.json` serves existing assets first and falls back to `index.html` for `/app` and `/order/<id>`; `.vercelignore` excludes credentials, environment files, signing-key files and local state from upload. Production removes the QA signer even when `VITE_QA_SIGNER=1` is set; QA also requires the separate `qa` build mode. Nick can use this configuration when he is ready to host. No deployment was made. See [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json).
+Hosting is prepared, not deployed: from the repository root, `pnpm install --frozen-lockfile && pnpm build` produces `packages/web/dist`. The static app uses public NEAR testnet defaults and needs no private key or server secret. `vercel.json` serves existing assets first and falls back to `index.html` for `/app`, `/order/<id>` and the other app routes; `.vercelignore` excludes credentials, environment files, signing-key files and local state from upload. Production removes the QA signer even when `VITE_QA_SIGNER=1` is set; QA also requires the separate `qa` build mode. Nick can use this configuration when he is ready to host. No deployment was made. See [Vercel configuration](https://vercel.com/docs/project-configuration/vercel-json).
 
 ## Live on NEAR testnet
 
@@ -93,7 +98,7 @@ The [11 Nov full-flow check](FLOW-QA.md) adds live deposits, encrypted stop/take
 | `packages/contract` | Rust near-sdk vault: orders, requests, verification, pool, balances. Sandbox tests in `tests/`. |
 | `packages/token` | tUSD test NEP-141 with an hourly faucet. |
 | `packages/sdk` | Sealing, attestation verification, FastFS upload, deploy and run scripts. |
-| `packages/web` | Vite + React app: landing (`/`), trading terminal (`/app`, Lightweight Charts) and order pages (`/order/<id>`). |
+| `packages/web` | Vite + React app: landing (`/`), trading terminal (`/app`, Lightweight Charts), order pages with the two-views panel (`/order/<id>`), sealed book (`/book`), portfolio (`/portfolio`), activity (`/activity`) and how it works (`/how-it-works`). Live price over the Coinbase WebSocket ticker with REST fallback. |
 | `deployments/` | Deployment and run evidence, including transaction hashes and the verified attestation. |
 | `docs/RESEARCH.md` | OutLayer, price-source and execution research with links. |
 
