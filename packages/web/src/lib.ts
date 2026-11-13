@@ -22,7 +22,7 @@ export type FireRecord = {
 };
 export type Order = { id: number; owner: string; ct: string; commit: string; view_ct: string | null; created_ns: string; status: 'Open' | 'Fired' | 'Unfilled' | 'Cancelled'; fire: FireRecord | null };
 export type TeeKeys = { order_pub: string; attest_pub: string; request: number; set_at_ns: string };
-export type Config = { owner: string; token: string; outlayer: string; enclave_url: string; enclave_hash: string; tee: TeeKeys | null; price_source: string; max_price_age_s: number; fee_bps: number; order_deposit: string; max_open: number };
+export type Config = { owner: string; token: string; outlayer: string; enclave_url: string; enclave_hash: string; tee: TeeKeys | null; price_source: string; max_price_age_s: number; fee_bps: number; order_deposit: string; max_open: number; second_source?: { oracle: string; asset: string; enabled: boolean; tolerance_bps: number } };
 export type CheckSummary = { request: number; path: string; price_e6: number; price_ts_ms: number; trade_id: number; checked: number; unreadable: number; fired: number[]; block_height: string; block_ts: string; outlayer_request: string };
 export type Stats = { orders_total: number; open: number; fired: number; unfilled: number; cancelled: number; checks: number; rejected_reports: number; requests_total: number; last_check: CheckSummary | null; pool: { near: string; usd: string }; bands: null | { request: number; price_e6: number; k: number; width_e6: number; bands: string; suppressed: number; total: number; block_height: string } };
 export type Balance = { near: string; usd: string };

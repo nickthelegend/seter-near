@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchQuote, view, ticker, type Balance, type Config, type LiveQuote, type Order, type Request, type Stats, type Ticker } from './lib';
+import { CONTRACT, fetchQuote, rpcRead, view, ticker, type Balance, type Config, type LiveQuote, type Order, type Request, type Stats, type Ticker } from './lib';
 import { TRANSACTION_EVENT } from './receipts';
 
 export type Loadable<T> = { data: T | null; error: string; loading: boolean };
@@ -59,3 +59,12 @@ export function useMedia(query: string) {
   useEffect(() => { const mq = matchMedia(query); const on = () => setMatch(mq.matches); mq.addEventListener('change', on); on(); return () => mq.removeEventListener('change', on); }, [query]);
   return match;
 }
+
+/** The scoped keeper key: a function-call key on the vault limited to `check`, and the budget its checks spend. */
+export type Keeper = { key: string; methods: string[]; budget: string };
+type KeyList = { keys: { public_key: string; access_key: { permission: 'FullAccess' | { FunctionCall: { receiver_id: string; method_names: string[] } } } }[] };
+export const useKeeper = () => usePoll<Keeper | null>(async () => {
+  const [list, second] = await Promise.all([rpcRead<KeyList>('query', { request_type: 'view_access_key_list', finality: 'final', account_id: CONTRACT }), view<{ keeper_budget: string }>('get_second_source')]);
+  const k = list.keys.find((x) => typeof x.access_key.permission === 'object' && x.access_key.permission.FunctionCall.receiver_id === CONTRACT && x.access_key.permission.FunctionCall.method_names.join() === 'check');
+  return k && typeof k.access_key.permission === 'object' ? { key: k.public_key, methods: k.access_key.permission.FunctionCall.method_names, budget: second.keeper_budget } : null;
+}, 30_000);
