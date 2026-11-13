@@ -1,0 +1,185 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "trader": "mienai-4e6b1225.testnet",
+  "keeper_key": "ed25519:EEgpZvdEP21Uwxrp2sLkhosQimy8BXrtbhnVCQ6BSiUx",
+  "at": "2026-11-13T21:28:24.116Z",
+  "steps": [
+    {
+      "step": "trader seals a stop (sell 0.05 NEAR) 2% above Coinbase 3.5038; trigger hidden on chain",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_order",
+      "args": {
+        "ct": "AS8yD15oKulx+8iRA5yupwszKgGAHzxx6iumzFxgxKZO3XIUgHKhZh/J1bEUuhyW04bOIamEqJSwJEzuqn3XO2CFuNX2V3TpxBhtuRoK/9kJyRoKtF4oDQK2aPIceP3iX7v9VyhTW0s9S4SMMSw9BmBhpsxTmNUKqHJqwd59N8NHpTvaTK7OZ9o/VJEQKGVDtA87OdJZfYQwejvarTJJRlEPpNPW4zlRWIjUpqZUOR+ZHPKUuEgVpK4ogGXJYcqn8N844EqJn9OQPnFXdw==",
+        "commit": "73e16f1753387ab160cde6d887d974a4e481c09c3eea0e2c6bccd9cd4f7775a8",
+        "view_ct": null
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "T8tXKcVjZ21HXRgN2SeigabVz4FFCh5xYQUfBXLHb41",
+      "explorer": "https://testnet.nearblocks.io/txns/T8tXKcVjZ21HXRgN2SeigabVz4FFCh5xYQUfBXLHb41",
+      "at": "2026-11-13T21:28:28.374Z",
+      "ok": true,
+      "return": "18",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":18,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    },
+    {
+      "step": "keeper check signed by the function-call key (check only, no deposit; paid from the keeper budget)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "check",
+      "args": {},
+      "deposit": "0",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "8MehJtyrBSeCv9cjeVfoiZ7TanZecUZhdPPeicHAaL6r",
+      "explorer": "https://testnet.nearblocks.io/txns/8MehJtyrBSeCv9cjeVfoiZ7TanZecUZhdPPeicHAaL6r",
+      "at": "2026-11-13T21:31:29.831Z",
+      "ok": true,
+      "return": "\"fired 1\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"keeper_check\",\"data\":[{\"paid_from_budget\":\"20000000000000000000000\",\"budget_left\":\"180000000000000000000000\"}]}",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"enclave_request\",\"data\":[{\"request\":15,\"operation\":\"check\",\"orders\":2}]}",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":40910,\\\"sender_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"predecessor_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\\\",\\\"hash\\\":\\\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":20000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"operation\\\\\\\":\\\\\\\"check\\\\\\\",\\\\\\\"contract\\\\\\\":\\\\\\\"mienai-3013a230.testnet\\\\\\\",\\\\\\\"request\\\\\\\":15,\\\\\\\"orders\\\\\\\":[{\\\\\\\"id\\\\\\\":3,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"ATg7nsfayyBeeX2H/pIUvsO40HwPTzoU7T6in6fsNqdyjcLxQhMDTHnKYeHKqNkOSihyHhAz6FJ3EeX9ZiT1pNXt455bVq734+qrLU8u24tbWvTv1m1mzfig/pdVLWdgAQBuhotNQ8GU07lQSCPKo2DT2ISwSh7nSswttcaE8B1oZ8bdUXYfVK1EFoH2265f1nix0PBquTTtYLww59Cn6lLK65nxl0Tq9zzcjEsJBXx+w51hHb7v33pa8d0ApwfCHubhZQAi4EG5EQ6UdvM=\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"22e2f6c6e412688e22c176e2d2e06d8b96a7aca1a66117c7a70a4f287733bea4\\\\\\\"},{\\\\\\\"id\\\\\\\":18,\\\\\\\"owner\\\\\\\":\\\\\\\"mienai-4e6b1225.testnet\\\\\\\",\\\\\\\"ct\\\\\\\":\\\\\\\"AS8yD15oKulx+8iRA5yupwszKgGAHzxx6iumzFxgxKZO3XIUgHKhZh/J1bEUuhyW04bOIamEqJSwJEzuqn3XO2CFuNX2V3TpxBhtuRoK/9kJyRoKtF4oDQK2aPIceP3iX7v9VyhTW0s9S4SMMSw9BmBhpsxTmNUKqHJqwd59N8NHpTvaTK7OZ9o/VJEQKGVDtA87OdJZfYQwejvarTJJRlEPpNPW4zlRWIjUpqZUOR+ZHPKUuEgVpK4ogGXJYcqn8N844EqJn9OQPnFXdw==\\\\\\\",\\\\\\\"commit\\\\\\\":\\\\\\\"73e16f1753387ab160cde6d887d974a4e481c09c3eea0e2c6bccd9cd4f7775a8\\\\\\\"}]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":null,\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"10000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794605345701446500,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":null,\\\"project_id\\\":null}\",\"data_id\":[126,16,238,113,226,3,180,90,110,231,202,229,66,181,135,20,225,191,1,59,90,6,74,171,255,29,45,12,54,127,196,226],\"timestamp\":1794605345701446500}]}",
+        "[[yNEAR charged: \"1121600700000000000000\"]]",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-3013a230.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://test.fastfs.io/mienai-3013a230.testnet/outlayer.testnet/791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386.wasm\",\"hash\":\"791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":7403434,\"time_ms\":1216,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1121600700000000000000\",\"payment_refunded\":\"8878399300000000000000\",\"compilation_note\":\"Cached WASM from 2026-11-09T17:16:17.890705+00:00\",\"timestamp\":1794605408404316902}]}",
+        "Execution completed successfully. Output: Json(705 bytes), Resources: { instructions: 7403434, time_ms: 1216 }, Cost: 1121600700000000000000 yoctoNEAR, Refund: 8878399300000000000000 yoctoNEAR, Cached WASM from 2026-11-09T17:16:17.890705+00:00",
+        "Resolved project: zavodil2.testnet/price-oracle, version: \"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\", source: WasmUrl { url: \"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\", hash: \"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\", build_target: Some(\"wasm32-wasip2\") }, uuid: p0000000000000007",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":40924,\\\"sender_id\\\":\\\"mienai-3013a230.testnet\\\",\\\"predecessor_id\\\":\\\"price-oracle.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\\\",\\\"hash\\\":\\\"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":10000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"command\\\\\\\":\\\\\\\"get_prices\\\\\\\",\\\\\\\"max_age_secs\\\\\\\":300,\\\\\\\"tokens\\\\\\\":[\\\\\\\"wrap.near\\\\\\\"]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":{\\\"profile\\\":\\\"default\\\",\\\"account_id\\\":\\\"zavodil2.testnet\\\"},\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"10000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794605410270567078,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":\\\"p0000000000000007\\\",\\\"project_id\\\":\\\"zavodil2.testnet/price-oracle\\\"}\",\"data_id\":[33,61,134,219,250,226,239,80,32,176,3,51,126,171,179,156,131,19,158,37,220,53,247,163,201,167,188,72,224,163,83,16],\"timestamp\":1794605410270567078}]}",
+        "[[yNEAR charged: \"1115100000000000000000\"]]",
+        "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-3013a230.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\",\"hash\":\"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":291554,\"time_ms\":1151,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1115100000000000000000\",\"payment_refunded\":\"8884900000000000000000\",\"compilation_note\":\"Cached WASM from 2026-10-02T18:51:55.432626+00:00\",\"timestamp\":1794605485599472252}]}",
+        "Execution completed successfully. Output: Json(175 bytes), Resources: { instructions: 291554, time_ms: 1151 }, Cost: 1115100000000000000000 yoctoNEAR, Refund: 8884900000000000000000 yoctoNEAR, Cached WASM from 2026-10-02T18:51:55.432626+00:00",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"check\",\"data\":[{\"request\":15,\"path\":\"callback\",\"price_e6\":3505800,\"fired\":[18],\"second_source\":{\"oracle\":\"price-oracle.testnet\",\"asset\":\"wrap.near\",\"oracle_price_e6\":3511000,\"oracle_ts_ns\":\"1794605486149598862\",\"enclave_price_e6\":3505800,\"diff_bps\":15,\"tolerance_bps\":100,\"request\":15,\"block_height\":\"277565580\"}}]}"
+      ],
+      "keeper_budget_before": "200000000000000000000000",
+      "keeper_budget_after": "180000000000000000000000",
+      "vault_balance_before": "11357329428979756699999997"
+    },
+    {
+      "step": "keeper key tries withdraw_near on the vault",
+      "signed_hash_never_included": "vTjWxhwwHu6wERBgAkjbHud62kenFYyiVmndih2kUCZ",
+      "rpc_error": "Access key does not allow method withdraw_near",
+      "refused": true
+    },
+    {
+      "step": "keeper key tries check with 0.02 NEAR attached",
+      "signed_hash_never_included": "A4yLyTaH1kSMSWkeWPMYJ1AXukq4wZnZHn1gmdvfa7S9",
+      "rpc_error": "Deposit is not allowed with function call",
+      "refused": true
+    },
+    {
+      "step": "keeper key tries a call on another contract (tUSD faucet)",
+      "signed_hash_never_included": "DgWFUtEBvVWC7HwK7qNBRh3RsZN1d2LmHb9zicNzhvBs",
+      "rpc_error": "Access key receiver mienai-3013a230.testnet does not match transaction receiver mienai-ad65ebef.testnet",
+      "refused": true
+    }
+  ],
+  "order_id": 18,
+  "placement_quote": {
+    "price": "3.5038",
+    "trade_id": 36580606,
+    "time": "2026-11-13T21:28:20.260574045Z"
+  },
+  "resumed_at": "2026-11-13T21:29:04.214Z",
+  "fire": {
+    "request": 15,
+    "path": "callback",
+    "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":3573876,\"side\":\"sell\",\"amount\":\"50000000000000000000000\",\"salt\":\"d864bc9c3f006efe85d2c473b40d1184\"}",
+    "cond": "lte",
+    "trigger_e6": 3573876,
+    "side": "sell",
+    "amount": "50000000000000000000000",
+    "price_e6": 3505800,
+    "price_ts_ms": 1794605403926,
+    "trade_id": 36580668,
+    "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+    "block_height": "277565580",
+    "block_ts": "1794605486734208947",
+    "filled_in": "50000000000000000000000",
+    "filled_out": "158448",
+    "note": "sold NEAR for tUSD on the test pool",
+    "report_sha256": "2ca91496762eb6c12ce73c655332a9dff5c2a9edbb09e39c002f5bce198d436f",
+    "outlayer_request": "40910"
+  },
+  "status": "Fired",
+  "second_source": {
+    "oracle": "price-oracle.testnet",
+    "asset": "wrap.near",
+    "oracle_price_e6": 3511000,
+    "oracle_ts_ns": "1794605486149598862",
+    "enclave_price_e6": 3505800,
+    "diff_bps": 15,
+    "tolerance_bps": 100,
+    "request": 15,
+    "block_height": "277565580"
+  },
+  "request": {
+    "id": 15,
+    "kind": "Check",
+    "caller": "mienai-3013a230.testnet",
+    "created_ns": "1794605345104577424",
+    "order_ids": [
+      3,
+      18
+    ],
+    "status": "Done",
+    "note": "callback: fired 1"
+  },
+  "attestation": {
+    "request_id": 40910,
+    "attestation_id": 91416,
+    "tx": "8MehJtyrBSeCv9cjeVfoiZ7TanZecUZhdPPeicHAaL6r",
+    "caller": "mienai-3013a230.testnet",
+    "block_height": 277565342,
+    "timestamp": 1794605405,
+    "wasm_hash": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386",
+    "input_hash": "d3ea72fa70fb334949cafcffdf6c45d3cbd2ec80f83f7d71f91d372095dbb646",
+    "output_hash": "f34fb004229542b06840022f3f159895a53af088bd86e9c60b106f9815d47bdf",
+    "measurements": {
+      "mrtd": "7fe60787222bd394cb516abca2435f22f035ab2cc9c0a4b4b3b148e46297f3d931a237b72f359052c6e657d8c1409173",
+      "rtmr3": "d85416a5a567dd0313fd66c309f736ec608d1e0e0c246d069517a616bd3d01d6a6bef8f2f6467d239ce3754de16f99b6"
+    },
+    "report_data": "4d03111335f8dd88b1441d167e889220b2033cf9565f73cc9d085e315ae38fad",
+    "tcb": {
+      "status": "UpToDate",
+      "advisory_ids": []
+    },
+    "checks": {
+      "wasm_hash_pinned": true,
+      "input_hash": true,
+      "output_hash": true,
+      "report_data_binds_task": true,
+      "measurements_approved_on_chain": true,
+      "intel_signature_chain": true
+    },
+    "ok": true,
+    "source": "https://testnet-api.outlayer.ai/attestations/by-request/40910"
+  },
+  "keys": [
+    {
+      "access_key": {
+        "nonce": 276946397000021,
+        "permission": "FullAccess"
+      },
+      "public_key": "ed25519:62n4qTNRZ1wn9nEbBjRSui6VXz6LZgrFkKLchqouUvgQ"
+    },
+    {
+      "access_key": {
+        "nonce": 277565315000001,
+        "permission": {
+          "FunctionCall": {
+            "allowance": "1996887209165110400000000",
+            "method_names": [
+              "check"
+            ],
+            "receiver_id": "mienai-3013a230.testnet"
+          }
+        }
+      },
+      "public_key": "ed25519:EEgpZvdEP21Uwxrp2sLkhosQimy8BXrtbhnVCQ6BSiUx"
+    }
+  ],
+  "attestation_first_attempt_note": "The first verification fetched the attestation by transaction and got the price oracle's OutLayer run (wasm 3585b389…), not the enclave's; re-verified by request id."
+}

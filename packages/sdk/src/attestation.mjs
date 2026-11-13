@@ -14,9 +14,12 @@ const leU64 = (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n));
 // TDX quote v4: 48-byte header, then the TD report body. Offsets are into the whole quote.
 const MRTD = 48 + 136, RTMR0 = 48 + 328, REPORT_DATA = 48 + 520, M = 48;
 
-export async function fetchAttestationByTx(txHash, api = OUTLAYER_TESTNET_API) {
+// A transaction can hold more than one OutLayer run (since 14 Nov a fire also refreshes
+// price-oracle.testnet through OutLayer); pass the run's request id to pick the right one.
+export async function fetchAttestationByTx(txHash, api = OUTLAYER_TESTNET_API, requestId = null) {
+  const url = requestId == null ? `${api}/attestations/by-tx/${txHash}` : `${api}/attestations/by-request/${requestId}`;
   for (let attempt = 0; attempt < 10; attempt++) {
-    const response = await fetch(`${api}/attestations/by-tx/${txHash}`, { signal: AbortSignal.timeout(20_000) });
+    const response = await fetch(url, { signal: AbortSignal.timeout(20_000) });
     if (response.ok) return response.json();
     if (response.status !== 404) throw new Error(`OutLayer attestation HTTP ${response.status} for ${txHash}`);
     await new Promise((r) => setTimeout(r, 4000)); // indexed a few seconds after the execution
@@ -41,8 +44,9 @@ export function quoteFields(quote) {
 }
 
 /** Verifies one execution. `input` and `output` are the exact strings OutLayer received and returned. */
-export async function verifyExecution({ txHash, input, output, wasmHash }) {
-  const a = await fetchAttestationByTx(txHash);
+export async function verifyExecution({ txHash, input, output, wasmHash, requestId = null }) {
+  const a = await fetchAttestationByTx(txHash, OUTLAYER_TESTNET_API, requestId);
+  if (a.transaction_hash && a.transaction_hash !== txHash) throw new Error(`Attestation ${a.id} belongs to ${a.transaction_hash}, not ${txHash}`);
   const quote = Buffer.from(a.tdx_quote, 'base64');
   const fields = quoteFields(quote);
   const { mrtd, rtmr0, rtmr1, rtmr2, rtmr3 } = fields;
@@ -62,5 +66,5 @@ export async function verifyExecution({ txHash, input, output, wasmHash }) {
     tcb = { error: String(error.message || error).slice(0, 200) };
     checks.intel_signature_chain = false;
   }
-  return { request_id: a.request_id, attestation_id: a.id, tx: a.transaction_hash, caller: a.caller_account_id, block_height: a.block_height, timestamp: a.timestamp, wasm_hash: a.wasm_hash, input_hash: a.input_hash, output_hash: a.output_hash, measurements: { mrtd, rtmr3 }, report_data: fields.report_data.slice(0, 64), tcb, checks, ok: Object.values(checks).every(Boolean), source: `${OUTLAYER_TESTNET_API}/attestations/by-tx/${txHash}` };
+  return { request_id: a.request_id, attestation_id: a.id, tx: a.transaction_hash, caller: a.caller_account_id, block_height: a.block_height, timestamp: a.timestamp, wasm_hash: a.wasm_hash, input_hash: a.input_hash, output_hash: a.output_hash, measurements: { mrtd, rtmr3 }, report_data: fields.report_data.slice(0, 64), tcb, checks, ok: Object.values(checks).every(Boolean), source: requestId == null ? `${OUTLAYER_TESTNET_API}/attestations/by-tx/${txHash}` : `${OUTLAYER_TESTNET_API}/attestations/by-request/${requestId}` };
 }
