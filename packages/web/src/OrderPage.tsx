@@ -1,10 +1,12 @@
-import { accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
+import { firedStep, accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
 import { useConfig, usePoll, useQuote, useStats } from './live';
 import { Copy, Icon, Link, Num, Obj, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
 import type { Wallet } from './wallet';
 import { art } from './art';
 import { PairLogo, WithLogo } from './logos';
+import TwoViews from './TwoViews';
+import { useLivePrice } from './price';
 
 const CHECK_LABEL: Record<string, string> = {
   wasm_hash_pinned: 'Executed WASM equals the hash pinned on the contract',
@@ -63,6 +65,51 @@ export function Certificate({ att, pinned, subject }: { att: Attestation; pinned
   </article>;
 }
 
+/** A fire with no recorded CLI verification: fetch its TDX quote from OutLayer now and compare the enclave
+ * measurements with the run that was fully verified (Intel signature chain included) on 9 Nov. */
+function LiveAttestation({ tx }: { tx: string }) {
+  const q = useQuote(tx);
+  const config = useConfig();
+  const ref = firedStep?.attestation;
+  if (q.error) return <State kind="error" art="warning" title="Could not fetch this run’s TDX quote">{q.error} Verify it with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State>;
+  if (!q.data) return <State kind="loading" title="Fetching this run’s TDX quote from OutLayer…" />;
+  const mrtd = ref ? q.data.mrtd === ref.measurements.mrtd : null, rtmr3 = ref ? q.data.rtmr3 === ref.measurements.rtmr3 : null;
+  return <article className="cert"><div className="cert-inner">
+    <header className="cert-head">
+      <img className="cert-seal" src={art('seal').src} alt="" aria-hidden="true" />
+      <div><p className="label">Intel TDX quote · fetched live</p><h3>OutLayer run #{q.data.requestId}</h3><p className="cert-stmt">A protected computer ran the pinned Seter program for this check. Its quote was fetched from OutLayer just now and hashed in this browser.</p></div>
+      <span className={`cert-verdict ${mrtd && rtmr3 ? 'ok' : 'bad'}`}>{mrtd && rtmr3 ? 'Same enclave' : 'Measurements differ'}</span>
+    </header>
+    <ul className="cert-checks">
+      <li className={mrtd ? 'ok' : 'bad'}><Icon name={mrtd ? 'check' : 'x'} size={15} />MRTD equals the fully verified run #{ref?.request_id}</li>
+      <li className={rtmr3 ? 'ok' : 'bad'}><Icon name={rtmr3 ? 'check' : 'x'} size={15} />RTMR3 (app image) equals the verified run</li>
+      <li className={q.data.wasm === (config.data?.enclave_hash ?? enclaveUpload.sha256) ? 'ok' : 'bad'}><Icon name={q.data.wasm === (config.data?.enclave_hash ?? enclaveUpload.sha256) ? 'check' : 'x'} size={15} />Executed WASM equals the hash pinned on the contract</li>
+      <li className="ok"><Icon name="check" size={15} />Contract accepted the report signed by the enclave key</li>
+    </ul>
+    <dl className="cert-fields">
+      <Field label="TDX quote SHA-256" value={q.data.quoteSha256} live />
+      <Field label="MRTD" value={q.data.mrtd} />
+      <Field label="RTMR3 (app)" value={q.data.rtmr3} />
+      <Field label="Report data" value={q.data.reportData} />
+    </dl>
+    <p className="cert-live">The Intel signature chain for this quote is checked by the CLI (<code>verify-attestation.mjs</code>), not in the browser.</p>
+  </div></article>;
+}
+
+/** The fill in money terms: what left the vault, what came back, the price it got, and holding at today's price. */
+function Money({ o }: { o: Order }) {
+  const f = o.fire!;
+  const live = useLivePrice();
+  const sold = Number(BigInt(f.filled_in) / 10n ** 18n) / 1e6, got = Number(f.filled_out) / 1e6;
+  const held = live.price ? sold * live.price : null;
+  return <dl className="money">
+    <div><dt>Sold</dt><dd className="mono"><WithLogo sym="NEAR">{sold.toFixed(4)} NEAR</WithLogo></dd></div>
+    <div><dt>Received</dt><dd className="mono gold"><WithLogo sym="tUSD">{got.toFixed(4)} tUSD</WithLogo></dd></div>
+    <div><dt>Price per NEAR</dt><dd className="mono">{sold ? (got / sold).toFixed(4) : '—'}</dd></div>
+    <div><dt>Holding instead, at today’s price</dt><dd className="mono">{held !== null ? held.toFixed(4) : '…'}<small>{held !== null ? `selling is ${got >= held ? 'ahead' : 'behind'} by ${Math.abs(got - held).toFixed(4)}` : ''}</small></dd></div>
+  </dl>;
+}
+
 export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }) {
   const order = usePoll<Order | null>(() => view('get_order', { id }), 15_000, [id]);
   const o = order.data;
@@ -102,6 +149,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
               <i aria-hidden="true">{f.cond === 'lte' ? '≥' : '≤'}</i>
               <div><span>Price read in the TEE</span><b className="gold"><Num value={e6(f.price_e6)} /></b></div>
             </div>
+            {o.status !== 'Unfilled' && <Money o={o} />}
             <p className="verdict-note">{o.status === 'Unfilled' ? <>The trigger crossed, but the order did not fill: {f.note}. Coinbase trade #{f.trade_id} · block {f.block_height}</> : <>Sold <WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> for <b><WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></b> on the vault pool · Coinbase trade #{f.trade_id} · block {f.block_height}</>}</p>
           </> : o.status === 'Open' ? <>
             <div className="verdict-top"><p className="label">Waiting inside the enclave</p><Obj name="eye-slash" size={72} /></div>
@@ -115,7 +163,10 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
         </div>
       </section>
 
+      <TwoViews order={o} account={wallet.account} />
+
       {f && (att ? <section className="order-sec"><h2>The attestation</h2><Certificate att={att} pinned={config.data?.enclave_hash ?? enclaveUpload.sha256} subject={`The program pinned by SHA-256 ran inside an Intel TDX enclave, read NEAR/USD at ${e6(f.price_e6)} from Coinbase and reported the crossing for order №${o.id}, whose trigger was ${e6(f.trigger_e6)}.`} /></section>
+        : fireTx ? <section className="order-sec"><h2>The attestation</h2><LiveAttestation tx={fireTx} /></section>
         : <section className="order-sec"><h2>The attestation</h2><State kind="setup" art="certificate" title="No recorded attestation for this fire">The contract accepted the report with a valid enclave signature through its private callback or signed relay. Verify the TDX quote with <code>node packages/sdk/scripts/verify-attestation.mjs</code>.</State></section>)}
 
       {f && <section className="order-sec">

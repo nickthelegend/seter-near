@@ -56,6 +56,28 @@ export async function view<T>(method: string, args: object = {}, contract = CONT
   throw new Error('NEAR testnet is unavailable. Check your connection; the app will retry.');
 }
 
+/** Any JSON-RPC read on the same provider list, for records the contract views do not return (transaction args). */
+export async function rpcRead<T>(method: string, params: object): Promise<T> {
+  const body = JSON.stringify({ jsonrpc: '2.0', id: 'seter-web', method, params });
+  for (let i = 0; i < RPCS.length; i++) {
+    const idx = (preferred + i) % RPCS.length;
+    try {
+      const json = await publicJson(RPCS[idx], 'NEAR testnet', { method: 'POST', headers: { 'content-type': 'application/json' }, body });
+      if (json.result) return json.result as T;
+    } catch { /* next provider */ }
+  }
+  throw new Error('NEAR testnet is unavailable. Check your connection; the app will retry.');
+}
+/** The arguments a transaction actually carried on chain, decoded from the signed transaction itself. */
+export type ChainTx = { hash: string; signer: string; receiver: string; method: string; args: Record<string, unknown>; block: string; status: 'Success' | 'Failure' | 'Pending' };
+export async function chainTx(hash: string, sender: string): Promise<ChainTx> {
+  const r = await rpcRead<{ transaction: { signer_id: string; receiver_id: string; actions: { FunctionCall?: { method_name: string; args: string } }[] }; transaction_outcome: { block_hash: string }; status: Record<string, unknown> }>('tx', { tx_hash: hash, sender_account_id: sender, wait_until: 'FINAL' });
+  const fc = r.transaction.actions.find((a) => a.FunctionCall)?.FunctionCall;
+  let args: Record<string, unknown> = {};
+  try { args = fc ? JSON.parse(atob(fc.args)) : {}; } catch { /* non-JSON args stay empty */ }
+  return { hash, signer: r.transaction.signer_id, receiver: r.transaction.receiver_id, method: fc?.method_name ?? '', args, block: r.transaction_outcome.block_hash, status: !r.status ? 'Pending' : 'Failure' in r.status ? 'Failure' : 'SuccessValue' in r.status ? 'Success' : 'Pending' };
+}
+
 export type Ticker = { price: string; time: string; trade_id: number };
 export async function ticker(): Promise<Ticker> {
   const t = await publicJson(PRICE_SOURCE, 'Coinbase price', { headers: { accept: 'application/json' } });
