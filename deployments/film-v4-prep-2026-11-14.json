@@ -1,0 +1,21 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "steps": [
+    {
+      "step": "film v4 prep: trader deposits 0.3 testnet NEAR into its vault (off camera)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "deposit_near",
+      "args": {},
+      "deposit": "300000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "B6uuB81pGtvKuzxs7gmQSuP22H7J4BxzEwwA9KiPG5Rg",
+      "explorer": "https://testnet.nearblocks.io/txns/B6uuB81pGtvKuzxs7gmQSuP22H7J4BxzEwwA9KiPG5Rg",
+      "at": "2026-11-13T22:21:24.276Z",
+      "ok": true,
+      "return": "{\"near\":\"439900000000000000000000\",\"usd\":\"2793827\"}",
+      "failure": null,
+      "logs": []
+    }
+  ]
+}
