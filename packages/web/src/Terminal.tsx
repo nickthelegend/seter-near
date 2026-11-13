@@ -4,10 +4,11 @@ import { CONTRACT, OUTLAYER_API, accountUrl, ago, buildLog, e6, enclaveUpload, n
 import { useBalance, useConfig, useMedia, useMine, useOrders, usePoll, useQuote, useRequests, useStats, useTicker } from './live';
 import { GRANULARITY, useCandles, useStats24h, type Tf } from './market';
 import Chart, { type ChartMark } from './Chart';
-import { Icon, Link, Num, State, Tx, Wordmark, shortHex } from './ui';
+import { Icon, Link, State, Tx, Wordmark, shortHex } from './ui';
 import { VaultSheet, viewKeyFor } from './Sheets';
 import type { Wallet } from './wallet';
 import { art } from './art';
+import { CountUp, EnclavePulse, LiveTick, StreamDot } from './motion';
 import { PairLogo, WithLogo } from './logos';
 
 export type Plain = { cond: string; trigger_e6: number; amount: string; side?: string };
@@ -22,14 +23,11 @@ export const Hidden = ({ label = 'hidden' }: { label?: string }) => <span classN
 const utc = (ms: number) => new Date(ms).toISOString().slice(0, 16).replace('T', ' ');
 
 /* ---------------- header ---------------- */
+const NAV: [string, string][] = [['/app', 'Trade'], ['/book', 'Sealed book'], ['/portfolio', 'Portfolio'], ['/activity', 'Activity'], ['/how-it-works', 'How it works']];
 export function AppHeader({ wallet, onVault }: { wallet: Wallet; onVault?: () => void }) {
   return <header className="ahead">
     <Link to="/" aria-label="Seter home"><Wordmark small /></Link>
-    <nav className="ahead-nav" aria-label="App">
-      <Link to="/app" aria-current={location.pathname.startsWith('/app') ? 'page' : undefined}>Trade</Link>
-      <Link to="/#benefits">How it works</Link>
-      <Link to="/#proof">Proof</Link>
-    </nav>
+    <nav className="ahead-nav" aria-label="App">{NAV.map(([to, label]) => <Link key={to} to={to} aria-current={location.pathname.startsWith(to) ? 'page' : undefined}>{label}</Link>)}</nav>
     <div className="ahead-right">
       <span className="net"><i className="live" />NEAR testnet</span>
       {wallet.account && onVault && <button className="btn btn-ghost btn-sm" onClick={onVault}><Icon name="wallet" size={15} />Vault</button>}
@@ -37,6 +35,7 @@ export function AppHeader({ wallet, onVault }: { wallet: Wallet; onVault?: () =>
         ? <button className="btn btn-ghost btn-sm account-button" onClick={wallet.disconnect} title={`Sign out ${wallet.account}`}><span>{shortAccount(wallet.account)}</span></button>
         : <button className="btn btn-primary btn-sm" onClick={wallet.connect} disabled={!wallet.ready}>{wallet.ready ? 'Connect wallet' : 'Loading'}</button>}
     </div>
+    <nav className="mnav" aria-label="App sections">{NAV.map(([to, label]) => <Link key={to} to={to} aria-current={location.pathname.startsWith(to) ? 'page' : undefined}>{label}</Link>)}</nav>
   </header>;
 }
 
@@ -51,14 +50,14 @@ function MarketBar({ stats }: { stats: Stats | null }) {
   const cell = (label: string, value: React.ReactNode, cls = '') => <div className={`mb-cell ${cls}`}><span>{label}</span><b>{value}</b></div>;
   return <section className="mbar dark" aria-label="Market">
     <div className="mb-pair"><PairLogo base="NEAR" quote="USD" size={28} /><div><b>NEAR / USD</b><small>Sealed spot · vault</small></div></div>
-    <div className={`mb-last ${chg === null ? '' : up ? 'up' : 'down'}`}>{last ? <Num value={last.toFixed(4)} /> : <span className="dim">{t.error ? 'unavailable' : '…'}</span>}<small>Coinbase last</small></div>
+    <div className={`mb-last ${chg === null ? '' : up ? 'up' : 'down'}`}><LiveTick /><small><StreamDot /></small></div>
     <div className="mb-cells">
       {cell('24h change', chg === null ? '…' : <span className={up ? 'up' : 'down'}>{up ? '+' : ''}{chg.toFixed(4)} / {up ? '+' : ''}{pct!.toFixed(2)}%</span>)}
       {cell('24h high', d.data ? d.data.high.toFixed(4) : '…')}
       {cell('24h low', d.data ? d.data.low.toFixed(4) : '…')}
       {cell('24h volume (NEAR)', d.data ? Math.round(d.data.volume).toLocaleString('en-US') : '…')}
-      {cell('Enclave read', stats?.last_check ? <>{e6(stats.last_check.price_e6)} <small>{ago(nsToMs(stats.last_check.block_ts))}</small></> : stats ? 'no check yet' : '…')}
-      {cell('Armed', stats ? stats.open : '…')}
+      {cell('Enclave read', stats?.last_check ? <>{e6(stats.last_check.price_e6)} <EnclavePulse stats={stats} compact /></> : stats ? 'no check yet' : '…')}
+      {cell('Armed', stats ? <CountUp value={stats.open} /> : '…')}
       {cell('Open levels exposed', stats ? <span className="gold">0</span> : '…')}
       <div className="mb-cell"><span>Source</span><b><a href="https://api.exchange.coinbase.com/products/NEAR-USD/ticker" target="_blank" rel="noreferrer">Coinbase <Icon name="external" size={11} /></a></b></div>
     </div>
