@@ -37,7 +37,7 @@ Hosting is prepared, not deployed: from the repository root, `pnpm install --fro
 
 ### Two price sources and a scoped keeper key (upgrade of 13–14 Nov, testnet)
 
-Since this upgrade, a fire needs two TEE price sources to agree, and the keeper signs with a key that can only call `check`. The vault was upgraded in place: same account, same state and the same enclave hash, so every order and record above is unchanged. The films were recorded before this upgrade.
+Since this upgrade, a fire needs two TEE price sources to agree, and the keeper signs with a key that can only call `check`. The vault was upgraded in place: same account, same state and the same enclave hash, so every order and record above is unchanged. The 13 Nov films were recorded before this upgrade; the 14 Nov film below uses it.
 
 | Step | Transaction |
 | --- | --- |
@@ -76,6 +76,15 @@ These transactions are copied from [the recorded run](deployments/real-run-2026-
 | Cancel order №5; its trigger was never revealed | [GbBRFrWs…](https://testnet.nearblocks.io/txns/GbBRFrWsi47ND6PcvHToxdH2gGmpZ4nt78PQpYryZabB) |
 
 The film was re-recorded the same evening for clean subtitles (`deployments/film-2026-11-13b.json`): seal stop №17 (trigger 3.5367) [8XGosiUZ…](https://testnet.nearblocks.io/txns/8XGosiUZtLN3aNfCdasQoaseEAiEKEuqJ3jZZLDg1Hdk); check reads 3.5024 and fires it, 0.2 NEAR → 0.652121 tUSD, attestation 6/6 [9KRm7G6d…](https://testnet.nearblocks.io/txns/9KRm7G6dWV6Wutcn9Uy6aEAttV25kXB76T8cXhi6mJNy); cancel №4 [2AUm4jMP…](https://testnet.nearblocks.io/txns/2AUm4jMPnGwse13FTuMi3ptSM3zmTevLNZxeSMraQ9SU).
+
+### Filmed on 14 Nov 2026 with the two-source build (`deployments/film-2026-11-14-v4.json`)
+
+Each user transaction was approved on camera in the test wallet's **Approve transaction** sheet and then shown on the public explorer (nearvalidate.org):
+- Seal stop №19 (trigger 3.4729, sell 0.2 NEAR; Coinbase 3.4317 at placement): [Dc7DPhQE…](https://testnet.nearblocks.io/txns/Dc7DPhQEL3PqEmsKUk1HsC1xejpZR2eee3NanM5spc3B).
+- Keeper check signed by the check-only key, paid from the keeper budget: [5T6o5jEb…](https://testnet.nearblocks.io/txns/5T6o5jEbzPW1mQpwTjMNhDGxdD1tAURHUQCfvgGaNiws). The enclave read 3.4276 and price-oracle.testnet read 3.4313 (11 bps apart, limit 100), so №19 fired: 0.2 NEAR → 0.616403 tUSD. TDX attestation of the vault's run: 6/6 (`verify-film-fire.mjs`). Keeper journal: `deployments/keeper/2026-11-13-1794609837483-5a8db899.json`.
+- Cancel №3, trigger never published: [7GvkZdjb…](https://testnet.nearblocks.io/txns/7GvkZdjbvQLb1z1r7GZkozcgG5buYWbfRtGSBMm9uD3v).
+
+Before filming, the trader deposited 0.3 NEAR into its own vault off camera (`deployments/film-v4-prep-2026-11-14.json`).
 
 Before filming, `rebalance-pool.mjs` deepened the test pool (+5 NEAR, +20.13 tUSD) and returned its price to Coinbase 3.5061 (`deployments/pool-rebalance-2026-11-13.json`).
 
