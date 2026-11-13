@@ -24,3 +24,10 @@ See [TESTING.md](TESTING.md) for the recorded enclave, contract, SDK, build and 
 
 ## Demo
 See the README's [Try it](README.md#try-it) section.
+
+## v3 update (13 Nov 2026)
+
+- New screens in the approved look: sealed book, portfolio, activity, how it works, and a "two views" panel on every order (owner view vs the real on-chain record read back over RPC). Landing gains the why-sealed problem section, a live-on-chain section and a FAQ.
+- Liveness: Coinbase WebSocket price stream with tick flashes, streamed trades, count-ups, enclave check-age pulse, live TDX quote and on-chain measurement approval for new fires.
+- Test pool deepened and re-priced to Coinbase (+5 NEAR, +20.13 tUSD; `deployments/pool-rebalance-2026-11-13.json`).
+- Film v3 (2:26): seal 3AsXyWwyrW7EDRfRZbcWUVHvBTCv1qa6jEQGzJSKawtH, check/fire 9Jff4h8JPCZbase4gMgcgK2DoLTYY5uZrv6V2V6Qphbx (attestation 6/6), cancel GbBRFrWsi47ND6PcvHToxdH2gGmpZ4nt78PQpYryZabB. Self-judged 9.0/10 (`videos/seter-near/film-v3/JUDGE-v3.2.md`).
