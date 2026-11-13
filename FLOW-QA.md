@@ -142,3 +142,24 @@ Twelve screenshots cover configuration, armed state, keeper readiness, fired sta
 Screenshots were captured locally during QA and are not committed.
 
 A low-disk preflight briefly paused builds/browsers. Only this repo's regenerable Rust build caches were removed; work resumed after the internal volume recovered above 5 GB. No films, deployment, push, new secret or keeper activation occurred. Hosting, human Meteor approval and adding the keeper secret remain Nick's steps.
+
+## v3 screens, 13 Nov 2026 (production build, live NEAR testnet and Coinbase data)
+
+Captured by `videos/seter-near/film-v3/retake.mjs` from the production build at 1440 and 390 px, full page, after a 5 s
+settle and a scroll pass. Files: `orchestration/shots/mienai/v3/flow/<route>-<width>.png`. All 20 captures: no horizontal
+overflow, no page errors.
+
+| Route | What it shows | 1440 | 390 |
+| --- | --- | --- | --- |
+| `/` | Hero with live price pill, live terminal preview, attestation strip, live numbers, **Why sealed** (illustrated public stop vs the latest real on-chain order, live armed count and enclave pulse), benefits, proof certificate, **Live on chain** (events + fires in money terms), NEAR tech, dark FAQ, CTA, footer | ok | ok |
+| `/app` | Trading terminal; price streamed over the Coinbase WebSocket with tick flashes, enclave check age pulse | ok | ok |
+| `/book` | Sealed book: every order as the public reads it; armed triggers `sealed`, cancelled `never revealed` | ok | ok |
+| `/portfolio?account=…` | Vault value at the live price, armed orders, fills in money terms, cancelled orders | ok | ok |
+| `/activity` | Event feed with filters, KPIs that count up, recent fires, streamed Coinbase trades | ok | ok |
+| `/how-it-works` | Labelled stop-hunting illustration, four steps with live data, two views with order picker, public vs sealed ledger | ok | ok |
+| `/order/16` | Filmed fire: crossing, money strip, **What you see / What everyone else sees** (real `place_order` args from RPC), 6/6 certificate | ok | ok |
+| `/order/5` | Cancelled order: never revealed | ok | ok |
+| `/order/1` | Recorded 9 Nov fire and certificate | ok | ok |
+| `/nope` | Not-found state | ok | ok |
+
+Fix after review: the problem card's live stats wrap to two rows at 390 px so the enclave pulse is not clipped.
