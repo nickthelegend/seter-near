@@ -1,0 +1,108 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "source": "film v3, real app UI with the build-gated QA signer",
+  "account": "mienai-4e6b1225.testnet",
+  "order_id": 17,
+  "trigger": "3.5367",
+  "placement_quote": {
+    "price": "3.4948",
+    "time": "2026-11-13T18:41:24.085342478Z",
+    "trade_id": 36575769
+  },
+  "fire": {
+    "request": 14,
+    "path": "callback",
+    "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":3536700,\"side\":\"sell\",\"amount\":\"200000000000000000000000\",\"salt\":\"d9d21f34bc5b62c33aab88dbf85a1919\"}",
+    "cond": "lte",
+    "trigger_e6": 3536700,
+    "side": "sell",
+    "amount": "200000000000000000000000",
+    "price_e6": 3502400,
+    "price_ts_ms": 1794595450098,
+    "trade_id": 36575801,
+    "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+    "block_height": "277548482",
+    "block_ts": "1794595461471261153",
+    "filled_in": "200000000000000000000000",
+    "filled_out": "652121",
+    "note": "sold NEAR for tUSD on the test pool",
+    "report_sha256": "e3a55dfcb428cfa43bc5a7d5cca0d3d9ce97d4649e106a14ba530d70367c25aa",
+    "outlayer_request": "40144"
+  },
+  "wallet_debit_yocto": "23117687289549300000000",
+  "steps": [
+    {
+      "step": "trader seals a stop (sell 0.2 NEAR) in the app; trigger hidden on chain",
+      "method": "place_order",
+      "tx": "8XGosiUZtLN3aNfCdasQoaseEAiEKEuqJ3jZZLDg1Hdk",
+      "at": "2026-11-13T18:41:36.064Z",
+      "return": "17",
+      "explorer": "https://testnet.nearblocks.io/txns/8XGosiUZtLN3aNfCdasQoaseEAiEKEuqJ3jZZLDg1Hdk"
+    },
+    {
+      "step": "trader pays for a check in the app (OutLayer TEE run)",
+      "method": "check",
+      "tx": "9KRm7G6dWV6Wutcn9Uy6aEAttV25kXB76T8cXhi6mJNy",
+      "at": "2026-11-13T18:42:23.179Z",
+      "return": "\"fired 1\"",
+      "explorer": "https://testnet.nearblocks.io/txns/9KRm7G6dWV6Wutcn9Uy6aEAttV25kXB76T8cXhi6mJNy",
+      "last_check": {
+        "request": 14,
+        "path": "callback",
+        "price_e6": 3502400,
+        "price_ts_ms": 1794595450098,
+        "trade_id": 36575801,
+        "checked": 3,
+        "unreadable": 0,
+        "fired": [
+          17
+        ],
+        "block_height": "277548482",
+        "block_ts": "1794595461471261153",
+        "outlayer_request": "40144"
+      },
+      "attestation": {
+        "request_id": 40144,
+        "attestation_id": 89752,
+        "tx": "9KRm7G6dWV6Wutcn9Uy6aEAttV25kXB76T8cXhi6mJNy",
+        "caller": "mienai-4e6b1225.testnet",
+        "block_height": 277548284,
+        "timestamp": 1794595458,
+        "wasm_hash": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386",
+        "input_hash": "7e7e71c03c7a027a874b5b133b20c2149f0476f15f01909b4cc8a83220d050e1",
+        "output_hash": "4b255896eebba985651af53828052e83cb3e1d302332918d948edea056bc3be4",
+        "measurements": {
+          "mrtd": "7fe60787222bd394cb516abca2435f22f035ab2cc9c0a4b4b3b148e46297f3d931a237b72f359052c6e657d8c1409173",
+          "rtmr3": "d85416a5a567dd0313fd66c309f736ec608d1e0e0c246d069517a616bd3d01d6a6bef8f2f6467d239ce3754de16f99b6"
+        },
+        "report_data": "8103c7463b80c522e7345b86f64d73284c6dde68fff94fb7065b96c57366bb6b",
+        "tcb": {
+          "status": "UpToDate",
+          "advisory_ids": []
+        },
+        "checks": {
+          "wasm_hash_pinned": true,
+          "input_hash": true,
+          "output_hash": true,
+          "report_data_binds_task": true,
+          "measurements_approved_on_chain": true,
+          "intel_signature_chain": true
+        },
+        "ok": true,
+        "source": "https://testnet-api.outlayer.ai/attestations/by-tx/9KRm7G6dWV6Wutcn9Uy6aEAttV25kXB76T8cXhi6mJNy"
+      }
+    },
+    {
+      "step": "trader cancels order №4 in the app; its trigger stays sealed",
+      "method": "cancel_order",
+      "tx": "2AUm4jMPnGwse13FTuMi3ptSM3zmTevLNZxeSMraQ9SU",
+      "at": "2026-11-13T18:45:09.567Z",
+      "return": "",
+      "explorer": "https://testnet.nearblocks.io/txns/2AUm4jMPnGwse13FTuMi3ptSM3zmTevLNZxeSMraQ9SU",
+      "args": {
+        "id": 4
+      }
+    }
+  ]
+}

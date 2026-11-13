@@ -51,6 +51,8 @@ These transactions are copied from [the recorded run](deployments/real-run-2026-
 | Paid check: the enclave reads 3.4854 (Coinbase trade 36575004), fires №16, sells 0.2 NEAR for 0.682980 tUSD; TDX attestation 6/6 checks | [9Jff4h8J…](https://testnet.nearblocks.io/txns/9Jff4h8JPCZbase4gMgcgK2DoLTYY5uZrv6V2V6Qphbx) |
 | Cancel order №5; its trigger was never revealed | [GbBRFrWs…](https://testnet.nearblocks.io/txns/GbBRFrWsi47ND6PcvHToxdH2gGmpZ4nt78PQpYryZabB) |
 
+The film was re-recorded the same evening for clean subtitles (`deployments/film-2026-11-13b.json`): seal stop №17 (trigger 3.5367) [8XGosiUZ…](https://testnet.nearblocks.io/txns/8XGosiUZtLN3aNfCdasQoaseEAiEKEuqJ3jZZLDg1Hdk); check reads 3.5024 and fires it, 0.2 NEAR → 0.652121 tUSD, attestation 6/6 [9KRm7G6d…](https://testnet.nearblocks.io/txns/9KRm7G6dWV6Wutcn9Uy6aEAttV25kXB76T8cXhi6mJNy); cancel №4 [2AUm4jMP…](https://testnet.nearblocks.io/txns/2AUm4jMPnGwse13FTuMi3ptSM3zmTevLNZxeSMraQ9SU).
+
 Before filming, `rebalance-pool.mjs` deepened the test pool (+5 NEAR, +20.13 tUSD) and returned its price to Coinbase 3.5061 (`deployments/pool-rebalance-2026-11-13.json`).
 
 ## Product and deployment details
