@@ -11,6 +11,9 @@
 //!   3. it answers a request this contract issued and has not consumed (no replay),
 //!   4. its price is fresh and from the pinned source,
 //!   5. each revealed plaintext matches the order's commitment and its trigger really is crossed.
+//!   6. (second source) before any order executes, OutLayer's price oracle (`price-oracle.testnet`,
+//!      a separate TEE run that takes the median of many exchanges) must agree with the enclave's
+//!      Coinbase price within `tolerance_bps`; otherwise the report is refused (ERR_SOURCES_DISAGREE).
 //! A fired order is swapped against the contract's NEAR/tUSD constant-product test pool and its
 //! trigger, price, source and block are kept public for audit.
 
@@ -19,7 +22,7 @@ use near_sdk::json_types::{U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::{self, json, Value};
 use near_sdk::store::{IterableSet, LazyOption, LookupMap, Vector};
-use near_sdk::{env, ext_contract, log, near, require, AccountId, Gas, NearToken, PanicOnDefault, Promise, PromiseOrValue};
+use near_sdk::{env, ext_contract, log, near, require, AccountId, Gas, GasWeight, NearToken, PanicOnDefault, Promise, PromiseOrValue};
 use sha2::{Digest, Sha256};
 
 pub const PRICE_SOURCE: &str = "https://api.exchange.coinbase.com/products/NEAR-USD/ticker";
@@ -38,6 +41,25 @@ pub const FEE_BPS: u128 = 30;
 const MAX_CT_LEN: usize = 640;
 const GAS_OUTLAYER: Gas = Gas::from_tgas(100);
 const GAS_CALLBACK: Gas = Gas::from_tgas(80);
+/// Static gas for the oracle call; it also receives all unused gas (its OutLayer run needs ~85 Tgas).
+const GAS_ORACLE: Gas = Gas::from_tgas(50);
+const GAS_SECOND_CALLBACK: Gas = Gas::from_tgas(40);
+/// OutLayer's price oracle requires at least 0.01 NEAR when its cached price is stale.
+pub const ORACLE_FEE: NearToken = NearToken::from_millinear(10);
+/// A check with the second source on: 0.01 NEAR for the enclave run plus the 0.01 NEAR oracle reserve.
+pub const CHECK_MIN_DEPOSIT: NearToken = NearToken::from_millinear(20);
+/// What one zero-deposit keeper check takes from the keeper budget.
+pub const KEEPER_CHECK_COST: NearToken = NearToken::from_millinear(20);
+pub const DEFAULT_ORACLE: &str = "price-oracle.testnet";
+pub const DEFAULT_ORACLE_ASSET: &str = "wrap.near";
+pub const DEFAULT_TOLERANCE_BPS: u32 = 100;
+const NEED_SECOND: &str = "NEED_SECOND_SOURCE";
+// Raw storage slots added after the first deployment (the borsh state struct is unchanged).
+const K_SECOND_CFG: &[u8] = b"cfg2";
+const K_KEEPER_BUDGET: &[u8] = b"kb";
+const K_LAST_SECOND: &[u8] = b"lc2";
+const K_RESERVE: &[u8] = b"q";
+const K_FIRE_SECOND: &[u8] = b"x";
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq)]
@@ -182,6 +204,36 @@ struct BandsBody {
 #[serde(crate = "near_sdk::serde")]
 pub struct Plain { pub v: u8, pub cond: String, pub trigger_e6: u64, pub side: String, pub amount: String, pub salt: String }
 
+/// Owner-set configuration of the second price source.
+#[near(serializers = [json])]
+#[derive(Clone, Debug, PartialEq)]
+pub struct SecondSourceConfig { pub oracle: AccountId, pub asset: String, pub enabled: bool, pub tolerance_bps: u32 }
+
+/// The oracle's answer, reduced to what the agreement check needs.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SecondPrice { pub price_e6: u64, pub oracle_ts_ns: u64 }
+
+/// Reads `price-oracle.testnet`'s `PriceData` JSON and returns the asset's price in micro-USD.
+/// `None` when the oracle has no fresh median for the asset (its `price` is null).
+pub fn parse_price_data(raw: &[u8], asset: &str) -> Option<SecondPrice> {
+    let v: Value = serde_json::from_slice(raw).ok()?;
+    let ts: u64 = v.get("timestamp")?.as_str()?.parse().ok()?;
+    let entry = v.get("prices")?.as_array()?.iter().find(|p| p.get("asset_id").and_then(|a| a.as_str()) == Some(asset))?;
+    let price = entry.get("price")?;
+    let multiplier: u128 = price.get("multiplier")?.as_str()?.parse().ok()?;
+    let decimals = price.get("decimals")?.as_u64()?;
+    if decimals > 30 || multiplier == 0 { return None; }
+    let e6 = if decimals >= 6 { multiplier / 10u128.pow((decimals - 6) as u32) } else { multiplier * 10u128.pow((6 - decimals) as u32) };
+    if e6 == 0 || e6 > u64::MAX as u128 { return None; }
+    Some(SecondPrice { price_e6: e6 as u64, oracle_ts_ns: ts })
+}
+
+/// Distance between the two prices in basis points of the oracle price (rounded up).
+pub fn diff_bps(enclave_e6: u64, oracle_e6: u64) -> u64 {
+    let d = (enclave_e6 as u128).abs_diff(oracle_e6 as u128) * 10_000;
+    d.div_ceil(oracle_e6.max(1) as u128) as u64
+}
+
 #[ext_contract(ext_ft)]
 #[allow(dead_code)]
 trait FungibleToken { fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>); }
@@ -198,6 +250,10 @@ pub fn commitment(owner: &str, plaintext: &str) -> String {
 pub fn crossed(p: &Plain, price_e6: u64) -> bool {
     match p.cond.as_str() { "lte" => price_e6 <= p.trigger_e6, "gte" => price_e6 >= p.trigger_e6, _ => false }
 }
+
+fn reserve_key(request: u64) -> Vec<u8> { [K_RESERVE, &request.to_le_bytes()].concat() }
+fn fire_second_key(id: u64) -> Vec<u8> { [K_FIRE_SECOND, &id.to_le_bytes()].concat() }
+fn enclave_price(body: &str) -> u64 { serde_json::from_str::<Value>(body).ok().and_then(|v| v.get("price_e6").and_then(|p| p.as_u64())).unwrap_or(0) }
 
 fn is_hex64(s: &str) -> bool { s.len() == 64 && s.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)) }
 
@@ -258,16 +314,30 @@ impl Mienai {
     #[payable]
     pub fn refresh_keys(&mut self) -> Promise {
         require!(env::predecessor_account_id() == self.owner, "ERR_OWNER");
-        self.request(RequestKind::Keys, vec![])
+        self.request(RequestKind::Keys, vec![], env::attached_deposit())
     }
 
     /// Anyone (a keeper) pays for one enclave run over the open orders.
+    ///
+    /// The contract account itself may also call `check` with no deposit: that is the scoped keeper
+    /// key (a function-call key on this account limited to `check`; such keys cannot attach NEAR).
+    /// Its run is paid from the keeper budget that `fund_keeper` fills, never from user balances.
+    /// With the second source on, 0.01 NEAR of the deposit is held back for the oracle and
+    /// returned (or put back in the keeper budget) when no order crossed.
     #[payable]
     pub fn check(&mut self) -> Promise {
         require!(self.tee.get().is_some(), "ERR_NO_ENCLAVE");
         let ids: Vec<u64> = self.open.iter().copied().collect();
         require!(!ids.is_empty(), "ERR_NOTHING_OPEN");
-        self.request(RequestKind::Check, ids)
+        let mut deposit = env::attached_deposit();
+        if deposit.is_zero() && env::predecessor_account_id() == env::current_account_id() {
+            let budget = self.keeper_budget();
+            require!(budget >= KEEPER_CHECK_COST.as_yoctonear(), "ERR_KEEPER_BUDGET");
+            self.set_keeper_budget(budget - KEEPER_CHECK_COST.as_yoctonear());
+            deposit = KEEPER_CHECK_COST;
+            log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"keeper_check","data":[{"paid_from_budget":U128(KEEPER_CHECK_COST.as_yoctonear()),"budget_left":U128(budget - KEEPER_CHECK_COST.as_yoctonear())}]}));
+        }
+        self.request(RequestKind::Check, ids, deposit)
     }
 
     /// Asks the enclave for k-anonymous order counts per price band.
@@ -275,12 +345,18 @@ impl Mienai {
     pub fn publish_bands(&mut self) -> Promise {
         require!(self.tee.get().is_some(), "ERR_NO_ENCLAVE");
         let ids: Vec<u64> = self.open.iter().copied().collect();
-        self.request(RequestKind::Bands, ids)
+        self.request(RequestKind::Bands, ids, env::attached_deposit())
     }
 
-    fn request(&mut self, kind: RequestKind, order_ids: Vec<u64>) -> Promise {
-        require!(env::attached_deposit() >= NearToken::from_millinear(5), "ERR_OUTLAYER_FEE");
+    fn request(&mut self, kind: RequestKind, order_ids: Vec<u64>, deposit: NearToken) -> Promise {
+        require!(deposit >= NearToken::from_millinear(5), "ERR_OUTLAYER_FEE");
+        let mut outlayer_deposit = deposit;
         let id = self.next_request;
+        if kind == RequestKind::Check && self.second_source().enabled {
+            require!(deposit >= CHECK_MIN_DEPOSIT, "ERR_OUTLAYER_FEE: a check needs 0.02 NEAR (enclave run + oracle reserve)");
+            outlayer_deposit = deposit.saturating_sub(ORACLE_FEE);
+            env::storage_write(&reserve_key(id), &ORACLE_FEE.as_yoctonear().to_le_bytes());
+        }
         self.next_request += 1;
         let operation = match kind { RequestKind::Keys => "keys", RequestKind::Check => "check", RequestKind::Bands => "bands" };
         let orders: Vec<Value> = order_ids.iter().map(|oid| {
@@ -298,13 +374,13 @@ impl Mienai {
         });
         log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"enclave_request","data":[{"request":id,"operation":operation,"orders":orders.len()}]}));
         Promise::new(self.outlayer.clone())
-            .function_call("request_execution".to_string(), args.to_string().into_bytes(), env::attached_deposit(), GAS_OUTLAYER)
+            .function_call("request_execution".to_string(), args.to_string().into_bytes(), outlayer_deposit, GAS_OUTLAYER)
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CALLBACK).on_result(id))
     }
 
     /// The only door for an OutLayer result: the promise result of this contract's own request.
     #[private]
-    pub fn on_result(&mut self, request: u64) -> String {
+    pub fn on_result(&mut self, request: u64) -> PromiseOrValue<String> {
         let mut req = self.requests.get(&request).cloned().expect("ERR_UNKNOWN_REQUEST");
         let raw = if env::promise_results_count() == 1 { env::promise_result_checked(0, 16_384).ok() } else { None };
         let parsed = raw.as_deref().and_then(|b| serde_json::from_slice::<Value>(b).ok());
@@ -315,32 +391,99 @@ impl Mienai {
             req.note = reason.chars().take(200).collect();
             log!("request {} failed: {}", request, req.note);
             self.requests.insert(request, req);
-            return "failed".into();
+            self.release_reserve(request);
+            return PromiseOrValue::Value("failed".into());
         };
         let outcome = match req.kind {
             RequestKind::Keys => self.apply_keys(request, &env_.body, &env_.sig),
-            RequestKind::Check => self.apply_check(Some(request), &env_.body, &env_.sig, "callback").map(|fired| format!("fired {}", fired.len())),
+            RequestKind::Check => match self.apply_check(Some(request), &env_.body, &env_.sig, "callback", None) {
+                // A crossed order: ask the second source before anything executes.
+                Err(NEED_SECOND) => {
+                    let reserve = self.take_reserve(request);
+                    let mut r = self.requests.get(&request).cloned().unwrap();
+                    r.note = "awaiting second source".into();
+                    self.requests.insert(request, r);
+                    return PromiseOrValue::Promise(self.ask_second_source(reserve).then(
+                        Self::ext(env::current_account_id()).with_static_gas(GAS_SECOND_CALLBACK).with_unused_gas_weight(0)
+                            .on_second_source(request, env_.body, env_.sig)));
+                }
+                other => other.map(|fired| format!("fired {}", fired.len())),
+            },
             RequestKind::Bands => self.apply_bands(request, &env_.body, &env_.sig),
         };
+        self.release_reserve(request);
+        PromiseOrValue::Value(self.settle_outcome(request, outcome))
+    }
+
+    fn settle_outcome(&mut self, request: u64, outcome: Result<String, &'static str>) -> String {
         match outcome {
             Ok(summary) => summary,
+            Err(code) => self.reject(request, code.to_string()),
+        }
+    }
+
+    fn reject(&mut self, request: u64, note: String) -> String {
+        let mut req = self.requests.get(&request).cloned().unwrap();
+        req.status = RequestStatus::Rejected;
+        req.note = note.chars().take(200).collect();
+        self.requests.insert(request, req);
+        self.rejected += 1;
+        log!("request {} rejected: {}", request, note);
+        note
+    }
+
+    /// The second source's answer for a report the callback delivered. The whole report is
+    /// validated again before anything executes; a refusal marks the request Rejected.
+    #[private]
+    pub fn on_second_source(&mut self, request: u64, body: String, sig: String) -> String {
+        let cfg = self.second_source();
+        let second = self.second_price(&cfg);
+        match self.apply_check(Some(request), &body, &sig, "callback", Some(second.clone())) {
+            Ok(fired) => format!("fired {}", fired.len()),
             Err(code) => {
-                let mut req = self.requests.get(&request).cloned().unwrap();
-                req.status = RequestStatus::Rejected;
-                req.note = code.to_string();
-                self.requests.insert(request, req);
-                self.rejected += 1;
-                log!("request {} rejected: {}", request, code);
-                code.to_string()
+                let note = match (&second, code) {
+                    (Ok(s), "ERR_SOURCES_DISAGREE") => format!("ERR_SOURCES_DISAGREE: oracle {} vs enclave {} (tolerance {} bps)", s.price_e6, enclave_price(&body), cfg.tolerance_bps),
+                    _ => code.to_string(),
+                };
+                self.reject(request, note)
             }
         }
     }
 
+    /// The second source's answer for a report a relayer delivered through `fire`.
+    #[private]
+    pub fn on_relay_second_source(&mut self, body: String, sig: String) -> Vec<u64> {
+        let second = self.second_price(&self.second_source());
+        match self.apply_check(None, &body, &sig, "relay", Some(second)) {
+            Ok(fired) => fired,
+            Err(code) => env::panic_str(code),
+        }
+    }
+
+    fn second_price(&self, cfg: &SecondSourceConfig) -> Result<SecondPrice, &'static str> {
+        env::promise_result_checked(0, 8_192).ok().and_then(|raw| parse_price_data(&raw, &cfg.asset)).ok_or("ERR_SECOND_SOURCE_UNAVAILABLE")
+    }
+
+    fn ask_second_source(&self, deposit: NearToken) -> Promise {
+        let cfg = self.second_source();
+        Promise::new(cfg.oracle).function_call_weight(
+            "request_price_data".to_string(), json!({ "asset_ids": [cfg.asset] }).to_string().into_bytes(), deposit, GAS_ORACLE, GasWeight(1))
+    }
+
     /// The relayer door: anyone may deliver an enclave-signed check report for a request this
     /// contract issued (for example when the callback ran out of gas). Same checks as the callback.
-    pub fn fire(&mut self, body: String, sig: String) -> Vec<u64> {
-        match self.apply_check(None, &body, &sig, "relay") {
-            Ok(fired) => fired,
+    /// With the second source on and a crossed order in the report, the relayer attaches 0.01 NEAR
+    /// for the oracle and the fire completes in `on_second_source`.
+    #[payable]
+    pub fn fire(&mut self, body: String, sig: String) -> PromiseOrValue<Vec<u64>> {
+        match self.apply_check(None, &body, &sig, "relay", None) {
+            Ok(fired) => PromiseOrValue::Value(fired),
+            Err(NEED_SECOND) => {
+                require!(env::attached_deposit() >= ORACLE_FEE, "ERR_ORACLE_FEE: attach 0.01 NEAR for the second source");
+                PromiseOrValue::Promise(self.ask_second_source(env::attached_deposit()).then(
+                    Self::ext(env::current_account_id()).with_static_gas(GAS_SECOND_CALLBACK).with_unused_gas_weight(0)
+                        .on_relay_second_source(body, sig)))
+            }
             Err(code) => env::panic_str(code),
         }
     }
@@ -395,8 +538,39 @@ impl Mienai {
         if let Some(mut r) = self.requests.get(&request).cloned() { r.status = status; r.note = note.to_string(); self.requests.insert(request, r); }
     }
 
+    // ---------- second source, keeper budget (raw storage slots) ----------
+
+    fn second_source(&self) -> SecondSourceConfig {
+        env::storage_read(K_SECOND_CFG).and_then(|raw| serde_json::from_slice(&raw).ok()).unwrap_or_else(|| SecondSourceConfig {
+            oracle: DEFAULT_ORACLE.parse().unwrap(), asset: DEFAULT_ORACLE_ASSET.into(), enabled: true, tolerance_bps: DEFAULT_TOLERANCE_BPS,
+        })
+    }
+
+    fn keeper_budget(&self) -> u128 {
+        env::storage_read(K_KEEPER_BUDGET).and_then(|raw| raw.try_into().ok()).map(u128::from_le_bytes).unwrap_or(0)
+    }
+
+    fn set_keeper_budget(&mut self, v: u128) { env::storage_write(K_KEEPER_BUDGET, &v.to_le_bytes()); }
+
+    /// Removes and returns a request's oracle reserve (zero if none was held).
+    fn take_reserve(&mut self, request: u64) -> NearToken {
+        let key = reserve_key(request);
+        let v = env::storage_read(&key).and_then(|raw| raw.try_into().ok()).map(u128::from_le_bytes).unwrap_or(0);
+        if v > 0 { env::storage_remove(&key); }
+        NearToken::from_yoctonear(v)
+    }
+
+    /// The oracle was not needed: the reserve goes back to whoever paid for the check.
+    fn release_reserve(&mut self, request: u64) {
+        let reserve = self.take_reserve(request);
+        if reserve.is_zero() { return; }
+        let caller = self.requests.get(&request).map(|r| r.caller.clone()).unwrap();
+        if caller == env::current_account_id() { let b = self.keeper_budget(); self.set_keeper_budget(b + reserve.as_yoctonear()); }
+        else { Promise::new(caller).transfer(reserve).detach(); }
+    }
+
     /// Validates the whole report first; only a fully valid report changes any order.
-    fn apply_check(&mut self, expected_request: Option<u64>, body: &str, sig: &str, path: &str) -> Result<Vec<u64>, &'static str> {
+    fn apply_check(&mut self, expected_request: Option<u64>, body: &str, sig: &str, path: &str, second: Option<Result<SecondPrice, &'static str>>) -> Result<Vec<u64>, &'static str> {
         let tee = self.tee.get().clone().ok_or("ERR_NO_ENCLAVE")?;
         self.verify_sig(&tee.attest_pub, body, sig)?;
         let b: CheckBody = serde_json::from_str(body).map_err(|_| "ERR_BODY")?;
@@ -426,6 +600,16 @@ impl Mienai {
             valid.push((item.id, plain, item.pt.clone()));
         }
 
+        // Second source: no order executes unless OutLayer's oracle agrees with the enclave's price.
+        let cfg = self.second_source();
+        let mut agreed: Option<(SecondPrice, u64)> = None;
+        if !valid.is_empty() && cfg.enabled {
+            let s = match second { None => return Err(NEED_SECOND), Some(r) => r? };
+            let d = diff_bps(b.price_e6, s.price_e6);
+            if d > cfg.tolerance_bps as u64 { return Err("ERR_SOURCES_DISAGREE"); }
+            agreed = Some((s, d));
+        }
+
         // Every check passed: consume the request, then execute.
         self.finish(b.request, RequestStatus::Done, &format!("{path}: fired {}", valid.len()));
         self.checks += 1;
@@ -446,7 +630,16 @@ impl Mienai {
             self.fired.push(id);
             fired_ids.push(id);
         }
-        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"check","data":[{"request":b.request,"path":path,"price_e6":b.price_e6,"fired":fired_ids}]}));
+        let second_json = agreed.as_ref().map(|(s, d)| json!({
+            "oracle": cfg.oracle, "asset": cfg.asset, "oracle_price_e6": s.price_e6, "oracle_ts_ns": U64(s.oracle_ts_ns),
+            "enclave_price_e6": b.price_e6, "diff_bps": d, "tolerance_bps": cfg.tolerance_bps, "request": b.request, "block_height": U64(env::block_height()),
+        }));
+        if let Some(j) = &second_json {
+            let raw = j.to_string();
+            env::storage_write(K_LAST_SECOND, raw.as_bytes());
+            for id in &fired_ids { env::storage_write(&fire_second_key(*id), raw.as_bytes()); }
+        }
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"check","data":[{"request":b.request,"path":path,"price_e6":b.price_e6,"fired":fired_ids,"second_source":second_json}]}));
         self.last_check = Some(CheckSummary { request: b.request, path: path.to_string(), price_e6: b.price_e6, price_ts_ms: b.price_ts_ms, trade_id: b.trade_id, checked: b.checked, unreadable: b.unreadable, fired: fired_ids.clone(), block_height: U64(env::block_height()), block_ts: U64(env::block_timestamp()), outlayer_request: b.ctx.outlayer_request });
         Ok(fired_ids)
     }
@@ -580,7 +773,40 @@ impl Mienai {
         self.pool.clone()
     }
 
+    /// Owner switch for the second source. Off means fires need only the enclave report (the
+    /// original single-source rule); every change is logged.
+    pub fn set_second_source(&mut self, oracle: AccountId, asset: String, enabled: bool, tolerance_bps: u32) {
+        require!(env::predecessor_account_id() == self.owner, "ERR_OWNER");
+        require!((10..=500).contains(&tolerance_bps), "ERR_TOLERANCE: 10..=500 bps");
+        require!(!asset.is_empty() && asset.len() <= 64, "ERR_ASSET");
+        let cfg = SecondSourceConfig { oracle, asset, enabled, tolerance_bps };
+        env::storage_write(K_SECOND_CFG, serde_json::to_string(&cfg).unwrap().as_bytes());
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"second_source_set","data":[cfg]}));
+    }
+
+    /// Anyone may add NEAR to the budget that pays for zero-deposit keeper checks.
+    #[payable]
+    pub fn fund_keeper(&mut self) -> U128 {
+        let amount = env::attached_deposit().as_yoctonear();
+        require!(amount > 0, "ERR_ZERO");
+        let b = self.keeper_budget() + amount;
+        self.set_keeper_budget(b);
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"keeper_funded","data":[{"by":env::predecessor_account_id(),"amount":U128(amount),"budget":U128(b)}]}));
+        U128(b)
+    }
+
     // ---------- views ----------
+
+    /// Second-source configuration, the last agreement it recorded, and the keeper budget.
+    pub fn get_second_source(&self) -> Value {
+        let last = env::storage_read(K_LAST_SECOND).and_then(|raw| serde_json::from_slice::<Value>(&raw).ok());
+        json!({ "config": self.second_source(), "last_agreement": last, "keeper_budget": U128(self.keeper_budget()), "keeper_check_cost": U128(KEEPER_CHECK_COST.as_yoctonear()), "check_min_deposit": U128(CHECK_MIN_DEPOSIT.as_yoctonear()) })
+    }
+
+    /// The two prices that agreed when this order fired (orders fired before the upgrade have none).
+    pub fn get_fire_second_source(&self, id: u64) -> Option<Value> {
+        env::storage_read(&fire_second_key(id)).and_then(|raw| serde_json::from_slice(&raw).ok())
+    }
 
     pub fn get_config(&self) -> Value {
         json!({
@@ -588,6 +814,7 @@ impl Mienai {
             "enclave_url": self.enclave_url, "enclave_hash": self.enclave_hash, "tee": self.tee.get(),
             "price_source": PRICE_SOURCE, "max_price_age_s": MAX_PRICE_AGE_NS / 1_000_000_000,
             "fee_bps": FEE_BPS as u64, "order_deposit": U128(ORDER_DEPOSIT.as_yoctonear()), "max_open": MAX_OPEN,
+            "second_source": self.second_source(),
         })
     }
 
@@ -651,6 +878,25 @@ mod tests {
         assert!(crossed(&p("lte"), 3_500_000) && crossed(&p("lte"), 3_400_000) && !crossed(&p("lte"), 3_500_001));
         assert!(crossed(&p("gte"), 3_500_000) && !crossed(&p("gte"), 3_499_999));
         assert!(!crossed(&p("eq"), 3_500_000));
+    }
+    #[test]
+    fn oracle_price_data_parses_like_price_oracle_testnet() {
+        // The exact return of the live probe tx 53Lsy4APti6hkneCNJBfLm9WMm7gn1zJsqCgRDFkJtne.
+        let raw = br#"{"timestamp":"1794604600501208921","recency_duration_sec":300,"prices":[{"asset_id":"wrap.near","price":{"multiplier":"351140000","decimals":8}}]}"#;
+        assert_eq!(parse_price_data(raw, "wrap.near"), Some(SecondPrice { price_e6: 3_511_400, oracle_ts_ns: 1_794_604_600_501_208_921 }));
+        assert_eq!(parse_price_data(raw, "aurora"), None);
+        let null = br#"{"timestamp":"1","recency_duration_sec":300,"prices":[{"asset_id":"wrap.near","price":null}]}"#;
+        assert_eq!(parse_price_data(null, "wrap.near"), None);
+        assert_eq!(parse_price_data(b"not json", "wrap.near"), None);
+        let four = br#"{"timestamp":"1","prices":[{"asset_id":"wrap.near","price":{"multiplier":"35114","decimals":4}}]}"#;
+        assert_eq!(parse_price_data(four, "wrap.near").unwrap().price_e6, 3_511_400);
+    }
+    #[test]
+    fn agreement_is_measured_in_bps_of_the_oracle_price() {
+        assert_eq!(diff_bps(3_507_200, 3_511_400), 12); // the probe: Coinbase 3.5072 vs oracle 3.5114
+        assert_eq!(diff_bps(3_511_400, 3_511_400), 0);
+        assert_eq!(diff_bps(3_545_000, 3_500_000), 129);
+        assert_eq!(diff_bps(3_535_000, 3_500_000), 100);
     }
     #[test]
     fn pool_math_charges_the_fee_and_keeps_k() {

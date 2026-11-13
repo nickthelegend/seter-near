@@ -1,0 +1,54 @@
+{
+  "network": "testnet",
+  "oracle": "price-oracle.testnet",
+  "at": "2026-11-13T21:16:43.666Z",
+  "coinbase_price_at_send": "3.5072",
+  "before": {
+    "timestamp": "1794604502130549807",
+    "recency_duration_sec": 300,
+    "prices": [
+      {
+        "asset_id": "wrap.near",
+        "price": null
+      }
+    ]
+  },
+  "tx": {
+    "step": "probe: request_price_data(wrap.near)",
+    "receiverId": "price-oracle.testnet",
+    "method": "request_price_data",
+    "args": {
+      "asset_ids": [
+        "wrap.near"
+      ]
+    },
+    "deposit": "10000000000000000000000",
+    "signer": "mienai-4e6b1225.testnet",
+    "tx": "53Lsy4APti6hkneCNJBfLm9WMm7gn1zJsqCgRDFkJtne",
+    "explorer": "https://testnet.nearblocks.io/txns/53Lsy4APti6hkneCNJBfLm9WMm7gn1zJsqCgRDFkJtne",
+    "at": "2026-11-13T21:16:43.502Z",
+    "ok": true,
+    "return": "{\"timestamp\":\"1794604600501208921\",\"recency_duration_sec\":300,\"prices\":[{\"asset_id\":\"wrap.near\",\"price\":{\"multiplier\":\"351140000\",\"decimals\":8}}]}",
+    "failure": null,
+    "logs": [
+      "Resolved project: zavodil2.testnet/price-oracle, version: \"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\", source: WasmUrl { url: \"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\", hash: \"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\", build_target: Some(\"wasm32-wasip2\") }, uuid: p0000000000000007",
+      "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_requested\",\"data\":[{\"request_data\":\"{\\\"request_id\\\":40850,\\\"sender_id\\\":\\\"mienai-4e6b1225.testnet\\\",\\\"predecessor_id\\\":\\\"price-oracle.testnet\\\",\\\"code_source\\\":{\\\"WasmUrl\\\":{\\\"url\\\":\\\"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\\\",\\\"hash\\\":\\\"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\\\",\\\"build_target\\\":\\\"wasm32-wasip2\\\"}},\\\"resource_limits\\\":{\\\"max_instructions\\\":10000000000,\\\"max_memory_mb\\\":128,\\\"max_execution_seconds\\\":60},\\\"input_data\\\":\\\"{\\\\\\\"command\\\\\\\":\\\\\\\"get_prices\\\\\\\",\\\\\\\"max_age_secs\\\\\\\":300,\\\\\\\"tokens\\\\\\\":[\\\\\\\"wrap.near\\\\\\\"]}\\\",\\\"input_data_in_state\\\":false,\\\"secrets_ref\\\":{\\\"profile\\\":\\\"default\\\",\\\"account_id\\\":\\\"zavodil2.testnet\\\"},\\\"response_format\\\":\\\"Json\\\",\\\"payment\\\":\\\"10000000000000000000000\\\",\\\"attached_usd\\\":\\\"0\\\",\\\"timestamp\\\":1794604506983651575,\\\"compile_only\\\":false,\\\"force_rebuild\\\":false,\\\"store_on_fastfs\\\":false,\\\"use_bound_identity\\\":false,\\\"project_uuid\\\":\\\"p0000000000000007\\\",\\\"project_id\\\":\\\"zavodil2.testnet/price-oracle\\\"}\",\"data_id\":[167,214,211,103,220,210,18,236,235,79,82,232,219,32,80,84,120,139,137,199,222,21,161,243,177,109,160,63,0,122,117,40],\"timestamp\":1794604506983651575}]}",
+      "[[yNEAR charged: \"1533200100000000000000\"]]",
+      "EVENT_JSON:{\"standard\":\"near-outlayer\",\"version\":\"1.0.0\",\"event\":\"execution_completed\",\"data\":[{\"sender_id\":\"mienai-4e6b1225.testnet\",\"code_source\":{\"WasmUrl\":{\"url\":\"https://wasmhub.testnet.fastfs.io/fastfs.testnet/3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0.wasm\",\"hash\":\"3585b3890f49748713b43ccb9b0ef4148f317d62f4d598db80fdaffc3f3185a0\",\"build_target\":\"wasm32-wasip2\"}},\"resources_used\":{\"instructions\":1058359,\"time_ms\":5332,\"compile_time_ms\":null},\"success\":true,\"error_message\":null,\"payment_charged\":\"1533200100000000000000\",\"payment_refunded\":\"8466799900000000000000\",\"compilation_note\":\"Cached WASM from 2026-10-02T18:51:55.432626+00:00\",\"timestamp\":1794604599933138363}]}",
+      "Execution completed successfully. Output: Json(177 bytes), Resources: { instructions: 1058359, time_ms: 5332 }, Cost: 1533200100000000000000 yoctoNEAR, Refund: 8466799900000000000000 yoctoNEAR, Cached WASM from 2026-10-02T18:51:55.432626+00:00"
+    ]
+  },
+  "after": {
+    "timestamp": "1794604601124019859",
+    "recency_duration_sec": 300,
+    "prices": [
+      {
+        "asset_id": "wrap.near",
+        "price": {
+          "multiplier": "351140000",
+          "decimals": 8
+        }
+      }
+    ]
+  }
+}
