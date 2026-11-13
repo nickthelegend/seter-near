@@ -34,7 +34,8 @@ export default function Portfolio({ wallet }: { wallet: Wallet }) {
   const open = orders.filter((o) => o.status === 'Open');
   const fired = orders.filter((o) => o.fire);
   const closed = orders.filter((o) => o.status === 'Cancelled');
-  const lockedNear = open.reduce((n, o) => { const p = decrypt(o, wallet.account); return p ? n + nearNum(p.amount) : n; }, 0);
+  const readable = open.filter((o) => decrypt(o, wallet.account));
+  const lockedNear = readable.reduce((n, o) => n + nearNum(decrypt(o, wallet.account)!.amount), 0);
   const received = fired.reduce((n, o) => n + Number(o.fire!.filled_out) / 1e6, 0);
   const soldNear = fired.reduce((n, o) => n + nearNum(o.fire!.filled_in), 0);
   if (!account) return <div className="term-page"><AppHeader wallet={wallet} /><main className="page" id="main">
@@ -57,7 +58,7 @@ export default function Portfolio({ wallet }: { wallet: Wallet }) {
         <dl className="pf-assets">
           <div><dt><TokenLogo sym="NEAR" />NEAR</dt><dd className="mono">{nearV !== null ? <CountUp value={nearV} digits={4} /> : '…'}</dd><small>{nearV !== null && px ? `$${(nearV * px).toFixed(2)}` : ''}</small></div>
           <div><dt><TokenLogo sym="tUSD" />tUSD</dt><dd className="mono">{usdV !== null ? <CountUp value={usdV} digits={4} /> : '…'}</dd><small>test dollars</small></div>
-          <div><dt><Icon name="lock" size={14} />Behind sealed stops</dt><dd className="mono">{own ? `${lockedNear.toFixed(4)} NEAR` : <Hidden label="owner only" />}</dd><small>{open.length} armed order{open.length === 1 ? '' : 's'}</small></div>
+          <div><dt><Icon name="lock" size={14} />Behind sealed stops</dt><dd className="mono">{own && readable.length ? `${lockedNear.toFixed(4)} NEAR` : <Hidden label={own ? 'other device' : 'owner only'} />}</dd><small>{open.length} armed order{open.length === 1 ? '' : 's'}{own && readable.length < open.length ? ` · ${open.length - readable.length} sealed on another device` : ''}</small></div>
           <div><dt><Icon name="bolt" size={14} />Sold by fires</dt><dd className="mono">{soldNear.toFixed(4)} NEAR</dd><small>→ {received.toFixed(4)} tUSD received</small></div>
         </dl>
       </section>
