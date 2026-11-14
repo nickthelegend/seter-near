@@ -4,13 +4,19 @@
 
 | Suite | Command | Tests | Result |
 | --- | --- | --- | --- |
-| Contract unit | `cargo test --lib` in `packages/contract` | 7 (was 3; adds oracle `PriceData` parsing from the live probe's exact return, and bps agreement) | 7 pass |
-| Contract sandbox (real local nearcore, real `price-oracle` contract v0.7.0 from its public source) | `cargo test --test sandbox` | 4 (was 2) | 4 pass |
+| Contract unit | `cargo test --lib` in `packages/contract` | 7 (was 3; adds oracle `PriceData` parsing from the live probe's exact return, bps agreement, USD trigger parsing and fill price) | 7 pass |
+| Contract sandbox (real local nearcore, real `price-oracle` contract v0.7.0 from its public source) | `cargo test --test sandbox` | 8 (was 4; 14 Nov adds market orders, public orders, OCO pairs and the in-place upgrade from the deployed code) | 8 pass |
 | SDK | `pnpm test:sdk` | 13 (keeper caps updated for the 0.02 NEAR budgeted check and 300 Tgas) | 13 pass |
 | Web typecheck + build | `pnpm build` | 1 | passes |
 | Order page `/order/18` with the new **Second source** row, headless Chrome 1440x900 and 390x844 | `docs/qa-2026-11-14/` | 2 | 0 page errors, no horizontal overflow |
 
 The enclave suite and the enclave build weren't rerun: the enclave is unchanged and its pinned hash `791b4f6c…` is the same on chain.
+
+Order-type sandbox cases added on 14 Nov (all signed transactions on a local chain):
+- `market_orders_fill_now_against_the_pool`: a sell fills at the pool quote (0.1 NEAR → 0.325762 tUSD, price 3.257620); selling more than the vault holds (`ERR_NOT_FILLED`), a bad side (`ERR_SIDE`) and a `min_out` above the quote (`ERR_SLIPPAGE`) are refused; the buy back works.
+- `public_orders_are_readable_and_fire_on_the_checked_price`: the trigger is readable in `get_public_orders`; bad deposit, trigger and condition are refused; a non-owner can't cancel; a check at 3.30 leaves the 3.28 stop open; at 3.27 it is refused while the oracle disagrees (`ERR_SOURCES_DISAGREE`) and fires once it agrees.
+- `oco_pairs_cancel_the_other_leg`: the take-profit leg fires and the stop leg is cancelled in the same transaction with its level never revealed; a report naming both legs executes only the first; cancelling one leg cancels the pair; deposit and same-order checks.
+- `order_types_upgrade_keeps_state`: deploys the exact code that ran on testnet before the upgrade (`tests/fixtures/mienai-testnet-two-source.wasm`), writes orders, balances and keeper budget, upgrades in place, and checks every view is unchanged and the numbering continues.
 
 New sandbox cases (all signed transactions on a local chain):
 - The oracle reads 3.40 while the enclave says 3.49, so the fire is refused with `ERR_SOURCES_DISAGREE` and the order stays armed. A relayer without the 0.01 NEAR fee gets `ERR_ORACLE_FEE`.
