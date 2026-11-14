@@ -1,0 +1,79 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "reason": "deepen the test pool and return its price to the live Coinbase price before filming",
+  "coinbase": {
+    "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+    "price": "3.3215",
+    "trade_id": 36607681,
+    "time": "2026-11-14T09:04:16.330451965Z"
+  },
+  "pool_before": {
+    "near": "9090100000000000000000000",
+    "usd": "27481882"
+  },
+  "pool_after": {
+    "near": "10090100000000000000000000",
+    "usd": "33514267"
+  },
+  "pool_price_before": 3.02327609157215,
+  "pool_price_after": 3.321499985133943,
+  "steps": [
+    {
+      "step": "seed pool: +1 NEAR",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "seed_pool_near",
+      "args": {},
+      "deposit": "1000000000000000000000000",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "EmcMptSsbasMpi8sMqMDMnnTQ8QpsVUEGxtFEzkenVGa",
+      "explorer": "https://testnet.nearblocks.io/txns/EmcMptSsbasMpi8sMqMDMnnTQ8QpsVUEGxtFEzkenVGa",
+      "at": "2026-11-14T09:04:31.835Z",
+      "ok": true,
+      "return": "{\"near\":\"10090100000000000000000000\",\"usd\":\"27481882\"}",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "mint pool tUSD to the issuer",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "mint",
+      "args": {
+        "account_id": "mienai-ad65ebef.testnet",
+        "amount": "6032385"
+      },
+      "deposit": "0",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "GR7y9R5GNDNi8pp9Dv3hk9SM58Ahaa5hgeXWjyLbuq8C",
+      "explorer": "https://testnet.nearblocks.io/txns/GR7y9R5GNDNi8pp9Dv3hk9SM58Ahaa5hgeXWjyLbuq8C",
+      "at": "2026-11-14T09:04:35.372Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_mint\",\"data\":[{\"owner_id\":\"mienai-ad65ebef.testnet\",\"amount\":\"6032385\",\"memo\":\"owner mint\"}]}"
+      ]
+    },
+    {
+      "step": "seed pool: +6.032385 tUSD at Coinbase 3.3215",
+      "receiverId": "mienai-ad65ebef.testnet",
+      "method": "ft_transfer_call",
+      "args": {
+        "receiver_id": "mienai-3013a230.testnet",
+        "amount": "6032385",
+        "msg": "seed"
+      },
+      "deposit": "1",
+      "signer": "mienai-ad65ebef.testnet",
+      "tx": "88JzKSLpqkExPDB17Nc2ZtuQow1kERAFLg4GVCKbZSGe",
+      "explorer": "https://testnet.nearblocks.io/txns/88JzKSLpqkExPDB17Nc2ZtuQow1kERAFLg4GVCKbZSGe",
+      "at": "2026-11-14T09:04:40.223Z",
+      "ok": true,
+      "return": "\"6032385\"",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"mienai-ad65ebef.testnet\",\"new_owner_id\":\"mienai-3013a230.testnet\",\"amount\":\"6032385\"}]}"
+      ]
+    }
+  ]
+}
