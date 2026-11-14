@@ -14,7 +14,7 @@ function describe(r: ApproveRequest): { action: string; rows: [string, string][]
   switch (r.method) {
     case 'place_order': {
       const bytes = Math.floor(String(a.ct ?? '').length * 3 / 4);
-      return { action: 'Seal a stop order', rows: [['Trigger and size', `encrypted, ${bytes}-byte sealed blob`], ['Price in the arguments', 'none']], depositNote: 'storage for the order record' };
+      return { action: 'Seal an order: type, trigger and size encrypted', rows: [['Trigger and size', `encrypted, ${bytes}-byte sealed blob`], ['Price in the arguments', 'none']], depositNote: 'storage for the order record' };
     }
     case 'place_oco': {
       const legs = [a.a, a.b] as { ct?: string }[];
