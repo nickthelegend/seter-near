@@ -60,6 +60,18 @@ const K_KEEPER_BUDGET: &[u8] = b"kb";
 const K_LAST_SECOND: &[u8] = b"lc2";
 const K_RESERVE: &[u8] = b"q";
 const K_FIRE_SECOND: &[u8] = b"x";
+// Order types added on 14 Nov (raw slots, so the deployed state struct is unchanged):
+// public (unsealed) orders, market fills and one-cancels-the-other links between sealed orders.
+const K_PUB_NEXT: &[u8] = b"Pn";
+const K_PUB_OPEN: &[u8] = b"Po";
+const K_PUB: &[u8] = b"Pu";
+const K_PUB_OWNER: &[u8] = b"Pw";
+const K_MKT_NEXT: &[u8] = b"Mn";
+const K_MKT: &[u8] = b"Mk";
+const K_MKT_OWNER: &[u8] = b"Mw";
+const K_OCO: &[u8] = b"Lk";
+const K_OCO_PAIRS: &[u8] = b"Lp";
+pub const MAX_PUBLIC_OPEN: usize = 16;
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Debug, PartialEq)]
@@ -204,6 +216,51 @@ struct BandsBody {
 #[serde(crate = "near_sdk::serde")]
 pub struct Plain { pub v: u8, pub cond: String, pub trigger_e6: u64, pub side: String, pub amount: String, pub salt: String }
 
+/// A public order: the opposite of a sealed one. Its trigger is in the transaction arguments and in
+/// contract state for anyone to read. It exists so the app can show the difference side by side; it
+/// fires on the same enclave-signed, two-source-checked price as sealed orders.
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct PublicOrder {
+    pub id: u64, pub owner: AccountId, pub kind: String, pub cond: String, pub trigger_e6: u64, pub side: String,
+    pub amount: U128, pub created_ns: U64, pub status: OrderStatus, pub fire: Option<PublicFill>,
+}
+
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct PublicFill {
+    pub request: u64, pub path: String, pub price_e6: u64, pub price_ts_ms: u64, pub block_height: U64, pub block_ts: U64,
+    pub filled_in: U128, pub filled_out: U128, pub note: String, pub report_sha256: String,
+}
+
+/// A market order: filled at once against the test pool from the caller's vault balance.
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct MarketFill {
+    pub id: u64, pub owner: AccountId, pub side: String, pub amount_in: U128, pub amount_out: U128, pub price_e6: u64,
+    pub block_height: U64, pub block_ts: U64, pub note: String,
+}
+
+/// One leg of a one-cancels-the-other pair: a sealed order like `place_order` takes.
+#[near(serializers = [json])]
+#[derive(Clone, Debug)]
+pub struct SealedLeg { pub ct: String, pub commit: String, pub view_ct: Option<String> }
+
+/// "3.2800" -> 3_280_000 (USD to micro-USD); at most 6 decimals, greater than zero.
+pub fn parse_usd_e6(s: &str) -> Option<u64> {
+    let (int, frac) = s.split_once('.').unwrap_or((s, ""));
+    if s.ends_with('.') || int.is_empty() || int.len() > 9 || frac.len() > 6 || !int.bytes().all(|b| b.is_ascii_digit()) || !frac.bytes().all(|b| b.is_ascii_digit()) { return None; }
+    let v = int.parse::<u64>().ok()? * 1_000_000 + format!("{frac:0<6}").parse::<u64>().ok()?;
+    (v > 0).then_some(v)
+}
+
+/// Effective price of a pool fill in micro-USD per NEAR (NEAR has 24 decimals, tUSD 6).
+pub fn fill_price_e6(side: &str, amount_in: u128, amount_out: u128) -> u64 {
+    let (usd, near) = if side == "sell" { (amount_out, amount_in) } else { (amount_in, amount_out) };
+    if near == 0 { return 0; }
+    (usd.saturating_mul(1_000_000_000_000_000_000_000_000) / near).min(u64::MAX as u128) as u64
+}
+
 /// Owner-set configuration of the second price source.
 #[near(serializers = [json])]
 #[derive(Clone, Debug, PartialEq)]
@@ -247,9 +304,17 @@ pub fn commitment(owner: &str, plaintext: &str) -> String {
     hex::encode(h.finalize())
 }
 
-pub fn crossed(p: &Plain, price_e6: u64) -> bool {
-    match p.cond.as_str() { "lte" => price_e6 <= p.trigger_e6, "gte" => price_e6 >= p.trigger_e6, _ => false }
+pub fn crossed(p: &Plain, price_e6: u64) -> bool { crossed_at(&p.cond, p.trigger_e6, price_e6) }
+
+pub fn crossed_at(cond: &str, trigger_e6: u64, price_e6: u64) -> bool {
+    match cond { "lte" => price_e6 <= trigger_e6, "gte" => price_e6 >= trigger_e6, _ => false }
 }
+
+fn slot(prefix: &[u8], id: u64) -> Vec<u8> { [prefix, &id.to_le_bytes()].concat() }
+fn owner_slot(prefix: &[u8], owner: &AccountId) -> Vec<u8> { [prefix, owner.as_bytes()].concat() }
+fn read_json<T: near_sdk::serde::de::DeserializeOwned>(key: &[u8]) -> Option<T> { env::storage_read(key).and_then(|raw| serde_json::from_slice(&raw).ok()) }
+fn write_json<T: Serialize>(key: &[u8], v: &T) { env::storage_write(key, serde_json::to_string(v).unwrap().as_bytes()); }
+fn read_u64(key: &[u8]) -> u64 { env::storage_read(key).and_then(|raw| raw.try_into().ok()).map(u64::from_le_bytes).unwrap_or(0) }
 
 fn reserve_key(request: u64) -> Vec<u8> { [K_RESERVE, &request.to_le_bytes()].concat() }
 fn fire_second_key(id: u64) -> Vec<u8> { [K_FIRE_SECOND, &id.to_le_bytes()].concat() }
@@ -328,7 +393,7 @@ impl Mienai {
     pub fn check(&mut self) -> Promise {
         require!(self.tee.get().is_some(), "ERR_NO_ENCLAVE");
         let ids: Vec<u64> = self.open.iter().copied().collect();
-        require!(!ids.is_empty(), "ERR_NOTHING_OPEN");
+        require!(!ids.is_empty() || !self.public_open().is_empty(), "ERR_NOTHING_OPEN");
         let mut deposit = env::attached_deposit();
         if deposit.is_zero() && env::predecessor_account_id() == env::current_account_id() {
             let budget = self.keeper_budget();
@@ -600,10 +665,14 @@ impl Mienai {
             valid.push((item.id, plain, item.pt.clone()));
         }
 
+        // Public orders need no enclave: their triggers are in state, checked against the same signed price.
+        let public_hits: Vec<PublicOrder> = self.public_open().into_iter().filter_map(|id| self.public_get(id))
+            .filter(|o| o.status == OrderStatus::Open && crossed_at(&o.cond, o.trigger_e6, b.price_e6)).collect();
+
         // Second source: no order executes unless OutLayer's oracle agrees with the enclave's price.
         let cfg = self.second_source();
         let mut agreed: Option<(SecondPrice, u64)> = None;
-        if !valid.is_empty() && cfg.enabled {
+        if (!valid.is_empty() || !public_hits.is_empty()) && cfg.enabled {
             let s = match second { None => return Err(NEED_SECOND), Some(r) => r? };
             let d = diff_bps(b.price_e6, s.price_e6);
             if d > cfg.tolerance_bps as u64 { return Err("ERR_SOURCES_DISAGREE"); }
@@ -611,12 +680,14 @@ impl Mienai {
         }
 
         // Every check passed: consume the request, then execute.
-        self.finish(b.request, RequestStatus::Done, &format!("{path}: fired {}", valid.len()));
+        self.finish(b.request, RequestStatus::Done, &format!("{path}: fired {}", valid.len() + public_hits.len()));
         self.checks += 1;
         let report_sha256 = hex::encode(Sha256::digest(body.as_bytes()));
         let mut fired_ids = Vec::new();
         for (id, plain, pt) in valid {
             let mut order = self.orders.get(&id).cloned().unwrap();
+            // Its one-cancels-the-other partner fired earlier in this same report.
+            if order.status != OrderStatus::Open { continue; }
             let (filled_in, filled_out, note) = self.execute(&order.owner, &plain);
             order.status = if filled_out > 0 { OrderStatus::Fired } else { self.unfilled += 1; OrderStatus::Unfilled };
             order.fire = Some(FireRecord {
@@ -629,6 +700,17 @@ impl Mienai {
             self.open.remove(&id);
             self.fired.push(id);
             fired_ids.push(id);
+            self.cancel_partner(id, "partner fired");
+        }
+        let mut public_fired = Vec::new();
+        for mut o in public_hits {
+            let plain = Plain { v: 1, cond: o.cond.clone(), trigger_e6: o.trigger_e6, side: o.side.clone(), amount: o.amount.0.to_string(), salt: String::new() };
+            let (filled_in, filled_out, note) = self.execute(&o.owner, &plain);
+            o.status = if filled_out > 0 { OrderStatus::Fired } else { OrderStatus::Unfilled };
+            o.fire = Some(PublicFill { request: b.request, path: path.to_string(), price_e6: b.price_e6, price_ts_ms: b.price_ts_ms, block_height: U64(env::block_height()), block_ts: U64(env::block_timestamp()), filled_in: U128(filled_in), filled_out: U128(filled_out), note, report_sha256: report_sha256.clone() });
+            write_json(&slot(K_PUB, o.id), &o);
+            self.public_set_open(o.id, false);
+            public_fired.push(o.id);
         }
         let second_json = agreed.as_ref().map(|(s, d)| json!({
             "oracle": cfg.oracle, "asset": cfg.asset, "oracle_price_e6": s.price_e6, "oracle_ts_ns": U64(s.oracle_ts_ns),
@@ -639,7 +721,7 @@ impl Mienai {
             env::storage_write(K_LAST_SECOND, raw.as_bytes());
             for id in &fired_ids { env::storage_write(&fire_second_key(*id), raw.as_bytes()); }
         }
-        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"check","data":[{"request":b.request,"path":path,"price_e6":b.price_e6,"fired":fired_ids,"second_source":second_json}]}));
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"check","data":[{"request":b.request,"path":path,"price_e6":b.price_e6,"fired":fired_ids,"public_fired":public_fired,"second_source":second_json}]}));
         self.last_check = Some(CheckSummary { request: b.request, path: path.to_string(), price_e6: b.price_e6, price_ts_ms: b.price_ts_ms, trade_id: b.trade_id, checked: b.checked, unreadable: b.unreadable, fired: fired_ids.clone(), block_height: U64(env::block_height()), block_ts: U64(env::block_timestamp()), outlayer_request: b.ctx.outlayer_request });
         Ok(fired_ids)
     }
@@ -679,8 +761,31 @@ impl Mienai {
     /// owner sealed to a key that never leaves their device. 0.02 NEAR pays for the record's storage.
     #[payable]
     pub fn place_order(&mut self, ct: String, commit: String, view_ct: Option<String>) -> u64 {
-        require!(self.tee.get().is_some(), "ERR_NO_ENCLAVE");
         require!(env::attached_deposit() >= ORDER_DEPOSIT, "ERR_ORDER_DEPOSIT");
+        self.place_sealed(ct, commit, view_ct)
+    }
+
+    /// Places two sealed orders as one-cancels-the-other: when either fires, the other is cancelled
+    /// in the same transaction, and cancelling either cancels both. Typically a stop below the
+    /// market and a take-profit above it. Both levels stay sealed; only the link between the two
+    /// order numbers is public. 0.04 NEAR pays for both records.
+    #[payable]
+    pub fn place_oco(&mut self, a: SealedLeg, b: SealedLeg) -> Vec<u64> {
+        require!(env::attached_deposit() >= ORDER_DEPOSIT.saturating_mul(2), "ERR_ORDER_DEPOSIT: an OCO pair needs 0.04 NEAR");
+        require!(a.commit != b.commit, "ERR_OCO_SAME_ORDER");
+        let x = self.place_sealed(a.ct, a.commit, a.view_ct);
+        let y = self.place_sealed(b.ct, b.commit, b.view_ct);
+        env::storage_write(&slot(K_OCO, x), &y.to_le_bytes());
+        env::storage_write(&slot(K_OCO, y), &x.to_le_bytes());
+        let mut pairs: Vec<[u64; 2]> = read_json(K_OCO_PAIRS).unwrap_or_default();
+        pairs.push([x, y]);
+        write_json(K_OCO_PAIRS, &pairs);
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"oco_placed","data":[{"ids":[x, y],"owner":env::predecessor_account_id()}]}));
+        vec![x, y]
+    }
+
+    fn place_sealed(&mut self, ct: String, commit: String, view_ct: Option<String>) -> u64 {
+        require!(self.tee.get().is_some(), "ERR_NO_ENCLAVE");
         require!(ct.len() >= 100 && ct.len() <= MAX_CT_LEN && B64.decode(&ct).map(|b| b.first() == Some(&1)).unwrap_or(false), "ERR_CIPHERTEXT");
         require!(is_hex64(&commit), "ERR_COMMITMENT");
         if let Some(v) = &view_ct { require!(v.len() <= MAX_CT_LEN && B64.decode(v).is_ok(), "ERR_VIEW_CIPHERTEXT"); }
@@ -706,6 +811,91 @@ impl Mienai {
         self.open.remove(&id);
         self.cancelled += 1;
         log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"order_cancelled","data":[{"id":id}]}));
+        self.cancel_partner(id, "partner cancelled");
+    }
+
+    /// Cancels the other leg of a one-cancels-the-other pair if it is still armed.
+    fn cancel_partner(&mut self, id: u64, why: &str) {
+        let Some(raw) = env::storage_read(&slot(K_OCO, id)) else { return };
+        let partner = u64::from_le_bytes(raw.try_into().unwrap());
+        let Some(mut p) = self.orders.get(&partner).cloned() else { return };
+        if p.status != OrderStatus::Open { return; }
+        p.status = OrderStatus::Cancelled;
+        self.orders.insert(partner, p);
+        self.open.remove(&partner);
+        self.cancelled += 1;
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"oco_cancelled","data":[{"id":partner,"partner":id,"reason":why}]}));
+    }
+
+    // ---------- public orders and market orders (no seal) ----------
+
+    /// A public (unsealed) order, for comparison with a sealed one: `trigger_usd` ("3.2800") is in
+    /// the transaction arguments, so every explorer, bot and searcher can read it. `kind` is a label
+    /// ("stop", "take_profit" or "limit"); `cond` is "lte" or "gte"; `side` "sell" (amount in yoctoNEAR)
+    /// or "buy" (amount in micro-tUSD). It fires on the same signed, two-source-checked check price.
+    #[payable]
+    pub fn place_public_order(&mut self, kind: String, cond: String, trigger_usd: String, side: String, amount: U128) -> u64 {
+        require!(env::attached_deposit() >= ORDER_DEPOSIT, "ERR_ORDER_DEPOSIT");
+        require!(["stop", "take_profit", "limit"].contains(&kind.as_str()), "ERR_KIND");
+        require!(cond == "lte" || cond == "gte", "ERR_COND");
+        require!(side == "sell" || side == "buy", "ERR_SIDE");
+        require!(amount.0 > 0, "ERR_AMOUNT");
+        let trigger_e6 = parse_usd_e6(&trigger_usd).unwrap_or_else(|| env::panic_str("ERR_TRIGGER"));
+        let open = self.public_open();
+        require!(open.len() < MAX_PUBLIC_OPEN, "ERR_BOOK_FULL");
+        let owner = env::predecessor_account_id();
+        let id = read_u64(K_PUB_NEXT).max(1);
+        env::storage_write(K_PUB_NEXT, &(id + 1).to_le_bytes());
+        write_json(&slot(K_PUB, id), &PublicOrder { id, owner: owner.clone(), kind: kind.clone(), cond: cond.clone(), trigger_e6, side: side.clone(), amount, created_ns: U64(env::block_timestamp()), status: OrderStatus::Open, fire: None });
+        self.public_set_open(id, true);
+        let key = owner_slot(K_PUB_OWNER, &owner);
+        let mut mine: Vec<u64> = read_json(&key).unwrap_or_default();
+        mine.push(id);
+        write_json(&key, &mine);
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"public_order_placed","data":[{"id":id,"owner":owner,"kind":kind,"cond":cond,"trigger_e6":trigger_e6,"side":side,"amount":amount}]}));
+        id
+    }
+
+    pub fn cancel_public_order(&mut self, id: u64) {
+        let mut o = self.public_get(id).unwrap_or_else(|| env::panic_str("ERR_UNKNOWN_ORDER"));
+        require!(o.owner == env::predecessor_account_id(), "ERR_NOT_OWNER");
+        require!(o.status == OrderStatus::Open, "ERR_NOT_OPEN");
+        o.status = OrderStatus::Cancelled;
+        write_json(&slot(K_PUB, id), &o);
+        self.public_set_open(id, false);
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"public_order_cancelled","data":[{"id":id}]}));
+    }
+
+    /// A market order: swaps now against the vault's NEAR/tUSD test pool from the caller's vault
+    /// balance. `side` "sell" spends `amount` yoctoNEAR, "buy" spends `amount` micro-tUSD. Refused
+    /// (nothing changes) if it would receive less than `min_out`. There is no trigger to hide.
+    pub fn market_order(&mut self, side: String, amount: U128, min_out: U128) -> MarketFill {
+        require!(side == "sell" || side == "buy", "ERR_SIDE");
+        let owner = env::predecessor_account_id();
+        let plain = Plain { v: 1, cond: String::new(), trigger_e6: 0, side: side.clone(), amount: amount.0.to_string(), salt: String::new() };
+        let quote = match side.as_str() { "sell" => amm_out(amount.0, self.pool.near.0, self.pool.usd.0), _ => amm_out(amount.0, self.pool.usd.0, self.pool.near.0) };
+        require!(quote >= min_out.0, "ERR_SLIPPAGE: the pool would pay less than min_out");
+        let (filled_in, filled_out, note) = self.execute(&owner, &plain);
+        if filled_out == 0 { env::panic_str(&format!("ERR_NOT_FILLED: {note}")); }
+        let id = read_u64(K_MKT_NEXT).max(1);
+        env::storage_write(K_MKT_NEXT, &(id + 1).to_le_bytes());
+        let fill = MarketFill { id, owner: owner.clone(), side, amount_in: U128(filled_in), amount_out: U128(filled_out), price_e6: fill_price_e6(&plain.side, filled_in, filled_out), block_height: U64(env::block_height()), block_ts: U64(env::block_timestamp()), note };
+        write_json(&slot(K_MKT, id), &fill);
+        let key = owner_slot(K_MKT_OWNER, &owner);
+        let mut mine: Vec<u64> = read_json(&key).unwrap_or_default();
+        mine.push(id);
+        write_json(&key, &mine);
+        log!("EVENT_JSON:{}", json!({"standard":"mienai","version":"1.0.0","event":"market_fill","data":[&fill]}));
+        fill
+    }
+
+    fn public_open(&self) -> Vec<u64> { read_json(K_PUB_OPEN).unwrap_or_default() }
+    fn public_get(&self, id: u64) -> Option<PublicOrder> { read_json(&slot(K_PUB, id)) }
+    fn public_set_open(&mut self, id: u64, open: bool) {
+        let mut ids = self.public_open();
+        ids.retain(|x| *x != id);
+        if open { ids.push(id); }
+        write_json(K_PUB_OPEN, &ids);
     }
 
     // ---------- balances and pool ----------
@@ -808,6 +998,34 @@ impl Mienai {
         env::storage_read(&fire_second_key(id)).and_then(|raw| serde_json::from_slice(&raw).ok())
     }
 
+    /// Public (unsealed) orders, triggers included: what a stop hunter reads.
+    pub fn get_public_orders(&self, from_id: Option<u64>, limit: Option<u64>) -> Vec<PublicOrder> {
+        let from = from_id.unwrap_or(1).max(1);
+        let limit = limit.unwrap_or(50).min(100);
+        (from..read_u64(K_PUB_NEXT).max(1)).take(limit as usize).filter_map(|id| self.public_get(id)).collect()
+    }
+
+    pub fn get_public_order(&self, id: u64) -> Option<PublicOrder> { self.public_get(id) }
+
+    pub fn get_public_orders_of(&self, owner: AccountId) -> Vec<PublicOrder> {
+        read_json::<Vec<u64>>(&owner_slot(K_PUB_OWNER, &owner)).unwrap_or_default().into_iter().filter_map(|id| self.public_get(id)).collect()
+    }
+
+    pub fn get_public_open_ids(&self) -> Vec<u64> { self.public_open() }
+
+    pub fn get_market_fills(&self, from_id: Option<u64>, limit: Option<u64>) -> Vec<MarketFill> {
+        let from = from_id.unwrap_or(1).max(1);
+        let limit = limit.unwrap_or(50).min(100);
+        (from..read_u64(K_MKT_NEXT).max(1)).take(limit as usize).filter_map(|id| read_json(&slot(K_MKT, id))).collect()
+    }
+
+    pub fn get_market_fills_of(&self, owner: AccountId) -> Vec<MarketFill> {
+        read_json::<Vec<u64>>(&owner_slot(K_MKT_OWNER, &owner)).unwrap_or_default().into_iter().filter_map(|id| read_json(&slot(K_MKT, id))).collect()
+    }
+
+    /// Every one-cancels-the-other pair, as [first, second] order numbers.
+    pub fn get_oco_pairs(&self) -> Vec<[u64; 2]> { read_json(K_OCO_PAIRS).unwrap_or_default() }
+
     pub fn get_config(&self) -> Value {
         json!({
             "owner": self.owner, "token": self.token, "outlayer": self.outlayer,
@@ -897,6 +1115,22 @@ mod tests {
         assert_eq!(diff_bps(3_511_400, 3_511_400), 0);
         assert_eq!(diff_bps(3_545_000, 3_500_000), 129);
         assert_eq!(diff_bps(3_535_000, 3_500_000), 100);
+    }
+    #[test]
+    fn usd_triggers_parse_to_micro_usd() {
+        assert_eq!(parse_usd_e6("3.28"), Some(3_280_000));
+        assert_eq!(parse_usd_e6("3.280000"), Some(3_280_000));
+        assert_eq!(parse_usd_e6("3"), Some(3_000_000));
+        assert_eq!(parse_usd_e6("0.000001"), Some(1));
+        for bad in ["", ".5", "3.", "3.1234567", "-3", "3,28", "0", "0.0", "1e3", "3.2.1", "9999999999"] { assert_eq!(parse_usd_e6(bad), None, "{bad}"); }
+    }
+    #[test]
+    fn fill_price_is_tusd_per_near() {
+        // 0.2 NEAR sold for 0.6164 tUSD -> 3.082 USD per NEAR.
+        assert_eq!(fill_price_e6("sell", 200_000_000_000_000_000_000_000, 616_403), 3_082_015);
+        // 1 tUSD spent for 0.3 NEAR -> 3.333333.
+        assert_eq!(fill_price_e6("buy", 1_000_000, 300_000_000_000_000_000_000_000), 3_333_333);
+        assert_eq!(fill_price_e6("sell", 0, 5), 0);
     }
     #[test]
     fn pool_math_charges_the_fee_and_keeps_k() {

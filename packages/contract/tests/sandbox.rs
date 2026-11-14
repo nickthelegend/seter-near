@@ -340,3 +340,183 @@ async fn the_scoped_keeper_key_can_only_run_budgeted_checks() -> anyhow::Result<
     assert!(format!("{other_receiver:?}").contains("ReceiverMismatch"), "{other_receiver:?}");
     Ok(())
 }
+
+/// Liquidity for the order-type tests: 10 NEAR and 33 tUSD (a 3.30 USD pool), and the test enclave key.
+async fn seeded(w: &World) -> anyhow::Result<()> {
+    let keys = TeeKeys { order_pub: B64.encode([9u8; 32]), attest_pub: B64.encode(w.key.verifying_key().to_bytes()), request: 1, set_at_ns: U64(0) };
+    w.worker.patch_state(w.mienai.id(), b"k", &near_sdk::borsh::to_vec(&keys)?).await?;
+    w.owner.call(w.mienai.id(), "seed_pool_near").deposit(NearToken::from_near(10)).transact().await?.into_result()?;
+    w.owner.call(w.token.id(), "mint").args_json(json!({"account_id": w.owner.id(), "amount": "1000000000"})).transact().await?.into_result()?;
+    w.owner.call(w.token.id(), "mint").args_json(json!({"account_id": w.mienai.id(), "amount": "0"})).transact().await?.into_result()?;
+    w.owner.call(w.token.id(), "ft_transfer_call").args_json(json!({"receiver_id": w.mienai.id(), "amount": "33000000", "msg": "seed"})).deposit(NearToken::from_yoctonear(1)).gas(Gas::from_tgas(100)).transact().await?.into_result()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn market_orders_fill_now_against_the_pool() -> anyhow::Result<()> {
+    let w = world().await?;
+    seeded(&w).await?;
+    let alice = w.worker.dev_create_account().await?;
+    alice.call(w.mienai.id(), "deposit_near").deposit(NearToken::from_near(1)).transact().await?.into_result()?;
+    // Selling more than the vault holds, a bad side and a min_out above the quote are all refused.
+    rejected(alice.call(w.mienai.id(), "market_order").args_json(json!({"side": "sell", "amount": (2 * NEAR).to_string(), "min_out": "0"})).transact().await?, "ERR_NOT_FILLED: insufficient NEAR in vault");
+    rejected(alice.call(w.mienai.id(), "market_order").args_json(json!({"side": "short", "amount": "1", "min_out": "0"})).transact().await?, "ERR_SIDE");
+    let quote: String = w.mienai.view("quote").args_json(json!({"side": "sell", "amount": (NEAR / 10).to_string()})).await?.json()?;
+    let q: u128 = quote.parse()?;
+    rejected(alice.call(w.mienai.id(), "market_order").args_json(json!({"side": "sell", "amount": (NEAR / 10).to_string(), "min_out": (q + 1).to_string()})).transact().await?, "ERR_SLIPPAGE");
+    // A real fill at the quote: 0.1 NEAR into a 10 NEAR / 33 tUSD pool, 0.3% fee.
+    let fill: Value = alice.call(w.mienai.id(), "market_order").args_json(json!({"side": "sell", "amount": (NEAR / 10).to_string(), "min_out": q.to_string()})).transact().await?.into_result()?.json()?;
+    assert_eq!(fill["amount_out"], quote);
+    assert_eq!(q, 325_762);
+    assert_eq!(fill["price_e6"], 3_257_620);
+    let bal: Value = w.mienai.view("balance_of").args_json(json!({"account_id": alice.id()})).await?.json()?;
+    assert_eq!(bal["near"], (NEAR * 9 / 10).to_string());
+    assert_eq!(bal["usd"], "325762");
+    // And back: buy NEAR with the tUSD just received.
+    let back: Value = alice.call(w.mienai.id(), "market_order").args_json(json!({"side": "buy", "amount": "325762", "min_out": "1"})).transact().await?.into_result()?.json()?;
+    assert_eq!(back["side"], "buy");
+    let fills: Vec<Value> = w.mienai.view("get_market_fills_of").args_json(json!({"owner": alice.id()})).await?.json()?;
+    assert_eq!(fills.len(), 2);
+    let bal: Value = w.mienai.view("balance_of").args_json(json!({"account_id": alice.id()})).await?.json()?;
+    assert_eq!(bal["usd"], "0");
+    assert!(bal["near"].as_str().unwrap().parse::<u128>()? < NEAR, "two fees were paid to the pool");
+    Ok(())
+}
+
+#[tokio::test]
+async fn public_orders_are_readable_and_fire_on_the_checked_price() -> anyhow::Result<()> {
+    let w = world().await?;
+    seeded(&w).await?;
+    let alice = w.worker.dev_create_account().await?;
+    let mallory = w.worker.dev_create_account().await?;
+    alice.call(w.mienai.id(), "deposit_near").deposit(NearToken::from_near(1)).transact().await?.into_result()?;
+    let place = |trigger: &str| json!({"kind": "stop", "cond": "lte", "trigger_usd": trigger, "side": "sell", "amount": (NEAR / 5).to_string()});
+    rejected(alice.call(w.mienai.id(), "place_public_order").args_json(place("3.28")).deposit(NearToken::from_millinear(1)).transact().await?, "ERR_ORDER_DEPOSIT");
+    rejected(alice.call(w.mienai.id(), "place_public_order").args_json(place("3,28")).deposit(NearToken::from_millinear(20)).transact().await?, "ERR_TRIGGER");
+    rejected(alice.call(w.mienai.id(), "place_public_order").args_json(json!({"kind": "stop", "cond": "eq", "trigger_usd": "3.28", "side": "sell", "amount": "1"})).deposit(NearToken::from_millinear(20)).transact().await?, "ERR_COND");
+    let id: u64 = alice.call(w.mienai.id(), "place_public_order").args_json(place("3.28")).deposit(NearToken::from_millinear(20)).transact().await?.into_result()?.json()?;
+    assert_eq!(id, 1);
+    // Unlike a sealed order, the trigger is in plain view for anyone.
+    let book: Vec<Value> = w.mienai.view("get_public_orders").args_json(json!({})).await?.json()?;
+    assert_eq!(book[0]["trigger_e6"], 3_280_000);
+    assert_eq!(book[0]["cond"], "lte");
+    rejected(mallory.call(w.mienai.id(), "cancel_public_order").args_json(json!({"id": 1})).transact().await?, "ERR_NOT_OWNER");
+
+    // A check runs with only a public order open. At 3.30 nothing crosses; the request is consumed.
+    let r = w.check(&mallory).await?;
+    let now = w.now_ms().await?;
+    let above = w.body(r, 3_300_000, now, json!([]));
+    let out = w.fire(&mallory, &above, &w.sign(&w.key, &above)).await?;
+    assert!(out.is_success(), "{out:?}");
+    let o: Value = w.mienai.view("get_public_order").args_json(json!({"id": 1})).await?.json()?;
+    assert_eq!(o["status"], "Open");
+
+    // At 3.27 it crosses: the same two-source rule applies before it sells.
+    let r = w.check(&mallory).await?;
+    let now = w.now_ms().await?;
+    let below = w.body(r, 3_270_000, now, json!([]));
+    let sig = w.sign(&w.key, &below);
+    w.oracle_price(3_400_000).await?;
+    rejected(w.fire(&mallory, &below, &sig).await?, "ERR_SOURCES_DISAGREE");
+    w.oracle_price(3_272_000).await?;
+    let out = w.fire(&mallory, &below, &sig).await?;
+    assert!(out.is_success(), "{out:?}");
+    let o: Value = w.mienai.view("get_public_order").args_json(json!({"id": 1})).await?.json()?;
+    assert_eq!(o["status"], "Fired");
+    assert_eq!(o["fire"]["price_e6"], 3_270_000);
+    assert_eq!(o["fire"]["filled_in"], (NEAR / 5).to_string());
+    assert!(o["fire"]["filled_out"].as_str().unwrap().parse::<u128>()? > 600_000);
+    assert!(w.mienai.view("get_public_open_ids").await?.json::<Vec<u64>>()?.is_empty());
+    rejected(alice.call(w.mienai.id(), "cancel_public_order").args_json(json!({"id": 1})).transact().await?, "ERR_NOT_OPEN");
+    Ok(())
+}
+
+#[tokio::test]
+async fn oco_pairs_cancel_the_other_leg() -> anyhow::Result<()> {
+    let w = world().await?;
+    seeded(&w).await?;
+    let alice = w.worker.dev_create_account().await?;
+    let mallory = w.worker.dev_create_account().await?;
+    alice.call(w.mienai.id(), "deposit_near").deposit(NearToken::from_near(1)).transact().await?.into_result()?;
+    let stop = plaintext("lte", 3_200_000, "sell", NEAR / 10, "66666666666666666666666666666666");
+    let tp = plaintext("gte", 3_400_000, "sell", NEAR / 10, "77777777777777777777777777777777");
+    let leg = |seed: u8, pt: &str| json!({"ct": blob(seed), "commit": commitment(alice.id().as_str(), pt), "view_ct": null});
+    rejected(alice.call(w.mienai.id(), "place_oco").args_json(json!({"a": leg(1, &stop), "b": leg(2, &tp)})).deposit(NearToken::from_millinear(20)).transact().await?, "ERR_ORDER_DEPOSIT");
+    rejected(alice.call(w.mienai.id(), "place_oco").args_json(json!({"a": leg(1, &stop), "b": leg(2, &stop)})).deposit(NearToken::from_millinear(40)).transact().await?, "ERR_OCO_SAME_ORDER");
+    let ids: Vec<u64> = alice.call(w.mienai.id(), "place_oco").args_json(json!({"a": leg(1, &stop), "b": leg(2, &tp)})).deposit(NearToken::from_millinear(40)).transact().await?.into_result()?.json()?;
+    assert_eq!(ids, vec![1, 2]);
+    assert_eq!(w.mienai.view("get_oco_pairs").await?.json::<Vec<[u64; 2]>>()?, vec![[1, 2]]);
+    // Both legs stay sealed: no level in the public view.
+    let public = w.mienai.view("get_orders").args_json(json!({})).await?.json::<Value>()?.to_string();
+    assert!(!public.contains("3200000") && !public.contains("3400000"));
+
+    // The take-profit crosses at 3.41: it sells, and the stop is cancelled in the same transaction.
+    let r = w.check(&mallory).await?;
+    let now = w.now_ms().await?;
+    let body = w.body(r, 3_410_000, now, json!([{"id": 2, "pt": tp}]));
+    w.oracle_price(3_405_000).await?;
+    let out = w.fire(&mallory, &body, &w.sign(&w.key, &body)).await?;
+    assert!(out.is_success(), "{out:?}");
+    assert!(format!("{:?}", out.logs()).contains("oco_cancelled"));
+    let a: Value = w.mienai.view("get_order").args_json(json!({"id": 1})).await?.json()?;
+    let b: Value = w.mienai.view("get_order").args_json(json!({"id": 2})).await?.json()?;
+    assert_eq!((a["status"].as_str(), b["status"].as_str()), (Some("Cancelled"), Some("Fired")));
+    assert!(a["fire"].is_null(), "the cancelled leg's level is never revealed");
+
+    // A report naming both legs of a pair executes only the first.
+    let stop2 = plaintext("lte", 3_500_000, "sell", NEAR / 10, "88888888888888888888888888888888");
+    let tp2 = plaintext("gte", 3_100_000, "sell", NEAR / 10, "99999999999999999999999999999999");
+    alice.call(w.mienai.id(), "place_oco").args_json(json!({"a": leg(3, &stop2), "b": leg(4, &tp2)})).deposit(NearToken::from_millinear(40)).transact().await?.into_result()?;
+    let r = w.check(&mallory).await?;
+    let now = w.now_ms().await?;
+    let both = w.body(r, 3_300_000, now, json!([{"id": 3, "pt": stop2}, {"id": 4, "pt": tp2}]));
+    w.oracle_price(3_300_000).await?;
+    let out = w.fire(&mallory, &both, &w.sign(&w.key, &both)).await?;
+    assert_eq!(out.json::<Vec<u64>>()?, vec![3]);
+    let d: Value = w.mienai.view("get_order").args_json(json!({"id": 4})).await?.json()?;
+    assert_eq!(d["status"], "Cancelled");
+
+    // Cancelling one leg cancels the pair.
+    let s3 = plaintext("lte", 3_000_000, "sell", NEAR / 10, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    let t3 = plaintext("gte", 3_600_000, "sell", NEAR / 10, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    let ids: Vec<u64> = alice.call(w.mienai.id(), "place_oco").args_json(json!({"a": leg(5, &s3), "b": leg(6, &t3)})).deposit(NearToken::from_millinear(40)).transact().await?.into_result()?.json()?;
+    rejected(mallory.call(w.mienai.id(), "cancel_order").args_json(json!({"id": ids[0]})).transact().await?, "ERR_NOT_OWNER");
+    alice.call(w.mienai.id(), "cancel_order").args_json(json!({"id": ids[0]})).transact().await?.into_result()?;
+    let e: Value = w.mienai.view("get_order").args_json(json!({"id": ids[1]})).await?.json()?;
+    assert_eq!(e["status"], "Cancelled");
+    let stats: Value = w.mienai.view("get_stats").await?.json()?;
+    assert_eq!((stats["open"].as_u64(), stats["fired"].as_u64(), stats["cancelled"].as_u64()), (Some(0), Some(2), Some(4)));
+    Ok(())
+}
+
+#[tokio::test]
+async fn order_types_upgrade_keeps_state() -> anyhow::Result<()> {
+    // The code running on testnet before this upgrade, then an in-place deploy of the new build.
+    let w = world().await?;
+    let old = w.worker.dev_deploy(&std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/mienai-testnet-two-source.wasm"))?).await?;
+    let url = format!("https://test.fastfs.io/{}/outlayer.testnet/{HASH}.wasm", w.owner.id());
+    old.call("new").args_json(json!({"owner_id": w.owner.id(), "token_id": w.token.id(), "outlayer_id": "outlayer.testnet", "enclave_url": url, "enclave_hash": HASH})).transact().await?.into_result()?;
+    let keys = TeeKeys { order_pub: B64.encode([9u8; 32]), attest_pub: B64.encode(w.key.verifying_key().to_bytes()), request: 1, set_at_ns: U64(0) };
+    w.worker.patch_state(old.id(), b"k", &near_sdk::borsh::to_vec(&keys)?).await?;
+    let alice = w.worker.dev_create_account().await?;
+    alice.call(old.id(), "deposit_near").deposit(NearToken::from_near(1)).transact().await?.into_result()?;
+    let pt = plaintext("lte", 3_000_000, "sell", NEAR / 10, "cccccccccccccccccccccccccccccccc");
+    alice.call(old.id(), "place_order").args_json(json!({"ct": blob(1), "commit": commitment(alice.id().as_str(), &pt), "view_ct": blob(2)})).deposit(NearToken::from_millinear(20)).transact().await?.into_result()?;
+    old.call("fund_keeper").deposit(NearToken::from_millinear(50)).transact().await?.into_result()?;
+    let before: Value = old.view("get_stats").await?.json()?;
+    let order_before: Value = old.view("get_order").args_json(json!({"id": 1})).await?.json()?;
+    old.as_account().deploy(&std::fs::read(MIENAI)?).await?.into_result()?;
+    let after: Value = old.view("get_stats").await?.json()?;
+    assert_eq!(before, after);
+    assert_eq!(order_before, old.view("get_order").args_json(json!({"id": 1})).await?.json::<Value>()?);
+    let second: Value = old.view("get_second_source").await?.json()?;
+    assert_eq!(second["keeper_budget"], NearToken::from_millinear(50).as_yoctonear().to_string());
+    // New methods work on the upgraded state, and new sealed orders continue the numbering.
+    assert!(old.view("get_public_orders").args_json(json!({})).await?.json::<Vec<Value>>()?.is_empty());
+    let id: u64 = alice.call(old.id(), "place_order").args_json(json!({"ct": blob(3), "commit": "1".repeat(64), "view_ct": null})).deposit(NearToken::from_millinear(20)).transact().await?.into_result()?.json()?;
+    assert_eq!(id, 2);
+    alice.call(old.id(), "cancel_order").args_json(json!({"id": 1})).transact().await?.into_result()?;
+    let o: Value = old.view("get_order").args_json(json!({"id": 1})).await?.json()?;
+    assert_eq!(o["status"], "Cancelled");
+    Ok(())
+}
