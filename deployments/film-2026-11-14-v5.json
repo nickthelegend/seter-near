@@ -1,1 +1,239 @@
-{ "network": "testnet", "contract": "mienai-3013a230.testnet", "status": "NOT_RUN", "note": "Filled by the v5 film recorder with the transactions approved on camera.", "steps": [] }
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "account": "mienai-4e6b1225.testnet",
+  "status": "PASS",
+  "film": "videos/seter-near/seter-near-film.mp4 (v5)",
+  "note": "Each user transaction was approved on camera in the test wallet sheet and then shown on nearvalidate.org. Off-camera setup: deployments/film-v5-prep-2026-11-14.json.",
+  "level_usd": "3.28",
+  "placement_quote": {
+    "price": "3.3188",
+    "time": "2026-11-14T09:40:11.405685395Z",
+    "trade_id": 36608007
+  },
+  "limit_usd": "3.3686",
+  "tp_usd": "3.4184",
+  "oco_stop_usd": "3.3686",
+  "oco_tp_usd": "3.4184",
+  "public_id": 3,
+  "limit_id": 22,
+  "tp_id": 23,
+  "oco_ids": [
+    24,
+    25
+  ],
+  "market": {
+    "id": 1,
+    "owner": "mienai-4e6b1225.testnet",
+    "side": "sell",
+    "amount_in": "50000000000000000000000",
+    "amount_out": "164762",
+    "price_e6": 3295240,
+    "block_height": "277639669",
+    "block_ts": "1794649213569731142",
+    "note": "sold NEAR for tUSD on the test pool"
+  },
+  "steps": [
+    {
+      "label": "public-stop",
+      "tx": "2uFvSfTiPkMuNzFH9kabYMWctedqEiBQ8yF4VgmLucse",
+      "method": "place_public_order",
+      "deposit": "20000000000000000000000",
+      "at": "2026-11-14T09:39:13.693Z",
+      "balance_before": "6666798262627352299999997",
+      "source": "real app UI, test wallet approval sheet approved on camera",
+      "final": true,
+      "ok": true,
+      "return": "3",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"public_order_placed\",\"data\":[{\"id\":3,\"owner\":\"mienai-4e6b1225.testnet\",\"kind\":\"stop\",\"cond\":\"lte\",\"trigger_e6\":3280000,\"side\":\"sell\",\"amount\":\"200000000000000000000000\"}]}"
+      ],
+      "balance_after": "6646510799021504199999997",
+      "wallet_debit_yocto": "20287463605848100000000"
+    },
+    {
+      "label": "market",
+      "tx": "8HTwn3LHWnqShDXmJZctsV38eM2wtsLcfL2Zh6i5fM94",
+      "method": "market_order",
+      "deposit": "0",
+      "at": "2026-11-14T09:40:12.561Z",
+      "balance_before": "6646510799021504199999997",
+      "source": "real app UI, test wallet approval sheet approved on camera",
+      "final": true,
+      "ok": true,
+      "return": "{\"id\":1,\"owner\":\"mienai-4e6b1225.testnet\",\"side\":\"sell\",\"amount_in\":\"50000000000000000000000\",\"amount_out\":\"164762\",\"price_e6\":3295240,\"block_height\":\"277639669\",\"block_ts\":\"1794649213569731142\",\"note\":\"sold NEAR for tUSD on the test pool\"}",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"market_fill\",\"data\":[{\"id\":1,\"owner\":\"mienai-4e6b1225.testnet\",\"side\":\"sell\",\"amount_in\":\"50000000000000000000000\",\"amount_out\":\"164762\",\"price_e6\":3295240,\"block_height\":\"277639669\",\"block_ts\":\"1794649213569731142\",\"note\":\"sold NEAR for tUSD on the test pool\"}]}"
+      ],
+      "balance_after": "6646229245798430199999997",
+      "wallet_debit_yocto": "281553223074000000000",
+      "fill_id": 1
+    },
+    {
+      "label": "limit",
+      "tx": "9icSTTgrDVCPinJ8ouA3SaLmQf1YLKURxiUjBKHurEoU",
+      "method": "place_order",
+      "deposit": "20000000000000000000000",
+      "at": "2026-11-14T09:40:34.266Z",
+      "balance_before": "6646229245798430199999997",
+      "source": "real app UI, test wallet approval sheet approved on camera",
+      "final": true,
+      "ok": true,
+      "return": "22",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":22,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ],
+      "balance_after": "6625942981109317799999997",
+      "wallet_debit_yocto": "20286264689112400000000"
+    },
+    {
+      "label": "tp",
+      "tx": "5M2Xo8nRud5WjUoUBDbaNVvAePcUdL9PsT3tnjeBz9SY",
+      "method": "place_order",
+      "deposit": "20000000000000000000000",
+      "at": "2026-11-14T09:40:52.521Z",
+      "balance_before": "6625942981109317799999997",
+      "source": "real app UI, test wallet approval sheet approved on camera",
+      "final": true,
+      "ok": true,
+      "return": "23",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":23,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ],
+      "balance_after": "6605655788650581399999997",
+      "wallet_debit_yocto": "20287192458736400000000"
+    },
+    {
+      "label": "oco",
+      "tx": "FxBQp5MRyKTa42A6bYG3BrNW6HBHQZmvMRQuWfsWHExk",
+      "method": "place_oco",
+      "deposit": "40000000000000000000000",
+      "at": "2026-11-14T09:41:13.682Z",
+      "balance_before": "6605655788650581399999997",
+      "source": "real app UI, test wallet approval sheet approved on camera",
+      "final": true,
+      "ok": true,
+      "return": "[24,25]",
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":24,\"owner\":\"mienai-4e6b1225.testnet\"}]}",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":25,\"owner\":\"mienai-4e6b1225.testnet\"}]}",
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"oco_placed\",\"data\":[{\"ids\":[24,25],\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ],
+      "balance_after": "6565255795410660199999997",
+      "wallet_debit_yocto": "40399993239921200000000"
+    }
+  ],
+  "failed_check": {
+    "tx": "Dt6AMdpK32GSDYTCGgmmd3NzFAYgqTr7GJF2XnJd5pWp",
+    "request": 18,
+    "result": "OutLayer: \"Execution promise failed\"; the vault marked request 18 Failed and nothing executed; the keeper budget paid 0.0215 NEAR",
+    "journal": "deployments/keeper/2026-11-14-1794649317321-a47479cd.json"
+  },
+  "keeper": {
+    "tx": "HbFZQWKw22CMTr4ovnZZmui5MCnpgLYdxAZPq2nJQCsu",
+    "journal_file": "2026-11-14-1794651225963-4be8c5fb.json",
+    "note": "the keeper fired 2 on chain; its own poll then hit an RPC 429 before it exited (journal reconciled: final, ok)"
+  },
+  "limit_after": {
+    "id": 22,
+    "owner": "mienai-4e6b1225.testnet",
+    "ct": "ATnb90EoQLun9QrDzXW6R4Pp+XpVJOunM+c7VkgpLyRDiudGhvVHLVoUU5AJWBSAtng0q5a/2ZnfHfWRSl1yur2GJRF+xdc0Xc9DGtE+1fd/GC8OvGa/oSdbUNj/JV4kOszLqtkLpkmeorxHCJnTrDglUWssw5p4PLtri4UcOpg8gIcIqr4EVZVy8TU4I3+3EBBOII7rZUTrC/OgoJARFM3Lc0ydKX5hAAc1utH8B7QCGCFhLwTOuLp7sg==",
+    "commit": "70b9cd54b15dd93ea1fd9a71c1aba4ec46880edc176c5eff40f55d083853997a",
+    "view_ct": "z5Zusx9maqYcDXXTTSXOlk/yDIClZz2muUk1v76W55Nj6vWONE6WrSfuL4T3/qYAbcpMCaZcPp5Q1TZao+dd/UBKu52f8ozS1mYsPQj6FDCmMs+YacROleJYbtxr8CuGjYlVCrZ2fcRGVKX69qFRyQpt/1K73BrulkMrEPAZYESI0jYxF8uECZC/ONR4vMhPUSaxyOWA+CLu8A==",
+    "created_ns": "1794649235595094172",
+    "status": "Fired",
+    "fire": {
+      "request": 19,
+      "path": "callback",
+      "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":3368600,\"side\":\"buy\",\"amount\":\"500000\",\"salt\":\"f917168de253d0571e8f67ae399c715b\"}",
+      "cond": "lte",
+      "trigger_e6": 3368600,
+      "side": "buy",
+      "amount": "500000",
+      "price_e6": 3331000,
+      "price_ts_ms": 1794651293780,
+      "trade_id": 36608494,
+      "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+      "block_height": "277643378",
+      "block_ts": "1794651402476028513",
+      "filled_in": "500000",
+      "filled_out": "149339373177237476773003",
+      "note": "bought NEAR with tUSD on the test pool",
+      "report_sha256": "6a806138899874b9a0f7293a657b97445d855cb098220949e669bbe8b2417ca6",
+      "outlayer_request": "44264"
+    }
+  },
+  "oco_after": [
+    {
+      "id": 24,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "AR7OpKwgyr8J5+jEjjW1ZIHDpc9b32dim40XGESPf3EnskMSw0qXiRCYC0ZLKNd/wASu2rsD1rV9D/1EPrIBVKUAum3qLNH0k4oys8Yz5g3KDmEMKwuKGfeigdU+6F5UbhPYsOl0nTcpmMfGUUR+9Er3uCGTVH4L9n225Fscy6Gn9dGck39wZrQVuZCBpYO37ZYJ9mx/j0wc4HrcZIwcZTD98u5m7qUEog4K0CzvcyK2GHEQ7GmK5K9+ZW8En4xPQH7e0EJxTQwrwWwvfg==",
+      "commit": "d9bca5e3299b590bf38cbbb6e6bfff8756535464b1de85f69f39f73e3254c3df",
+      "view_ct": "xWpsnBXGYB6QAAP62qGXDHhaUjppy5SFoMOsQj3MDGyFsUuHYqciRAejafID1sTSmIhpsKCDzVWLcObO5BvZzunTEwi7h4ANhztMwalhZIB17kwfZkxldK03oQT6Gy4u5uYaQAobeJOAUCrJRoHoz2+yy0MdIOhKZNSCUKSbygzTbc7+A5gEynswOS/THIjnQ0LH8ACPUYgkTVBtg5Cbxs9b7N3LSSMqIV2d0w==",
+      "created_ns": "1794649274813443131",
+      "status": "Fired",
+      "fire": {
+        "request": 19,
+        "path": "callback",
+        "plaintext": "{\"v\":1,\"cond\":\"lte\",\"trigger_e6\":3368600,\"side\":\"sell\",\"amount\":\"50000000000000000000000\",\"salt\":\"d6071b6bfeeab7c8450e6eea4a326e02\"}",
+        "cond": "lte",
+        "trigger_e6": 3368600,
+        "side": "sell",
+        "amount": "50000000000000000000000",
+        "price_e6": 3331000,
+        "price_ts_ms": 1794651293780,
+        "trade_id": 36608494,
+        "source": "https://api.exchange.coinbase.com/products/NEAR-USD/ticker",
+        "block_height": "277643378",
+        "block_ts": "1794651402476028513",
+        "filled_in": "50000000000000000000000",
+        "filled_out": "168057",
+        "note": "sold NEAR for tUSD on the test pool",
+        "report_sha256": "6a806138899874b9a0f7293a657b97445d855cb098220949e669bbe8b2417ca6",
+        "outlayer_request": "44264"
+      }
+    },
+    {
+      "id": 25,
+      "owner": "mienai-4e6b1225.testnet",
+      "ct": "Aa2EcwnLBq/SXPjAw9Ia1qXgtj2PgyfcSx1AOnzLKFMxqGRlV6V9jULCx8KzxxzmAmcQOC8suW3rNJfOTpMhpdTjwErdAubH18mD75cxOjM4GoqF9+9kH+UuOrgAfHBeyUWVzIS7nXiklgWR2LEM9d7E1eoiMhPhVQT/ONqToeppyWz0vetQ7Dj7+CNBl9ZB7e7satp45UX+jTW/LHxserSx5Jkhw1SoAyQfAOBw9xtJFQ5v17s7rW/pXLuiOr35S3ar8elhUegNcIawHg==",
+      "commit": "472e45013a012387e72987fd595ea02ce34043dc4ba316c637ae52e2b5c73afc",
+      "view_ct": "GEWjmdlEoGzV2oXL4ax9RhRrfwIkm8NCNK7aH1saIp8yo23EgTISjzL3xdhXn1h6geQQDFqoHSmE+Rx01fobu/vJSuOv0WNfbGCsVtCLZaJrHkkEs3l8xMydLRyekS/xV9AnjDrqqp52UOfPMgfBqpiNlI9gAUuy/BsFheq6MKkViBXbqeLmY/t3047DLdoJczPD335WffAZkIGx4OXWIzlXXEUbyZxpt4F2QQ==",
+      "created_ns": "1794649274813443131",
+      "status": "Cancelled",
+      "fire": null
+    }
+  ],
+  "tp_after": {
+    "id": 23,
+    "owner": "mienai-4e6b1225.testnet",
+    "ct": "AW0OCL5HUVIoVHUzUwEl63nmFofeHJky6Cs2ntU4IP5PauZZ0n6SLAdr7gNDWwOtTpJyNYPxePOJMFiWZVW1n12C7UoK4tlh1xDMkVo1E/fyb2yW/LKSppRgdBAbVqJ5n+myzbndfTU0nt0OdcIu30Gilx0cmDuyeSQ/ydv56xPw9ZR2lbcaUvFgDxBAbogo42JXkixa0tTOKuWsDCZ5TUadoNtGsFil9T9YsqWvK9wgPuMxm/49/4Goe8NT6ftnR1kCxf3MuAt/kXON+g==",
+    "commit": "64c5ec8a4b95313c8620c58a2bdc3d472baf32c5fd6c30815844574d8904daf2",
+    "view_ct": "qE7eiswn6RfF9/4vTdFpI+SORdCFFZxktVPzW8g7UG4SSAxu/1R9yFeaL5DdElgfKJFWeDFj1onsVMT+MdHh5sZMx9RBVU+hL8V4x0UjnguvUcYq/FQ6G1XoQnVpPxc2h6oggE3gEuyXd4IlfWMFo4ipeP/5yAoi3Dds32fmWE07JhexDs4ZE4VQYQCdcLfpLLm9IeZvxdZkLUoGMLbPyKK/l74psFTQBqLLqg==",
+    "created_ns": "1794649253713303691",
+    "status": "Open",
+    "fire": null
+  },
+  "second_after": {
+    "oracle": "price-oracle.testnet",
+    "asset": "wrap.near",
+    "oracle_price_e6": 3334333,
+    "oracle_ts_ns": "1794651401980395963",
+    "enclave_price_e6": 3331000,
+    "diff_bps": 10,
+    "tolerance_bps": 100,
+    "request": 19,
+    "block_height": "277643378"
+  },
+  "vault_after_fire": {
+    "near": "1789239373177237476773003",
+    "usd": "3243049"
+  },
+  "wallet_before": "6666798262627352299999997",
+  "retakes": [
+    {
+      "at": "2026-11-14T09:48:34.161Z",
+      "reason": "first keeper check: OutLayer execution failed (request 18, tx Dt6AMdpK32GSDYTCGgmmd3NzFAYgqTr7GJF2XnJd5pWp); orders stayed armed"
+    }
+  ]
+}

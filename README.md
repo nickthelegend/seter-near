@@ -88,6 +88,30 @@ Before filming, the trader deposited 0.3 NEAR into its own vault off camera (`de
 
 Before filming, `rebalance-pool.mjs` deepened the test pool (+5 NEAR, +20.13 tUSD) and returned its price to Coinbase 3.5061 (`deployments/pool-rebalance-2026-11-13.json`).
 
+### Order types and public orders (upgrade and film of 14 Nov, `deployments/order-types/`, `deployments/film-2026-11-14-v5.json`)
+
+The vault was upgraded in place again ([Aw5AyCjh…](https://testnet.nearblocks.io/txns/Aw5AyCjhWtvmgASVGrgjQiQtTzUtHqqFCyhY9Ye5Y6aF)): same account, same state, same enclave hash. New storage lives in raw slots, so the deployed state struct is unchanged; `order_types_upgrade_keeps_state` replays the upgrade from the exact previous code. What it adds:
+- **Market orders** (`market_order(side, amount, min_out)`): swap now against the test pool from the vault balance, refused below `min_out`. No trigger, so nothing to seal.
+- **Sealed limit buy**: a sealed order with `side: buy` (spend tUSD when NEAR falls to the limit). No contract change; the enclave already accepted `buy`.
+- **OCO pairs** (`place_oco(a, b)`): two sealed orders in one transaction. When one fires, the other is cancelled in the same transaction, never revealed. Cancelling one cancels both. Only the link between the two order numbers is public.
+- **Public orders, no seal** (`place_public_order(kind, cond, trigger_usd, side, amount)`): for comparison. The trigger is in the arguments and in `get_public_orders`. They fire on the same signed, two-source-checked check price. The book page shows them as a bot reads them, next to the sealed book.
+- Trailing stops are not built: they need state inside the enclave, and changing the enclave changes its keys.
+
+Before filming, the trader deposited 1.5 NEAR into its vault and placed two public and two sealed stops (0.10 and 0.15 NEAR) at $3.28, off camera (`deployments/film-v5-prep-2026-11-14.json`). `rebalance-pool.mjs` returned the pool to Coinbase 3.3215 first (`deployments/pool-rebalance-2026-11-14.json`).
+
+Filmed in the app; each was approved on camera in the test wallet sheet and shown on nearvalidate.org:
+
+| In-app action | Transaction |
+| --- | --- |
+| Public stop P3 (no seal): sell 0.2 NEAR at `"trigger_usd": "3.2800"`, readable in the arguments | [2uFvSfTi…](https://testnet.nearblocks.io/txns/2uFvSfTiPkMuNzFH9kabYMWctedqEiBQ8yF4VgmLucse) |
+| Market sell 0.05 NEAR → 0.164762 tUSD on the test pool | [8HTwn3LH…](https://testnet.nearblocks.io/txns/8HTwn3LHWnqShDXmJZctsV38eM2wtsLcfL2Zh6i5fM94) |
+| Sealed limit buy №22 (spend 0.50 tUSD; limit 3.3686, 1.5% above the market so the next check fills it) | [9icSTTgr…](https://testnet.nearblocks.io/txns/9icSTTgrDVCPinJ8ouA3SaLmQf1YLKURxiUjBKHurEoU) |
+| Sealed take-profit №23 (sell 0.05 NEAR at 3.4184); still armed | [5M2Xo8nR…](https://testnet.nearblocks.io/txns/5M2Xo8nRud5WjUoUBDbaNVvAePcUdL9PsT3tnjeBz9SY) |
+| Sealed OCO pair №24 + №25 (stop 3.3686 just above the market, take-profit 3.4184; 0.05 NEAR each) | [FxBQp5MR…](https://testnet.nearblocks.io/txns/FxBQp5MRyKTa42A6bYG3BrNW6HBHQZmvMRQuWfsWHExk) |
+| **Keeper check (check-only key): enclave 3.3310, `price-oracle.testnet` 3.3343 (10 bps apart). №22 bought 0.149339 NEAR for 0.50 tUSD; №24 sold 0.05 NEAR for 0.168057 tUSD; №25 cancelled in the same transaction, never revealed** | [HbFZQWKw…](https://testnet.nearblocks.io/txns/HbFZQWKw22CMTr4ovnZZmui5MCnpgLYdxAZPq2nJQCsu) |
+
+The first keeper check of that session failed inside OutLayer ([Dt6AMdpK…](https://testnet.nearblocks.io/txns/Dt6AMdpK32GSDYTCGgmmd3NzFAYgqTr7GJF2XnJd5pWp), "Execution promise failed"). The vault marked request 18 Failed and nothing executed; the keeper budget paid 0.0215 NEAR. The film shows the second check.
+
 ## Product and deployment details
 
 Seter (סֵתֶר, Hebrew for "hidden / secret place") was formerly named Mienai. On-chain account IDs keep the old prefix. The `mienai:` domain-separation strings and `@mienai/*` package scopes also stay unchanged because deployed code and builds use them.
@@ -146,7 +170,7 @@ The [11 Nov full-flow check](FLOW-QA.md) adds live deposits, encrypted stop/take
 | `packages/contract` | Rust near-sdk vault: orders, requests, verification, pool, balances. Sandbox tests in `tests/`. |
 | `packages/token` | tUSD test NEP-141 with an hourly faucet. |
 | `packages/sdk` | Sealing, attestation verification, FastFS upload, deploy and run scripts. |
-| `packages/web` | Vite + React app: landing (`/`), trading terminal (`/app`, Lightweight Charts), order pages with the two-views panel (`/order/<id>`), sealed book (`/book`), portfolio (`/portfolio`), activity (`/activity`) and how it works (`/how-it-works`). Live price over the Coinbase WebSocket ticker with REST fallback. |
+| `packages/web` | Vite + React app: landing (`/`), trading terminal (`/app`, Lightweight Charts; market, limit, stop, take-profit and OCO tickets, sealed or public), order pages with the two-views panel (`/order/<id>`), sealed book (`/book`), portfolio (`/portfolio`), activity (`/activity`) and how it works (`/how-it-works`). Live price over the Coinbase WebSocket ticker with REST fallback. |
 | `deployments/` | Deployment and run evidence, including transaction hashes and the verified attestation. |
 | `docs/RESEARCH.md` | OutLayer, price-source and execution research with links. |
 
