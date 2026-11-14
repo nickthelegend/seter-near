@@ -1,0 +1,113 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "at": "2026-11-14T09:04:16.749Z",
+  "steps": [
+    {
+      "step": "upgrade the vault in place: public orders, market orders, OCO pairs",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "DeployContract",
+      "signer": "mienai-3013a230.testnet",
+      "tx": "Aw5AyCjhWtvmgASVGrgjQiQtTzUtHqqFCyhY9Ye5Y6aF",
+      "explorer": "https://testnet.nearblocks.io/txns/Aw5AyCjhWtvmgASVGrgjQiQtTzUtHqqFCyhY9Ye5Y6aF",
+      "at": "2026-11-14T09:04:15.537Z",
+      "ok": true,
+      "return": "",
+      "failure": null,
+      "logs": [],
+      "wasm_sha256": "9bfea11dea1e19d66e5fc29b4cbf2df36b41ff170c8dd577fe5c0de2d89ab9ef",
+      "code_hash_before": "CWaQtZsoHWwL9iaFxUDwe3N9pr8ShJZpSbRniXydjcZD",
+      "code_hash_after": "BVwPYRhv5tYxBUJ5JHRt1KV92z6AAmXYKDGeZTVT5MuQ",
+      "state_preserved": true,
+      "enclave_hash": "791b4f6cab748be35d9f8c46c4df262bc8af13b4ade21a4b7e42c74e14a71386",
+      "stats_before": {
+        "orders_total": 19,
+        "open": 0,
+        "fired": 10,
+        "unfilled": 0,
+        "cancelled": 9,
+        "checks": 13,
+        "rejected_reports": 0,
+        "requests_total": 17,
+        "last_check": {
+          "request": 17,
+          "path": "callback",
+          "price_e6": 3427600,
+          "price_ts_ms": 1794609917076,
+          "trade_id": 36584368,
+          "checked": 2,
+          "unreadable": 0,
+          "fired": [
+            19
+          ],
+          "block_height": "277573360",
+          "block_ts": "1794610004430195338",
+          "outlayer_request": "41241"
+        },
+        "pool": {
+          "near": "9090100000000000000000000",
+          "usd": "27481882"
+        },
+        "bands": {
+          "request": 5,
+          "price_e6": 3579600,
+          "price_ts_ms": 1794245869769,
+          "k": 5,
+          "width_e6": 50000,
+          "bands": "[]",
+          "suppressed": 3,
+          "total": 3,
+          "block_height": "276951815",
+          "outlayer_request": "14964"
+        }
+      },
+      "stats_after": {
+        "orders_total": 19,
+        "open": 0,
+        "fired": 10,
+        "unfilled": 0,
+        "cancelled": 9,
+        "checks": 13,
+        "rejected_reports": 0,
+        "requests_total": 17,
+        "last_check": {
+          "request": 17,
+          "path": "callback",
+          "price_e6": 3427600,
+          "price_ts_ms": 1794609917076,
+          "trade_id": 36584368,
+          "checked": 2,
+          "unreadable": 0,
+          "fired": [
+            19
+          ],
+          "block_height": "277573360",
+          "block_ts": "1794610004430195338",
+          "outlayer_request": "41241"
+        },
+        "pool": {
+          "near": "9090100000000000000000000",
+          "usd": "27481882"
+        },
+        "bands": {
+          "request": 5,
+          "price_e6": 3579600,
+          "price_ts_ms": 1794245869769,
+          "k": 5,
+          "width_e6": 50000,
+          "bands": "[]",
+          "suppressed": 3,
+          "total": 3,
+          "block_height": "276951815",
+          "outlayer_request": "14964"
+        }
+      },
+      "keeper_budget": "150000000000000000000000",
+      "new_views": {
+        "public_orders": [],
+        "market_fills": [],
+        "oco_pairs": []
+      }
+    }
+  ]
+}
