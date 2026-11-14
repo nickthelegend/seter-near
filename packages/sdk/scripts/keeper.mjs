@@ -11,7 +11,12 @@ const RPCS = ['https://test.rpc.fastnear.com', 'https://near-testnet.drpc.org', 
 const rpcUrl = process.env.NEAR_TESTNET_RPC || RPCS[0];
 if (!RPCS.includes(rpcUrl)) throw new Error('Keeper refuses a non-testnet RPC.');
 async function rpc(method, params, url = rpcUrl) {
-  const response = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(8000), headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'seter-keeper', method, params }) });
+  // A busy shared provider answers 429; reads fall over to the next testnet RPC. A broadcast is never re-sent elsewhere.
+  let response;
+  for (const u of method === 'send_tx' ? [url] : [url, ...RPCS.filter((x) => x !== url)]) {
+    response = await fetch(u, { method: 'POST', signal: AbortSignal.timeout(8000), headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'seter-keeper', method, params }) });
+    if (response.status !== 429) break;
+  }
   if (!response.ok) throw new Error(`Testnet RPC HTTP ${response.status}`);
   const json = await response.json();
   if (json.error) throw Object.assign(new Error('Testnet RPC has not confirmed this operation.'), { rejected: /InvalidNonce|Expired|InvalidSignature|NotEnoughBalance/.test(JSON.stringify(json.error)) });
