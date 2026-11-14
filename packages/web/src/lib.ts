@@ -4,6 +4,8 @@ import enclaveUpload from '../../../deployments/enclave-fastfs.json';
 import book from '../../../deployments/book-2026-11-09.json';
 import qa from '../../../deployments/flow-qa-2026-11-11.json';
 import film from '../../../deployments/film-2026-11-13.json';
+import film4 from '../../../deployments/film-2026-11-14-v4.json';
+import film5 from '../../../deployments/film-2026-11-14-v5.json';
 import { readReceipts } from './receipts';
 
 export const CONTRACT: string = import.meta.env.VITE_MIENAI_CONTRACT || deployment.contract_id;
@@ -26,6 +28,20 @@ export type Config = { owner: string; token: string; outlayer: string; enclave_u
 export type CheckSummary = { request: number; path: string; price_e6: number; price_ts_ms: number; trade_id: number; checked: number; unreadable: number; fired: number[]; block_height: string; block_ts: string; outlayer_request: string };
 export type Stats = { orders_total: number; open: number; fired: number; unfilled: number; cancelled: number; checks: number; rejected_reports: number; requests_total: number; last_check: CheckSummary | null; pool: { near: string; usd: string }; bands: null | { request: number; price_e6: number; k: number; width_e6: number; bands: string; suppressed: number; total: number; block_height: string } };
 export type Balance = { near: string; usd: string };
+/** A public (unsealed) order: its trigger is in the transaction arguments and in contract state. */
+export type PublicFill = { request: number; path: string; price_e6: number; price_ts_ms: number; block_height: string; block_ts: string; filled_in: string; filled_out: string; note: string; report_sha256: string };
+export type PublicOrder = { id: number; owner: string; kind: 'stop' | 'take_profit' | 'limit'; cond: 'lte' | 'gte'; trigger_e6: number; side: 'sell' | 'buy'; amount: string; created_ns: string; status: Order['status']; fire: PublicFill | null };
+/** A market order, filled at once against the vault's test pool. */
+export type MarketFill = { id: number; owner: string; side: 'sell' | 'buy'; amount_in: string; amount_out: string; price_e6: number; block_height: string; block_ts: string; note: string };
+
+/** Plain words for an order from its condition and side (sealed orders carry these inside the ciphertext). */
+export function orderType(cond: string, side = 'sell'): string {
+  if (side === 'buy') return cond === 'lte' ? 'limit buy' : 'stop buy';
+  return cond === 'lte' ? 'stop' : 'take-profit';
+}
+export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** Size in the unit the order spends: NEAR for a sell, tUSD for a buy. */
+export const orderSize = (amount: string, side = 'sell', digits = 2) => side === 'buy' ? `${usd6(amount, 2)} tUSD` : `${near(amount, digits)} NEAR`;
 
 /** FastNEAR first; a 429 from it carries no CORS header and surfaces as a network error, so fall over to the next RPC. */
 export const RPCS = [RPC, 'https://near-testnet.drpc.org', 'https://rpc.testnet.near.org'];
@@ -132,8 +148,10 @@ export type Request = { id: number; kind: 'Keys' | 'Check' | 'Bands'; caller: st
 export const OUTLAYER_API = 'https://testnet-api.outlayer.ai';
 /** Recorded transaction for a step, found in the run or book records. */
 type RecStep = { step: string; tx?: string; at?: string; method?: string; return?: string | null; args?: unknown; last_check?: CheckSummary; attestation?: Attestation };
-const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((qa as unknown as { steps: RecStep[] }).steps ?? []), ...((film as unknown as { steps: RecStep[] }).steps ?? [])];
+const allSteps = [...((deployment as unknown as { steps: RecStep[] }).steps ?? []), ...((run as unknown as { steps: RecStep[] }).steps ?? []), ...((qa as unknown as { steps: RecStep[] }).steps ?? []), ...((film as unknown as { steps: RecStep[] }).steps ?? []), ...((film4 as unknown as { steps: RecStep[] }).steps ?? []), ...((film5 as unknown as { steps: RecStep[] }).steps ?? [])];
 export const txForOrder = (id: number) => readReceipts(CONTRACT).find((r) => r.method === 'place_order' && r.order === id)?.tx ?? allSteps.find((s) => s.method === 'place_order' && s.return === String(id))?.tx;
+export const txForPublic = (id: number) => readReceipts(CONTRACT).find((r) => r.method === 'place_public_order' && r.order === id)?.tx ?? allSteps.find((s) => s.method === 'place_public_order' && s.return === String(id))?.tx;
+export const txForMarket = (id: number) => readReceipts(CONTRACT).find((r) => r.method === 'market_order' && r.order === id)?.tx ?? allSteps.find((s) => s.method === 'market_order' && (s as { fill_id?: number }).fill_id === id)?.tx;
 export const txForRequest = (request: number) => readReceipts(CONTRACT).find((r) => r.method === 'check' && r.request === request)?.tx ?? allSteps.find((s) => s.last_check?.request === request)?.tx;
 export const attestationFor = (request: number) => allSteps.find((s) => s.last_check?.request === request)?.attestation ?? null;
 

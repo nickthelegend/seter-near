@@ -16,6 +16,19 @@ function describe(r: ApproveRequest): { action: string; rows: [string, string][]
       const bytes = Math.floor(String(a.ct ?? '').length * 3 / 4);
       return { action: 'Seal a stop order', rows: [['Trigger and size', `encrypted, ${bytes}-byte sealed blob`], ['Price in the arguments', 'none']], depositNote: 'storage for the order record' };
     }
+    case 'place_oco': {
+      const legs = [a.a, a.b] as { ct?: string }[];
+      return { action: 'Seal an OCO pair (stop + take-profit)', rows: [['Orders', 'two, linked: one cancels the other'], ['Triggers and sizes', `encrypted, two ${Math.floor(String(legs[0]?.ct ?? '').length * 3 / 4)}-byte sealed blobs`], ['Price in the arguments', 'none']], depositNote: 'storage for two order records' };
+    }
+    case 'place_public_order': {
+      const buy = a.side === 'buy';
+      return { action: `Place a public ${String(a.kind).replace('_', '-')} (no seal)`, rows: [['Trigger', `${a.trigger_usd} USD · in plain text`], ['Size', buy ? `${(Number(a.amount ?? 0) / 1e6).toFixed(2)} tUSD` : `${near(String(a.amount ?? '0'), 2)} NEAR`], ['Readable by', 'anyone: explorers, bots, searchers']], depositNote: 'storage for the order record' };
+    }
+    case 'cancel_public_order': return { action: `Cancel public order P${a.id}`, rows: [['Order', `P${a.id}`]], depositNote: '' };
+    case 'market_order': {
+      const sell = a.side === 'sell';
+      return { action: `Market ${sell ? 'sell' : 'buy'}: fill now`, rows: [['Spend', sell ? `${near(String(a.amount ?? '0'), 4)} NEAR` : `${(Number(a.amount ?? 0) / 1e6).toFixed(4)} tUSD`], ['Receive at least', sell ? `${(Number(a.min_out ?? 0) / 1e6).toFixed(4)} tUSD` : `${near(String(a.min_out ?? '0'), 4)} NEAR`], ['Trigger', 'none: fills against the test pool now']], depositNote: '' };
+    }
     case 'cancel_order': return { action: `Cancel order №${a.id}`, rows: [['Order', `№${a.id}`], ['Trigger after cancel', 'never published']], depositNote: '' };
     case 'check': return { action: 'Pay for an enclave check', rows: [['Orders checked', 'every open order']], depositNote: 'enclave run and price oracle' };
     case 'deposit_near': return { action: 'Deposit NEAR into your vault', rows: [], depositNote: 'moves into your vault' };
@@ -39,7 +52,7 @@ function ApproveSheet({ req, onDone }: { req: ApproveRequest; onDone: (ok: boole
       <button className="icon-btn" onClick={() => onDone(false)} aria-label="Reject and close"><Icon name="x" /></button>
     </header>
     <div className="ap-head">
-      <span className="ap-icon" aria-hidden="true"><Icon name={req.method === 'cancel_order' ? 'ban' : req.method === 'place_order' ? 'lock' : 'bolt'} /></span>
+      <span className="ap-icon" aria-hidden="true"><Icon name={req.method.startsWith('cancel') ? 'ban' : req.method === 'place_order' || req.method === 'place_oco' ? 'lock' : req.method === 'place_public_order' ? 'eye' : 'bolt'} /></span>
       <div><h2 className="sheet-title">Approve transaction</h2><p className="ap-action">{d.action}</p></div>
     </div>
     <dl className="receipt ap-receipt">
@@ -52,6 +65,8 @@ function ApproveSheet({ req, onDone }: { req: ApproveRequest; onDone: (ok: boole
       <div><dt>Gas limit<small>unused gas is refunded</small></dt><dd>{(req.gas / 10n ** 12n).toString()} Tgas</dd></div>
     </dl>
     {req.method === 'place_order' && <code className="cipher cipher-block ap-cipher">{short(String(req.args.ct ?? ''), 220)}</code>}
+    {req.method === 'place_oco' && <code className="cipher cipher-block ap-cipher">{short(String((req.args.a as { ct?: string })?.ct ?? ''), 104)}{'\n'}{short(String((req.args.b as { ct?: string })?.ct ?? ''), 104)}</code>}
+    {req.method === 'place_public_order' && <pre className="plain-args ap-plain" aria-label="Arguments as they will appear on chain">{JSON.stringify(req.args, null, 1).split('\n').map((l, i) => <span key={i}>{l.includes('trigger_usd') ? <mark>{l}</mark> : l}{'\n'}</span>)}</pre>}
     <div className="ap-actions">
       <button className="btn btn-ghost" onClick={() => onDone(false)}>Reject</button>
       <button ref={approveRef} className="btn btn-primary" onClick={() => onDone(true)}>Approve</button>

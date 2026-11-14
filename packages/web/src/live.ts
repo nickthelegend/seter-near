@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CONTRACT, fetchQuote, rpcRead, view, ticker, type Balance, type Config, type LiveQuote, type Order, type Request, type Stats, type Ticker } from './lib';
+import { CONTRACT, fetchQuote, rpcRead, view, ticker, type Balance, type Config, type LiveQuote, type MarketFill, type Order, type PublicOrder, type Request, type Stats, type Ticker } from './lib';
 import { TRANSACTION_EVENT } from './receipts';
 
 export type Loadable<T> = { data: T | null; error: string; loading: boolean };
@@ -37,6 +37,10 @@ export const useFired = () => usePoll<Order[]>(() => view('get_fired', {}), 20_0
 export const useTicker = () => usePoll<Ticker>(ticker, 10_000);
 export const useBalance = (account: string) => usePoll<Balance | null>(() => (account ? view('balance_of', { account_id: account }) : Promise.resolve(null)), 15_000, [account]);
 export const useMine = (account: string) => usePoll<Order[] | null>(() => (account ? view('get_orders_of', { owner: account }) : Promise.resolve(null)), 15_000, [account]);
+/** Public (unsealed) orders, all accounts or one; market fills; one-cancels-the-other pairs (14 Nov upgrade). */
+export const usePublicOrders = (account = '') => usePoll<PublicOrder[]>(() => (account ? view('get_public_orders_of', { owner: account }) : view('get_public_orders', { limit: 100 })), 15_000, [account]);
+export const useMarketFills = (account = '') => usePoll<MarketFill[]>(() => (account ? view('get_market_fills_of', { owner: account }) : view('get_market_fills', { limit: 100 })), 15_000, [account]);
+export const useOcoPairs = () => usePoll<[number, number][]>(() => view('get_oco_pairs'), 15_000);
 /** Every OutLayer request the contract has issued (keys, checks, band reports). */
 export const useRequests = (total: number | undefined) => usePoll<Request[] | null>(async () => {
   if (total === undefined) return null;

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { openView, orderPlaintext, sealToEnclave, commitment, newViewKey, sealView } from '@mienai/sdk/crypto';
-import { CONTRACT, OUTLAYER_API, accountUrl, ago, buildLog, e6, enclaveUpload, near, nsToMs, outlayerRuns, short, shortAccount, toYocto, txForRequest, usd6, view, type Balance, type Config, type LogEvent, type Order, type OutlayerRun, type Stats } from './lib';
-import { useBalance, useConfig, useKeeper, useMedia, useMine, useOrders, usePoll, useQuote, useRequests, useStats, useTicker } from './live';
+import { openView } from '@mienai/sdk/crypto';
+import OrderTicket from './OrderTicket';
+import { CONTRACT, OUTLAYER_API, accountUrl, ago, buildLog, e6, enclaveUpload, near, nsToMs, orderSize, orderType, outlayerRuns, short, shortAccount, toYocto, txForMarket, txForPublic, txForRequest, usd6, type Balance, type Config, type LogEvent, type MarketFill, type Order, type OutlayerRun, type PublicOrder, type Stats } from './lib';
+import { useBalance, useConfig, useKeeper, useMarketFills, useMedia, useMine, useOcoPairs, useOrders, usePublicOrders, useQuote, useRequests, useStats, useTicker } from './live';
 import { GRANULARITY, useCandles, useStats24h, type Tf } from './market';
 import Chart, { type ChartMark } from './Chart';
 import { Icon, Link, State, Tx, Wordmark, shortHex } from './ui';
+export { orderType };
 import { VaultSheet, viewKeyFor } from './Sheets';
 import type { Wallet } from './wallet';
 import { art } from './art';
@@ -89,7 +91,8 @@ function ChartPanel({ stats, fired, requestsLog }: { stats: Stats | null; fired:
 }
 
 /* ---------------- sealed book ---------------- */
-function SealedBook({ orders, error, stats, last }: { orders: Order[] | null; error: string; stats: Stats | null; last: number | null }) {
+function SealedBook({ orders, error, stats, last, pub }: { orders: Order[] | null; error: string; stats: Stats | null; last: number | null; pub: PublicOrder[] }) {
+  const pubOpen = pub.filter((o) => o.status === 'Open').sort((a, b) => b.trigger_e6 - a.trigger_e6);
   const armed = (orders ?? []).filter((o) => o.status === 'Open').sort((a, b) => b.id - a.id);
   const revealed = (orders ?? []).filter((o) => o.fire).sort((a, b) => b.id - a.id);
   const b = stats?.bands;
@@ -99,6 +102,8 @@ function SealedBook({ orders, error, stats, last }: { orders: Order[] | null; er
     {!orders ? <p className="book-empty dim" role={error ? 'alert' : 'status'}>{error || 'Loading…'}</p> : <>
       <ul className="book-rows">{armed.length ? armed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span><Hidden label="" /></span><span><Hidden label="" /></span><span className="mono dim">{ago(nsToMs(o.created_ns))}</span></Link></li>) : <li className="book-empty dim">No armed orders</li>}</ul>
       <div className="book-mid"><b className="mono">{last ? last.toFixed(4) : '…'}</b><span>Coinbase last · {armed.length} sealed level{armed.length === 1 ? '' : 's'} around it</span></div>
+      {pubOpen.length > 0 && <><p className="book-sub book-sub-pub mono">Public orders · no seal · readable</p>
+      <ul className="book-rows book-pub">{pubOpen.map((o) => <li key={`p${o.id}`}><a href={txForPublic(o.id) ? `https://testnet.nearblocks.io/txns/${txForPublic(o.id)}` : '/book#hunter'}><span className="mono pub-trig">{e6(o.trigger_e6)}</span><span className="mono">{orderSize(o.amount, o.side)}</span><span className="mono dim">{ago(nsToMs(o.created_ns))}</span></a></li>)}</ul></>}
       <p className="book-sub mono">Revealed after firing</p>
       <ul className="book-rows">{revealed.length ? revealed.map((o) => <li key={o.id}><Link to={`/order/${o.id}`}><span className="mono gold">{e6(o.fire!.trigger_e6)}</span><span className="mono">{near(o.fire!.amount, 2)}</span><span className="mono dim">{ago(nsToMs(o.fire!.block_ts))}</span></Link></li>) : <li className="book-empty dim">Nothing fired yet</li>}</ul>
     </>}
@@ -110,104 +115,15 @@ function SealedBook({ orders, error, stats, last }: { orders: Order[] | null; er
 }
 
 /* ---------------- order panel ---------------- */
-type Kind = 'market' | 'limit' | 'stop' | 'tp';
 function OrderPanel({ wallet, config, configError, balance, stats, onVault }: { wallet: Wallet; config: Config | null; configError: string; balance: Balance | null; stats: Stats | null; onVault: () => void }) {
-  const t = useTicker();
-  const price = t.data ? Number(t.data.price) : null;
-  const [kind, setKind] = useState<Kind>('stop');
-  const [trigger, setTrigger] = useState('');
-  const [size, setSize] = useState('0.5');
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(false);
-  const initialTrigger = useRef(false);
-  const pending = useRef(false);
-  const cond = kind === 'tp' ? 'gte' : 'lte';
-  useEffect(() => { if (price && !initialTrigger.current) { initialTrigger.current = true; setTrigger((price * 0.97).toFixed(4)); } }, [price]);
-  const pick = (k: Kind) => { setKind(k); setErr(''); if (price && (k === 'stop' || k === 'tp')) setTrigger((price * (k === 'stop' ? 0.97 : 1.03)).toFixed(4)); };
-  const owner = wallet.account || 'your-account.testnet';
-  const valid = /^\d+(\.\d+)?$/.test(trigger) && /^\d+(\.\d+)?$/.test(size) && Number.isFinite(Number(trigger)) && Number.isFinite(Number(size)) && Number(trigger) > 0 && Number(size) > 0;
-  const preview = useMemo(() => {
-    if (!config?.tee || !valid || (kind !== 'stop' && kind !== 'tp')) return null;
-    try {
-      const amount = toYocto(size);
-      if (BigInt(amount) > (1n << 128n) - 1n) return null;
-      const pt = orderPlaintext({ cond, triggerUsd: trigger, side: 'sell', amount });
-      return { pt, ct: sealToEnclave(config.tee.order_pub, owner, pt) as string, commit: commitment(owner, pt) as string };
-    } catch { return null; }
-  }, [config, cond, trigger, size, owner, valid, kind]);
-  const poolQuote = usePoll<string | null>(() => preview ? view('quote', { side: 'sell', amount: toYocto(size) }) : Promise.resolve(null), 15_000, [size, Boolean(preview), stats?.pool.near, stats?.pool.usd]);
-  const dist = price && Number(trigger) > 0 ? (Number(trigger) / price - 1) * 100 : null;
-  const wrong = dist !== null && ((cond === 'lte' && dist >= 0) || (cond === 'gte' && dist <= 0));
-  const availNear = balance ? Number(BigInt(balance.near) / 10n ** 18n) / 1e6 : null;
-  const nudge = (d: number) => { const v = Number(trigger) || price || 0; setTrigger(Math.max(0.0001, v * (1 + d)).toFixed(4)); };
-  async function place() {
-    if (!preview || !wallet.account || pending.current) return;
-    if (!balance) { setErr('Wait for your vault balance to load, then try again.'); return; }
-    if (BigInt(toYocto(size)) > BigInt(balance.near)) { setErr('Deposit enough NEAR in your vault before sealing this order.'); return; }
-    pending.current = true;
-    setErr(''); setBusy(true);
-    try {
-      let key = viewKeyFor(wallet.account);
-      if (!key) {
-        key = newViewKey();
-        try { localStorage.setItem(`mienai:view:${wallet.account}`, key); }
-        catch { throw new Error('Allow browser storage before sealing, so you can read your own order levels.'); }
-      }
-      await wallet.call('place_order', { ct: preview.ct, commit: preview.commit, view_ct: sealView(key, wallet.account, preview.pt) }, toYocto('0.02'), 30);
-    } catch (e) { setErr((e as Error).message); } finally { pending.current = false; setBusy(false); }
-  }
-  const sealed = kind === 'stop' || kind === 'tp';
-  return <aside className="pnl form" aria-label="Order panel">
-    <div className="otabs" role="tablist" aria-label="Order type">
-      {([['market', 'Market'], ['limit', 'Limit'], ['stop', 'Sealed stop'], ['tp', 'Sealed take-profit']] as [Kind, string][]).map(([k, l]) => <button key={k} role="tab" aria-selected={kind === k} className={`${kind === k ? 'on' : ''}${k === 'stop' || k === 'tp' ? ' sealed' : ''}`} onClick={() => pick(k)}>{(k === 'stop' || k === 'tp') && <Icon name="lock" size={12} />}{l}</button>)}
-    </div>
-    {!sealed ? <div className="form-body">
-      <div className="notice">
-        <h3>{kind === 'market' ? 'Market orders' : 'Limit orders'} are not offered here</h3>
-        <p>A {kind} order shows its price to everyone before it fills, which is exactly what stop hunters read. Seter only takes sealed orders: a stop or take-profit whose trigger stays encrypted until the enclave fires it, then settles on the vault’s NEAR / tUSD test pool.</p>
-        <button className="btn btn-primary btn-block" onClick={() => pick(kind === 'limit' ? 'tp' : 'stop')}><Icon name="lock" size={15} />Use a sealed {kind === 'limit' ? 'take-profit' : 'stop'}</button>
-      </div>
-    </div> : <div className="form-body">
-      <div className="side-row"><span className="side-chip"><span>Sell <WithLogo sym="NEAR">NEAR</WithLogo> → <WithLogo sym="tUSD">tUSD</WithLogo></span></span><span className="dim small">{kind === 'stop' ? 'fires if price ≤ trigger' : 'fires if price ≥ trigger'}</span></div>
-      <div className="frow"><span>Available</span><b className="mono">{wallet.account ? (availNear !== null ? <WithLogo sym="NEAR">{availNear.toFixed(4)} NEAR</WithLogo> : '…') : 'Connect to see'}</b></div>
-      {!config ? <State kind={configError ? 'error' : 'loading'} art={configError ? 'warning' : undefined} title={configError ? 'Could not read the enclave key' : 'Reading the enclave key…'}>{configError}</State>
-        : !config.tee ? <State kind="setup" art="lock" title="Setup required: enclave keys">The enclave has not published its keys yet (owner runs refresh_keys).</State>
-        : <>
-          <label className="fld">
-            <span>Trigger price</span>
-            <div className="fld-in"><button type="button" className="step" onClick={() => nudge(-0.005)} aria-label="Lower the trigger by 0.5%">−</button><input inputMode="decimal" value={trigger} onChange={(e) => { initialTrigger.current = true; setTrigger(e.target.value.trim()); }} aria-label="Trigger price in USD per NEAR" /><em><WithLogo sym="USD">USD</WithLogo></em><button type="button" className="step" onClick={() => nudge(0.005)} aria-label="Raise the trigger by 0.5%">+</button></div>
-            <small className={wrong ? 'warn' : ''}>{dist === null ? 'Live price loading' : <>{Math.abs(dist).toFixed(2)}% {dist < 0 ? 'below' : 'above'} last {price!.toFixed(4)}{wrong ? ' · would fire on the next check' : ''}</>}</small>
-          </label>
-          <label className="fld">
-            <span>Amount</span>
-            <div className="fld-in"><input inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value.trim())} aria-label="Amount of NEAR to sell" /><em><WithLogo sym="NEAR">NEAR</WithLogo></em></div>
-          </label>
-          <div className="pcts">{[25, 50, 75, 100].map((p) => <button key={p} type="button" disabled={!availNear} onClick={() => availNear && setSize((availNear * p / 100).toFixed(4))}>{p === 100 ? 'Max' : `${p}%`}</button>)}</div>
-          <div className="chain-sees">
-            <div className="cs-head"><span>Chain sees</span>{preview ? <span className="cs-badge"><Icon name="lock" size={11} />ciphertext · {preview.ct.length} chars</span> : null}</div>
-            {preview ? <code className="cipher">{preview.ct.slice(0, 92)}<span>{preview.ct.slice(92, 124)}</span></code> : <p className="dim small">Enter a trigger and amount.</p>}
-            <div className="cs-you"><span>You see</span><b className="mono">{cond === 'lte' ? '≤' : '≥'} {valid ? Number(trigger).toFixed(4) : '—'} · {valid ? Number(size) : '—'} NEAR</b></div>
-          </div>
-          <dl className="summ">
-            <div><dt>Current pool quote</dt><dd className="mono">{!preview ? '—' : poolQuote.data ? <WithLogo sym="tUSD">{usd6(poolQuote.data)} tUSD</WithLogo> : poolQuote.error ? 'unavailable' : '…'}</dd></div>
-            <div><dt>Pool fee</dt><dd className="mono">{config.fee_bps / 100}%</dd></div>
-            <div><dt>Storage deposit</dt><dd className="mono"><WithLogo sym="NEAR">0.02 NEAR</WithLogo></dd></div>
-            <div><dt>Max price age</dt><dd className="mono">{config.max_price_age_s} s</dd></div>
-          </dl>
-          {err && <p className="sheet-err" role="alert">{err}</p>}
-          {wallet.account
-            ? <button className="btn btn-primary btn-block btn-lg" disabled={!preview || busy} onClick={place}>{busy ? 'Opening wallet…' : <><Icon name="lock" size={16} />Seal {kind === 'stop' ? 'stop' : 'take-profit'} order</>}</button>
-            : <button className="btn btn-primary btn-block btn-lg" onClick={wallet.connect} disabled={!wallet.ready}>Connect wallet to seal</button>}
-          <p className="form-note">Encrypted in your browser to the enclave’s X25519 key. The contract stores ciphertext and a commitment; owner, time and status are public.</p>
-        </>}
-    </div>}
+  return <OrderTicket wallet={wallet} config={config} configError={configError} balance={balance} stats={stats}>
     <div className="vault-box">
       <div className="vb-head"><span>Vault</span>{wallet.account ? <button className="link" onClick={onVault}>Deposit · Withdraw</button> : <button className="link" onClick={wallet.connect} disabled={!wallet.ready}>Connect</button>}</div>
       <div className="frow"><span><WithLogo sym="NEAR">NEAR</WithLogo></span><b className="mono">{wallet.account ? (balance ? near(balance.near) : '…') : '—'}</b></div>
       <div className="frow"><span><WithLogo sym="tUSD">tUSD</WithLogo> <small className="dim">test token</small></span><b className="mono">{wallet.account ? (balance ? usd6(balance.usd) : '…') : '—'}</b></div>
     </div>
     <EnclaveBox config={config} stats={stats} wallet={wallet} />
-  </aside>;
+  </OrderTicket>;
 }
 
 function EnclaveBox({ config, stats, wallet }: { config: Config | null; stats: Stats | null; wallet: Wallet }) {
@@ -239,7 +155,9 @@ function EnclaveBox({ config, stats, wallet }: { config: Config | null; stats: S
 
 /* ---------------- bottom panel ---------------- */
 type Tab = 'open' | 'history' | 'log' | 'att';
-function typeLabel(p: Plain | null) { return p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'; }
+function typeLabel(p: Plain | null) { return p ? `Sealed ${orderType(p.cond, p.side)}` : 'Sealed'; }
+const OcoChip = ({ partner }: { partner?: number }) => partner ? <small className="oco-chip" title="One cancels the other">OCO ↔ №{partner}</small> : null;
+const PubChip = () => <small className="pub-chip"><Icon name="eye" size={10} />no seal</small>;
 
 function AttRow({ r }: { r: OutlayerRun }) {
   const q = useQuote(r.tx);
@@ -253,7 +171,7 @@ function AttRow({ r }: { r: OutlayerRun }) {
   </tr>;
 }
 
-function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Wallet; orders: Order[] | null; ordersErr: string; log: LogEvent[] | null; logErr: string }) {
+function BottomPanel({ wallet, orders, ordersErr, log, logErr, pub, fills, pairs }: { wallet: Wallet; orders: Order[] | null; ordersErr: string; log: LogEvent[] | null; logErr: string; pub: PublicOrder[]; fills: MarketFill[]; pairs: [number, number][] }) {
   const [tab, setTab] = useState<Tab>('open');
   const [err, setErr] = useState('');
   const [pendingIds, setPendingIds] = useState<number[]>([]);
@@ -261,14 +179,28 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
   async function cancel(id: number) {
     if (cancelling.current.has(id)) return;
     cancelling.current.add(id); setPendingIds([...cancelling.current]); setErr('');
-    try { await wallet.call('cancel_order', { id }, '0', 30); }
+    try { await wallet.call(id < 0 ? 'cancel_public_order' : 'cancel_order', { id: Math.abs(id) }, '0', 30); }
     catch (e) { setErr((e as Error).message); }
     finally { cancelling.current.delete(id); setPendingIds([...cancelling.current]); }
   }
   const open = (orders ?? []).filter((o) => o.status === 'Open').sort((a, b) => b.id - a.id);
   const hist = (orders ?? []).filter((o) => o.status !== 'Open').sort((a, b) => b.id - a.id);
+  const partner = (id: number) => pairs.find((p) => p.includes(id))?.find((x) => x !== id);
+  const pubOpen = pub.filter((o) => o.status === 'Open').sort((a, b) => b.id - a.id);
+  const pubHist = pub.filter((o) => o.status !== 'Open').sort((a, b) => b.id - a.id);
   const runs = outlayerRuns();
-  const tabs: [Tab, string, number | null][] = [['open', 'Open orders', orders ? open.length : null], ['history', 'Order history', orders ? hist.length : null], ['log', 'Enclave log', log ? log.length : null], ['att', 'Attestations', runs.length]];
+  const tabs: [Tab, string, number | null][] = [['open', 'Open orders', orders ? open.length + pubOpen.length : null], ['history', 'Order history', orders ? hist.length + pubHist.length + fills.length : null], ['log', 'Enclave log', log ? log.length : null], ['att', 'Attestations', runs.length]];
+  const pubRows = pubOpen.map((o) => <tr key={`p${o.id}`} className="row-public">
+    <td><span className="ocell"><span className="pub-dot" aria-hidden="true"><Icon name="eye" size={14} /></span><span><b className="mono">P{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
+    <td><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR/USD</span></td>
+    <td>Public {orderType(o.cond, o.side)} <PubChip /></td>
+    <td>{o.side === 'buy' ? <span className="up">Buy</span> : <span className="down">Sell</span>}</td>
+    <td className="mono">{orderSize(o.amount, o.side)}</td>
+    <td><span className="mono pub-trig">{e6(o.trigger_e6)} <small>anyone can read</small></span></td>
+    <td><span className="st st-armed"><i />Armed</span></td>
+    <td className="mono">{utc(nsToMs(o.created_ns))}</td>
+    <td className="acts">{wallet.account === o.owner && <button className="btn btn-ghost btn-xs" disabled={pendingIds.includes(-o.id)} onClick={() => cancel(-o.id)}>{pendingIds.includes(-o.id) ? 'Cancelling…' : 'Cancel'}</button>}{txForPublic(o.id) && <Tx hash={txForPublic(o.id)!} label="Tx" />}</td>
+  </tr>);
   const loading = (e: string, what: string) => <State kind={e ? 'error' : 'loading'} art={e ? 'warning' : undefined} title={e ? `Could not read ${what}` : `Reading ${what}…`}>{e}</State>;
   return <section className="pnl bottom" aria-label="Orders and enclave">
     <header className="pnl-tabs btabs" role="tablist">
@@ -276,28 +208,48 @@ function BottomPanel({ wallet, orders, ordersErr, log, logErr }: { wallet: Walle
       <span className="pnl-note">{wallet.account ? `Account ${shortAccount(wallet.account)}` : 'All accounts · not connected'}</span>
     </header>
     <div className="tbl-wrap">
-      {tab === 'open' && (!orders ? loading(ordersErr, 'orders') : !open.length ? <State kind="empty" art="tray-empty" title={wallet.account ? 'No open sealed orders' : 'No armed orders on chain'}>Seal a stop or take-profit in the order panel.</State> : <table className="tbl">
+      {tab === 'open' && (!orders ? loading(ordersErr, 'orders') : !open.length && !pubOpen.length ? <State kind="empty" art="tray-empty" title={wallet.account ? 'No open sealed orders' : 'No armed orders on chain'}>Seal a stop or take-profit in the order panel.</State> : <table className="tbl">
         <thead><tr><th>Order</th><th>Market</th><th>Type</th><th>Side</th><th>Size</th><th>Trigger</th><th>Status</th><th>Placed (UTC)</th><th /></tr></thead>
         <tbody>{open.map((o) => { const p = decrypt(o, wallet.account); return <tr key={o.id}>
           <td><span className="ocell"><img src={art('slip').src} alt="" aria-hidden="true" /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
           <td><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR/USD</span></td>
-          <td>{typeLabel(p)}</td>
-          <td>{p ? <span className="down">Sell</span> : <Hidden label="" />}</td>
-          <td className="mono">{p ? <WithLogo sym="NEAR">{near(p.amount, 2)} NEAR</WithLogo> : <Hidden label="" />}</td>
+          <td>{typeLabel(p)} <OcoChip partner={partner(o.id)} /></td>
+          <td>{p ? (p.side === 'buy' ? <span className="up">Buy</span> : <span className="down">Sell</span>) : <Hidden label="" />}</td>
+          <td className="mono">{p ? <WithLogo sym={p.side === 'buy' ? 'tUSD' : 'NEAR'}>{orderSize(p.amount, p.side)}</WithLogo> : <Hidden label="" />}</td>
           <td>{p ? <span className="mono">{e6(p.trigger_e6)} <small className="dim">only you</small></span> : <Hidden />}</td>
           <td><span className="st st-armed"><i />Armed</span></td>
           <td className="mono">{utc(nsToMs(o.created_ns))}</td>
           <td className="acts">{wallet.account === o.owner && <button className="btn btn-ghost btn-xs" disabled={pendingIds.includes(o.id)} onClick={() => cancel(o.id)}>{pendingIds.includes(o.id) ? 'Cancelling…' : 'Cancel'}</button>}<Link to={`/order/${o.id}`} className="btn btn-ghost btn-xs">View</Link></td>
-        </tr>; })}</tbody>
+        </tr>; })}{pubRows}</tbody>
       </table>)}
-      {tab === 'history' && (!orders ? loading(ordersErr, 'orders') : !hist.length ? <State kind="empty" art="tray-empty" title="No fired or cancelled orders yet" /> : <table className="tbl">
+      {tab === 'history' && (!orders ? loading(ordersErr, 'orders') : !hist.length && !pubHist.length && !fills.length ? <State kind="empty" art="tray-empty" title="No fired or cancelled orders yet" /> : <table className="tbl">
         <thead><tr><th>Order</th><th>Type</th><th>Trigger</th><th>Price read</th><th>Filled</th><th>Status</th><th>Time (UTC)</th><th>Tx</th><th /></tr></thead>
-        <tbody>{hist.map((o) => { const f = o.fire; return <tr key={o.id}>
-          <td><span className="ocell"><img src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" className={f ? '' : 'faded'} /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
-          <td>{f ? (f.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</td>
-          <td>{f ? <span className="mono gold">{e6(f.trigger_e6)} <small className="dim">revealed</small></span> : <Hidden label="never revealed" />}</td>
+        <tbody>{[...fills].sort((a, b) => b.id - a.id).map((m) => <tr key={`m${m.id}`}>
+          <td><span className="ocell"><span className="pub-dot mkt-dot" aria-hidden="true"><Icon name="bolt" size={14} /></span><span><b className="mono">M{m.id}</b><small className="mono">{shortAccount(m.owner)}</small></span></span></td>
+          <td>Market {m.side}</td>
+          <td className="dim">no trigger</td>
+          <td className="mono">{e6(m.price_e6)} <small className="dim">pool</small></td>
+          <td className="mono">{m.side === 'sell' ? <><WithLogo sym="NEAR">{near(m.amount_in, 2)} NEAR</WithLogo> → <WithLogo sym="tUSD">{usd6(m.amount_out)} tUSD</WithLogo></> : <><WithLogo sym="tUSD">{usd6(m.amount_in, 2)} tUSD</WithLogo> → <WithLogo sym="NEAR">{near(m.amount_out)} NEAR</WithLogo></>}</td>
+          <td><span className="st st-fired"><i />Filled</span></td>
+          <td className="mono">{utc(nsToMs(m.block_ts))}</td>
+          <td>{txForMarket(m.id) ? <Tx hash={txForMarket(m.id)!} /> : <span className="dim">—</span>}</td>
+          <td />
+        </tr>)}{pubHist.map((o) => { const f = o.fire; return <tr key={`p${o.id}`} className="row-public">
+          <td><span className="ocell"><span className="pub-dot" aria-hidden="true"><Icon name="eye" size={14} /></span><span><b className="mono">P{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
+          <td>Public {orderType(o.cond, o.side)} <PubChip /></td>
+          <td><span className="mono pub-trig">{e6(o.trigger_e6)} <small>always public</small></span></td>
           <td className="mono">{f ? e6(f.price_e6) : '—'}</td>
-          <td className="mono">{f ? <><WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> → <WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></> : '—'}</td>
+          <td className="mono">{f ? (o.side === 'sell' ? `${near(f.filled_in, 2)} NEAR → ${usd6(f.filled_out)} tUSD` : `${usd6(f.filled_in, 2)} tUSD → ${near(f.filled_out)} NEAR`) : '—'}</td>
+          <td><span className={`st st-${o.status.toLowerCase()}`}><i />{o.status}</span></td>
+          <td className="mono">{f ? utc(nsToMs(f.block_ts)) : utc(nsToMs(o.created_ns))}</td>
+          <td>{f && txForRequest(f.request) ? <Tx hash={txForRequest(f.request)!} /> : <span className="dim">—</span>}</td>
+          <td />
+        </tr>; })}{hist.map((o) => { const f = o.fire; return <tr key={o.id}>
+          <td><span className="ocell"><img src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" className={f ? '' : 'faded'} /><span><b className="mono">№{o.id}</b><small className="mono">{shortAccount(o.owner)}</small></span></span></td>
+          <td>{f ? `Sealed ${orderType(f.cond, f.side)}` : 'Sealed'} <OcoChip partner={partner(o.id)} /></td>
+          <td>{f ? <span className="mono gold">{e6(f.trigger_e6)} <small className="dim">revealed</small></span> : <Hidden label={partner(o.id) ? 'never revealed · OCO' : 'never revealed'} />}</td>
+          <td className="mono">{f ? e6(f.price_e6) : '—'}</td>
+          <td className="mono">{f ? (f.side === 'buy' ? <><WithLogo sym="tUSD">{usd6(f.filled_in, 2)} tUSD</WithLogo> → <WithLogo sym="NEAR">{near(f.filled_out)} NEAR</WithLogo></> : <><WithLogo sym="NEAR">{near(f.filled_in, 2)} NEAR</WithLogo> → <WithLogo sym="tUSD">{usd6(f.filled_out)} tUSD</WithLogo></>) : '—'}</td>
           <td><span className={`st st-${o.status.toLowerCase()}`}><i />{o.status}</span></td>
           <td className="mono">{f ? utc(nsToMs(f.block_ts)) : utc(nsToMs(o.created_ns))}</td>
           <td>{f && txForRequest(f.request) ? <Tx hash={txForRequest(f.request)!} /> : <span className="dim">—</span>}</td>
@@ -332,6 +284,9 @@ export default function Terminal({ wallet }: { wallet: Wallet }) {
   const bal = useBalance(wallet.account);
   const t = useTicker();
   const requests = useRequests(stats.data?.requests_total);
+  const pub = usePublicOrders(wallet.account);
+  const fills = useMarketFills(wallet.account);
+  const pairs = useOcoPairs();
   const [vault, setVault] = useState(false);
   const [mobileView, setMobileView] = useState<'chart' | 'book'>('chart');
   const log = useMemo(() => (book.data && requests.data ? buildLog(book.data, requests.data) : null), [book.data, requests.data]);
@@ -339,7 +294,8 @@ export default function Terminal({ wallet }: { wallet: Wallet }) {
   const last = t.data ? Number(t.data.price) : null;
   const fired = (book.data ?? []).filter((o) => o.fire);
   const chart = <ChartPanel stats={stats.data} fired={fired} requestsLog={log} />;
-  const sealedBook = <SealedBook orders={book.data} error={book.error} stats={stats.data} last={last} />;
+  const allPub = usePublicOrders();
+  const sealedBook = <SealedBook orders={book.data} error={book.error} stats={stats.data} last={last} pub={allPub.data ?? []} />;
   return <div className="term-page">
     <AppHeader wallet={wallet} onVault={() => setVault(true)} />
     <main className={`term ${wide ? 'term-wide' : ''}`} id="main">
@@ -349,7 +305,7 @@ export default function Terminal({ wallet }: { wallet: Wallet }) {
         {mobileView === 'chart' ? chart : sealedBook}
       </div>}
       <OrderPanel wallet={wallet} config={config.data} configError={config.error} balance={bal.data} stats={stats.data} onVault={() => setVault(true)} />
-      <BottomPanel wallet={wallet} orders={orders} ordersErr={wallet.account ? mine.error : book.error} log={log} logErr={book.error || requests.error} />
+      <BottomPanel wallet={wallet} orders={orders} ordersErr={wallet.account ? mine.error : book.error} log={log} logErr={book.error || requests.error} pub={pub.data ?? []} fills={fills.data ?? []} pairs={pairs.data ?? []} />
     </main>
     <footer className="term-foot mono"><span><i className="live" />Live · NEAR testnet</span><a href={accountUrl(CONTRACT)} target="_blank" rel="noreferrer">{CONTRACT} <Icon name="external" size={11} /></a><span>tUSD has no value</span></footer>
     {vault && <VaultSheet wallet={wallet} balance={bal.data} onClose={() => setVault(false)} />}

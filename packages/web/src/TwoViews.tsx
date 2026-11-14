@@ -1,4 +1,4 @@
-import { accountUrl, chainTx, e6, near, nsToMs, shortAccount, txForOrder, txUrl, view, type ChainTx, type Order } from './lib';
+import { orderSize, orderType, accountUrl, chainTx, e6, near, nsToMs, shortAccount, txForOrder, txUrl, view, type ChainTx, type Order } from './lib';
 import { usePoll } from './live';
 import { useLivePrice } from './price';
 import { decrypt } from './Terminal';
@@ -27,11 +27,11 @@ export default function TwoViews({ order, account, title = true }: { order: Orde
       <article className="view-card view-you">
         <header><span className="view-tag"><Icon name="eye" size={14} />What you see</span><span className="dim small">{revealed ? 'Revealed after it fired' : mine && p ? 'Opened on this device' : 'Owner only'}</span></header>
         {p ? <>
-          <p className="view-lede">{p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit'} · sell if NEAR {p.cond === 'lte' ? 'falls to' : 'rises to'}</p>
+          <p className="view-lede">Sealed {orderType(p.cond, p.side)} · {p.side === 'buy' ? 'buy' : 'sell'} if NEAR {p.cond === 'lte' ? 'falls to' : 'rises to'}</p>
           <p className="view-big num">${e6(p.trigger_e6)}</p>
           <dl className="view-rows">
-            <div><dt>Size</dt><dd className="mono"><WithLogo sym="NEAR">{near(p.amount, 4)} NEAR</WithLogo></dd></div>
-            <div><dt>Side</dt><dd>Sell NEAR → tUSD</dd></div>
+            <div><dt>Size</dt><dd className="mono"><WithLogo sym={p.side === 'buy' ? 'tUSD' : 'NEAR'}>{orderSize(p.amount, p.side, 4)}</WithLogo></dd></div>
+            <div><dt>Side</dt><dd>{p.side === 'buy' ? 'Buy NEAR with tUSD' : 'Sell NEAR → tUSD'}</dd></div>
             <div><dt>Live price</dt><dd className="mono">{live.price ? `${live.price.toFixed(4)}${dist !== null && !revealed ? ` · ${Math.abs(dist).toFixed(2)}% ${dist < 0 ? 'below' : 'above'}` : ''}` : '…'}</dd></div>
             <div><dt>Status</dt><dd>{o.status === 'Open' ? 'Armed in the enclave' : o.status}</dd></div>
           </dl>
@@ -53,8 +53,8 @@ export default function TwoViews({ order, account, title = true }: { order: Orde
         </pre>
         <dl className="view-absent">
           <div><dt>Trigger price</dt><dd>{revealed ? <span className="gold mono">{e6(o.fire!.trigger_e6)} · published when it fired</span> : <span className="absent">not in the record</span>}</dd></div>
-          <div><dt>Size</dt><dd>{revealed ? <span className="mono">{near(o.fire!.amount, 4)} NEAR</span> : <span className="absent">not in the record</span>}</dd></div>
-          <div><dt>Stop or take-profit</dt><dd>{revealed ? (o.fire!.cond === 'lte' ? 'stop' : 'take-profit') : <span className="absent">not in the record</span>}</dd></div>
+          <div><dt>Size</dt><dd>{revealed ? <span className="mono">{orderSize(o.fire!.amount, o.fire!.side, 4)}</span> : <span className="absent">not in the record</span>}</dd></div>
+          <div><dt>Order type</dt><dd>{revealed ? orderType(o.fire!.cond, o.fire!.side) : <span className="absent">not in the record</span>}</dd></div>
         </dl>
         <footer>{hash ? <a className="tx" href={txUrl(hash)} target="_blank" rel="noreferrer">Open the transaction on NearBlocks <Icon name="external" size={12} /></a> : <span className="dim small">Placement transaction not recorded in this browser; the contract record above is live.</span>}{tx.error && <span className="dim small"> · {tx.error}</span>}</footer>
       </article>

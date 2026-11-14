@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ago, e6, near, nsToMs, shortAccount, txForOrder, type Order } from './lib';
-import { useOrders, useStats } from './live';
+import { useOrders, usePublicOrders, useStats } from './live';
+import { ArgsCompare, HunterView } from './Hunter';
 import { CountUp, EnclavePulse, LiveTick, StreamDot } from './motion';
 import { AppHeader, Hidden } from './Terminal';
 import { Link, Obj, State, Tx, shortHex } from './ui';
@@ -13,6 +14,7 @@ const status = (o: Order) => (o.status === 'Open' ? 'armed' : o.status.toLowerCa
 /** The whole sealed book as a stop hunter would read it from chain: every order, no armed level. */
 export default function Book({ wallet }: { wallet: Wallet }) {
   const orders = useOrders();
+  const pub = usePublicOrders();
   const stats = useStats();
   const [filter, setFilter] = useState<Filter>('armed');
   const list = useMemo(() => [...(orders.data ?? [])].sort((a, b) => b.id - a.id), [orders.data]);
@@ -40,6 +42,8 @@ export default function Book({ wallet }: { wallet: Wallet }) {
           <div><dt>Band report (k = {b?.k ?? 5})</dt><dd className="bk-band">{b ? `${b.suppressed} of ${b.total} suppressed` : s ? 'none yet' : '…'}<small>{b ? ` · bands of $${e6(b.width_e6)}` : ''}</small></dd></div>
         </dl>
       </section>
+      <HunterView pub={pub.data} sealed={orders.data} error={pub.error} />
+      <ArgsCompare pub={pub.data} sealed={orders.data} />
       <section className="pnl" aria-label="Orders">
         <header className="pnl-tabs" role="tablist">
           {([['armed', 'Armed'], ['fired', 'Fired'], ['cancelled', 'Cancelled'], ['all', 'All']] as [Filter, string][]).map(([k, l]) => <button key={k} role="tab" aria-selected={filter === k} className={`pnl-tab ${filter === k ? 'on' : ''}`} onClick={() => setFilter(k)}>{l}{orders.data && <small>{count(k)}</small>}</button>)}

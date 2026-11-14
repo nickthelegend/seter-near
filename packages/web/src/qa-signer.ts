@@ -24,7 +24,7 @@ async function jsonRpc(url: string, method: string, params: object) {
 const MARKER = 'SETER_QA_SIGNER_TESTNET_ONLY';
 const RPCS = new Set(['https://test.rpc.fastnear.com', 'https://rpc.testnet.near.org', 'https://near-testnet.drpc.org']);
 const METHODS: Record<string, Set<string>> = {
-  [CONTRACT]: new Set(['deposit_near', 'place_order', 'check', 'cancel_order', 'withdraw_near', 'withdraw_usd']),
+  [CONTRACT]: new Set(['deposit_near', 'place_order', 'place_oco', 'place_public_order', 'cancel_public_order', 'market_order', 'check', 'cancel_order', 'withdraw_near', 'withdraw_usd']),
   [TOKEN]: new Set(['faucet', 'ft_transfer_call', 'storage_deposit']),
 };
 let instance: Promise<WalletPort> | undefined;

@@ -1,0 +1,147 @@
+{
+  "network": "testnet",
+  "contract": "mienai-3013a230.testnet",
+  "account": "mienai-4e6b1225.testnet",
+  "at": "2026-11-14T09:13:08.866Z",
+  "coinbase": {
+    "price": "3.3215",
+    "time": "2026-11-14T09:13:03.745415398Z",
+    "trade_id": 36607748
+  },
+  "level_usd": "3.28",
+  "steps": [
+    {
+      "step": "film v5 prep: trader deposits 1.5 testnet NEAR into its vault (off camera)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "deposit_near",
+      "args": {},
+      "deposit": "1500000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "BFHEL7GFfUczbN4zqEMpCpsficc8iYo6847N6HGpipDF",
+      "explorer": "https://testnet.nearblocks.io/txns/BFHEL7GFfUczbN4zqEMpCpsficc8iYo6847N6HGpipDF",
+      "at": "2026-11-14T09:13:12.494Z",
+      "ok": true,
+      "return": "{\"near\":\"1739900000000000000000000\",\"usd\":\"3410230\"}",
+      "failure": null,
+      "logs": []
+    },
+    {
+      "step": "film v5 prep: public stop, sell 0.10 NEAR at 3.28 (off camera)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_public_order",
+      "args": {
+        "kind": "stop",
+        "cond": "lte",
+        "trigger_usd": "3.28",
+        "side": "sell",
+        "amount": "100000000000000000000000"
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "J46sZrGtAjRwVNZ3jZTy1Dk2fibz1G2cP4HdP1ycRvR2",
+      "explorer": "https://testnet.nearblocks.io/txns/J46sZrGtAjRwVNZ3jZTy1Dk2fibz1G2cP4HdP1ycRvR2",
+      "at": "2026-11-14T09:13:16.452Z",
+      "ok": true,
+      "return": "1",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"public_order_placed\",\"data\":[{\"id\":1,\"owner\":\"mienai-4e6b1225.testnet\",\"kind\":\"stop\",\"cond\":\"lte\",\"trigger_e6\":3280000,\"side\":\"sell\",\"amount\":\"100000000000000000000000\"}]}"
+      ]
+    },
+    {
+      "step": "film v5 prep: public stop, sell 0.15 NEAR at 3.28 (off camera)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_public_order",
+      "args": {
+        "kind": "stop",
+        "cond": "lte",
+        "trigger_usd": "3.28",
+        "side": "sell",
+        "amount": "150000000000000000000000"
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "C3UeadjGvTwxYdoTUJBCgzLvTbGhtFgDe6kFAHSpXQPZ",
+      "explorer": "https://testnet.nearblocks.io/txns/C3UeadjGvTwxYdoTUJBCgzLvTbGhtFgDe6kFAHSpXQPZ",
+      "at": "2026-11-14T09:13:20.475Z",
+      "ok": true,
+      "return": "2",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"public_order_placed\",\"data\":[{\"id\":2,\"owner\":\"mienai-4e6b1225.testnet\",\"kind\":\"stop\",\"cond\":\"lte\",\"trigger_e6\":3280000,\"side\":\"sell\",\"amount\":\"150000000000000000000000\"}]}"
+      ]
+    },
+    {
+      "step": "film v5 prep: sealed stop, same level and size as a public one (sell 0.10 NEAR; level not in the transaction) (off camera)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_order",
+      "args": {
+        "ct": "Ac224wuIC972G3Qx27oamWwr2wCgrzvoLomw7wLmGK80loAgU9KdaDz3DQYu1pan2TLRDUK77296SNe+R4tfFLwOsYxC5o9m8xAmpXzzEJgfqJTurEsLAhXj9mOKpqAo9K/oj9t2SYhH9lri5JLJIKELsD0+Ho1P6TTL4bd9nXOXYFb9Tq+WVJXfvlzW6yNKJ084I3oNHM8YU/8W0pvbKwAzYDMr5WRTl8s7trD0PDYs3s0x4XpjMKlXurUERUCO9iuKfcYlCo3i04+6cGg=",
+        "commit": "814c131706a13b29ab633993a07ae5c7939f2e451ffa188ac3e4fbc560585186",
+        "view_ct": null
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "5covNMNsmqeUcQcExhGsnEhowoP4GmqXriLCVE29eaax",
+      "explorer": "https://testnet.nearblocks.io/txns/5covNMNsmqeUcQcExhGsnEhowoP4GmqXriLCVE29eaax",
+      "at": "2026-11-14T09:13:24.630Z",
+      "ok": true,
+      "return": "20",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":20,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    },
+    {
+      "step": "film v5 prep: sealed stop, same level and size as a public one (sell 0.15 NEAR; level not in the transaction) (off camera)",
+      "receiverId": "mienai-3013a230.testnet",
+      "method": "place_order",
+      "args": {
+        "ct": "AU9uZ44Nz2GoRc8dSduckOmkMYX6ZGg1xxbOvONfIjdX0EhHL5H4S/RIXnUgiVTqaxwG0jXYiUYe5ocx8WD2dYJPUoP3TXjTwFw2dMct8CQlpRux9bdcaf20xeDSYds6hvFG/+WryUegLTNpbBWPoezNYXvXL4HCm5XVuygdkfqr8oQXxfCtk8OLHmIoLln2OwOpT1EVWVIy/4j4+X4Xvh0w2GMihjUwIIOtQ/1QXxnbl82S//Pry371uOQEZaTvaswyRon7SM/oNCmGO/A=",
+        "commit": "5db5b3a2ef9590357ba8112a125006f7092f03da055d0205d72f23160696e422",
+        "view_ct": null
+      },
+      "deposit": "20000000000000000000000",
+      "signer": "mienai-4e6b1225.testnet",
+      "tx": "8P1mzaTJ17c4yDw4UaJt1ecZJzBuoyEMj613rj9hFnz4",
+      "explorer": "https://testnet.nearblocks.io/txns/8P1mzaTJ17c4yDw4UaJt1ecZJzBuoyEMj613rj9hFnz4",
+      "at": "2026-11-14T09:13:28.346Z",
+      "ok": true,
+      "return": "21",
+      "failure": null,
+      "logs": [
+        "EVENT_JSON:{\"standard\":\"mienai\",\"version\":\"1.0.0\",\"event\":\"order_placed\",\"data\":[{\"id\":21,\"owner\":\"mienai-4e6b1225.testnet\"}]}"
+      ]
+    }
+  ],
+  "vault_after": {
+    "near": "1739900000000000000000000",
+    "usd": "3410230"
+  },
+  "public_orders": [
+    {
+      "id": 1,
+      "owner": "mienai-4e6b1225.testnet",
+      "kind": "stop",
+      "cond": "lte",
+      "trigger_e6": 3280000,
+      "side": "sell",
+      "amount": "100000000000000000000000",
+      "created_ns": "1794647593505618509",
+      "status": "Open",
+      "fire": null
+    },
+    {
+      "id": 2,
+      "owner": "mienai-4e6b1225.testnet",
+      "kind": "stop",
+      "cond": "lte",
+      "trigger_e6": 3280000,
+      "side": "sell",
+      "amount": "150000000000000000000000",
+      "created_ns": "1794647597819602152",
+      "status": "Open",
+      "fire": null
+    }
+  ]
+}

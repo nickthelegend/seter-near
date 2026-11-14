@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { accountUrl, e6, near, nsToMs, shortAccount, usd6, view, type Balance, type Order } from './lib';
+import { orderType, accountUrl, e6, near, nsToMs, shortAccount, usd6, view, type Balance, type Order } from './lib';
 import { useBalance, useMine, useNow, usePoll } from './live';
 import { CountUp, LiveTick } from './motion';
 import { useLivePrice } from './price';
@@ -71,7 +71,7 @@ export default function Portfolio({ wallet }: { wallet: Wallet }) {
             : <table className="tbl"><thead><tr><th>Order</th><th>Type</th><th>Trigger</th><th>Size</th><th>From live</th><th>Placed (UTC)</th><th /></tr></thead>
               <tbody>{open.map((o) => { const p = decrypt(o, wallet.account); const d = p && px ? (p.trigger_e6 / 1e6 / px - 1) * 100 : null; return <tr key={o.id}>
                 <td><b className="mono">№{o.id}</b></td>
-                <td>{p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</td>
+                <td>{p ? `Sealed ${orderType(p.cond, p.side)}` : 'Sealed'}</td>
                 <td>{p ? <span className="mono">{e6(p.trigger_e6)} <small className="dim">only you</small></span> : <Hidden />}</td>
                 <td className="mono">{p ? <WithLogo sym="NEAR">{near(p.amount, 4)}</WithLogo> : <Hidden label="" />}</td>
                 <td className="mono">{d !== null ? <span className={d < 0 ? 'down' : 'up'}>{d >= 0 ? '+' : ''}{d.toFixed(2)}%</span> : '—'}</td>

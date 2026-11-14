@@ -1,4 +1,4 @@
-import { accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
+import { orderType, accountUrl, ago, attestationFor, e6, enclaveUpload, near, nsToMs, short, txForOrder, txForRequest, usd6, view, type Attestation, type Order } from './lib';
 import { useConfig, useFireSecond, usePoll, useQuote, useStats } from './live';
 import { Copy, Icon, Link, Num, Obj, State, Tx, shortHex } from './ui';
 import { AppHeader, Hidden, decrypt } from './Terminal';
@@ -135,7 +135,7 @@ export default function OrderPage({ id, wallet }: { id: number; wallet: Wallet }
           <header><img className="osum-art" src={art(f ? 'slip-fired' : 'slip').src} alt="" aria-hidden="true" /><h1>Order №{o.id}</h1><span className={`st st-${o.status === 'Open' ? 'armed' : o.status.toLowerCase()}`}><i />{o.status === 'Open' ? 'Armed' : o.status}</span></header>
           <dl className="osum-grid">
             <div><dt>Market</dt><dd><span className="tamt"><PairLogo base="NEAR" quote="USD" />NEAR / USD</span></dd></div>
-            <div><dt>Type</dt><dd>{p ? (p.cond === 'lte' ? 'Sealed stop' : 'Sealed take-profit') : 'Sealed'}</dd></div>
+            <div><dt>Type</dt><dd>{p ? `Sealed ${orderType(p.cond, p.side)}` : 'Sealed'}</dd></div>
             <div><dt>Side</dt><dd>{p ? <>Sell <WithLogo sym="NEAR">NEAR</WithLogo> → <WithLogo sym="tUSD">tUSD</WithLogo></> : <Hidden label="" />}</dd></div>
             <div><dt>Size</dt><dd className="mono">{p ? <WithLogo sym="NEAR">{near(p.amount, 4)} NEAR</WithLogo> : <Hidden label="" />}</dd></div>
             <div><dt>Trigger</dt><dd className="mono">{f ? <span className="gold">{e6(f.trigger_e6)} · revealed</span> : p ? <>{e6(p.trigger_e6)} <small className="dim">only you</small></> : <Hidden />}</dd></div>
