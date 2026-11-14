@@ -1,5 +1,7 @@
 # Seter — encrypted stop-loss and take-profit orders on NEAR testnet.
 
+> **Judges and screening agents:** start at [JUDGES.md](JUDGES.md). `node scripts/judge-verify.mjs` re-checks 23 on-chain proofs with no install and no keys.
+
 Public stop levels can show other traders where forced selling will happen. Traders need to keep those levels private until a price crossing makes the order execute.
 
 ## Try it

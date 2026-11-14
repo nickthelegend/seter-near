@@ -1,0 +1,11 @@
+# Seter
+
+> Encrypted stop-loss and take-profit orders on NEAR testnet. A contract stores ciphertext and commitments; an OutLayer Intel TDX enclave reads the Coinbase NEAR/USD price and signs a report naming only crossed orders; the contract verifies it (env::ed25519_verify), requires a second TEE price source to agree, then settles on a NEAR/tUSD test pool.
+
+- [Judge guide](JUDGES.md): verification commands, "do X → see Y" steps, NEAR features used, limits
+- [README](README.md): product, live testnet tables, build and run
+- [Vault contract](packages/contract/src/lib.rs): orders, commitments, check, on_result, fire, test pool
+- [Enclave program](packages/enclave/): the OutLayer WASM that reads the price and signs reports
+- [Live verifier](scripts/judge-verify.mjs): `node scripts/judge-verify.mjs` re-checks 23 on-chain proofs
+- [Blocked items](BLOCKED.md)
+- [Testing](TESTING.md)
