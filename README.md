@@ -255,7 +255,7 @@ Built with AI coding agents (Claude Code, Codex) under human direction; all code
 
 ### Other projects by the same team in this hackathon
 
-Lead: <TBD by Nick>
+Lead: Manikanta. Manikanta also leads Mempire (https://github.com/nickthelegend/mempire-near), a staked card battler refereed by a NEAR contract. The two are independent products.
 
 ### License
 
